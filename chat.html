@@ -316,6 +316,143 @@
             background: #e2e8f0;
             color: #4a5568;
         }
+        /* ========== ADMIN BUTTON ========== */
+        .btn-admin {
+            background: #805ad5;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-right: 8px;
+        }
+        
+        .btn-admin.active {
+            background: #6b46c1;
+            box-shadow: 0 0 0 2px rgba(128, 90, 213, 0.3);
+        }
+        
+        .btn-admin:hover {
+            background: #6b46c1;
+            transform: translateY(-2px);
+        }
+        
+        /* ========== DELETE SELECTED BUTTON ========== */
+        .delete-selected-btn {
+            position: sticky;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f56565;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: all 0.3s;
+            width: fit-content;
+            margin: 0 auto 20px;
+        }
+        
+        .delete-selected-btn:hover {
+            background: #e53e3e;
+            transform: translateX(-50%) scale(1.05);
+        }
+        
+        /* ========== ADMIN DELETE ROOM BUTTON ========== */
+        .admin-delete-room-btn {
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        
+        .admin-delete-room-btn:hover {
+            background: #e53e3e;
+        }
+        
+        /* ========== MESSAGE CHECKBOX ========== */
+        .message-checkbox {
+            display: flex;
+            align-items: center;
+            margin-right: 8px;
+        }
+        
+        .message-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+        
+        .message.selected {
+            background-color: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding-left: 8px;
+        }
+        
+        /* ========== DELETED MESSAGE ========== */
+        .message.deleted-message {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+        
+        .deleted-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #718096;
+            font-style: italic;
+        }
+        
+        .deleted-icon {
+            font-size: 14px;
+        }
+        
+        .deleted-text {
+            font-size: 13px;
+        }
+        
+        .deleted-time {
+            font-size: 11px;
+            margin-left: auto;
+        }
+        
+        /* ========== DELETE MESSAGE BUTTON ========== */
+        .delete-message-btn {
+            background: none;
+            border: none;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            opacity: 0;
+            margin-left: 8px;
+        }
+        
+        .message:hover .delete-message-btn {
+            opacity: 1;
+        }
+        
+        .delete-message-btn:hover {
+            background: #fed7d7;
+            color: #e53e3e;
+        }
     </style>
 </head>
 <body>
@@ -332,6 +469,10 @@
             </div>
             <div class="chat-header-right">
                 <div class="user-profile" id="userProfile"></div>
+                <!-- ✅ เพิ่มปุ่มแอดมินตรงนี้ -->
+                <button id="adminModeBtn" onclick="window.toggleAdminMode()" class="btn btn-admin" style="display: none;">
+                    👑 แอดมิน (ปิด)
+                </button>
                 <button onclick="window.logout()" class="btn btn-outline">
                     ออกจากระบบ
                 </button>
@@ -369,6 +510,11 @@
                 
                 <!-- Typing Indicator -->
                 <div id="typingIndicator" class="typing-indicator"></div>
+                
+                <!-- ✅ เพิ่มปุ่มลบหลายข้อความตรงนี้ -->
+                <div id="deleteSelectedBtn" class="delete-selected-btn" style="display: none;" onclick="window.deleteSelectedMessages()">
+                    🗑️ ลบ 0 ข้อความ
+                </div>
                 
                 <!-- Input Area -->
                 <div class="message-input-area" id="messageInputArea" style="display: none;">
@@ -1506,5 +1652,6 @@
     </script>
 </body>
 </html>
+
 
 
