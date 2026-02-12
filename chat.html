@@ -2,16 +2,306 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ห้องแชท - ChatApp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ChatApp - ห้องแชท</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* ========== ROOM STYLES ========== */
+        .rooms-panel {
+            width: 300px;
+            background: #f7fafc;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .rooms-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .create-room-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .create-room-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .room-tabs {
+            display: flex;
+            padding: 16px 20px;
+            gap: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .room-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .room-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        
+        .room-item:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .room-item.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .room-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .room-type-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .room-item.active .room-type-badge {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .room-meta {
+            font-size: 12px;
+            color: #718096;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .room-item.active .room-meta {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        /* ========== MEMBERS PANEL ========== */
+        .members-panel {
+            width: 280px;
+            background: white;
+            border-left: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .members-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .members-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #f7fafc;
+        }
+        
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .member-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .kick-btn {
+            padding: 6px 12px;
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .kick-btn:hover {
+            background: #e53e3e;
+        }
+        
+        /* ========== MODAL STYLES ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 450px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .password-field {
+            display: none;
+        }
+        
+        .password-field.show {
+            display: block;
+        }
+        
+        /* ========== MOBILE RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .chat-main {
+                flex-direction: column;
+            }
+            
+            .rooms-panel {
+                width: 100%;
+                max-height: 300px;
+            }
+            
+            .members-panel {
+                position: fixed;
+                right: -100%;
+                top: 0;
+                width: 85%;
+                height: 100vh;
+                z-index: 1500;
+                transition: right 0.3s;
+            }
+            
+            .members-panel.active {
+                right: 0;
+            }
+            
+            .chat-sidebar {
+                display: none;
+            }
+        }
+        
+        /* ========== CHAT ADJUSTMENTS ========== */
+        .chat-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .chat-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .current-room-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .room-badge {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+    </style>
 </head>
 <body>
     <div class="chat-container">
         <!-- Header -->
         <div class="chat-header">
             <div class="chat-header-left">
-                <h2>💬 ห้องแชทสาธารณะ</h2>
+                <div class="current-room-info">
+                    <h2 id="currentRoomTitle">💬 ห้องแชทสาธารณะ</h2>
+                    <span class="room-badge" id="currentRoomTypeBadge">สาธารณะ</span>
+                </div>
                 <span class="online-status" id="onlineStatus">🟢 ออนไลน์</span>
             </div>
             <div class="chat-header-right">
@@ -24,18 +314,29 @@
         
         <!-- Main Chat Area -->
         <div class="chat-main">
-            <!-- Sidebar -->
-            <div class="chat-sidebar">
-                <div class="online-users">
-                    <h3>👥 สมาชิกออนไลน์</h3>
-                    <div id="onlineUsersList" class="users-list"></div>
+            <!-- Rooms Panel (ซ้าย) -->
+            <div class="rooms-panel">
+                <div class="rooms-header">
+                    <button class="create-room-btn" onclick="showCreateRoomModal()">
+                        + สร้างห้องใหม่
+                    </button>
                 </div>
-                <div class="room-info">
-                    <p>🔊 มีสมาชิกทั้งหมด <span id="totalUsers">0</span> คน</p>
+                
+                <div class="room-tabs">
+                    <button class="tab-btn active" onclick="filterRooms('all', this)">ทั้งหมด</button>
+                    <button class="tab-btn" onclick="filterRooms('public', this)">สาธารณะ</button>
+                    <button class="tab-btn" onclick="filterRooms('private', this)">ส่วนตัว</button>
+                </div>
+                
+                <div class="room-list" id="roomList">
+                    <!-- รายการห้องจะโหลดมาใส่ที่นี่ -->
+                    <div style="text-align: center; padding: 40px 20px; color: #a0aec0;">
+                        ⏳ กำลังโหลดห้อง...
+                    </div>
                 </div>
             </div>
             
-            <!-- Messages Area -->
+            <!-- Messages Area (กลาง) -->
             <div class="chat-content">
                 <div class="messages-container" id="messagesContainer">
                     <!-- Messages will be loaded here -->
@@ -45,7 +346,7 @@
                 <div id="typingIndicator" class="typing-indicator"></div>
                 
                 <!-- Input Area -->
-                <div class="message-input-area">
+                <div class="message-input-area" id="messageInputArea" style="display: none;">
                     <div class="input-wrapper">
                         <textarea 
                             id="messageInput" 
@@ -61,23 +362,790 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Members Panel (ขวา) -->
+            <div class="members-panel" id="membersPanel">
+                <div class="members-header">
+                    <h3>👥 สมาชิกในห้อง</h3>
+                    <button onclick="toggleMembersPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+                </div>
+                <div class="members-list" id="membersList">
+                    <!-- รายการสมาชิกจะโหลดมาใส่ที่นี่ -->
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Templates -->
-    <template id="messageTemplate">
-        <div class="message">
-            <div class="message-header">
-                <span class="message-author"></span>
-                <span class="message-time"></span>
-            </div>
-            <div class="message-body"></div>
+    <!-- Modal: สร้างห้อง -->
+    <div id="createRoomModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">📝 สร้างห้องใหม่</h2>
+            <form id="createRoomForm">
+                <div class="form-group">
+                    <label>ชื่อห้อง <span style="color: #e53e3e;">*</span></label>
+                    <input type="text" id="roomName" placeholder="เช่น ห้องเล่นเกม" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>คำอธิบาย</label>
+                    <textarea id="roomDescription" placeholder="รายละเอียดห้อง..." rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>ประเภทห้อง</label>
+                    <select id="roomType" onchange="togglePasswordField()">
+                        <option value="public">🌍 สาธารณะ - ทุกคนเข้าได้</option>
+                        <option value="private">🔒 ส่วนตัว - ต้องใช้รหัสผ่าน</option>
+                    </select>
+                </div>
+                
+                <div id="passwordField" class="password-field">
+                    <div class="form-group">
+                        <label>รหัสผ่านห้อง</label>
+                        <input type="password" id="roomPassword" placeholder="ตั้งรหัสผ่าน">
+                    </div>
+                    <div class="form-group">
+                        <label>ยืนยันรหัสผ่าน</label>
+                        <input type="password" id="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">สร้างห้อง</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateRoomModal()">ยกเลิก</button>
+                </div>
+            </form>
         </div>
-    </template>
+    </div>
+    
+    <!-- Modal: เข้าร่วมห้องส่วนตัว -->
+    <div id="joinPrivateRoomModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">🔐 เข้าร่วมห้องส่วนตัว</h2>
+            <p id="joinRoomName" style="margin-bottom: 20px; font-weight: 600;"></p>
+            
+            <div class="form-group">
+                <label>รหัสผ่านห้อง</label>
+                <input type="password" id="joinRoomPassword" placeholder="กรอกรหัสผ่าน">
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="confirmJoinPrivateRoom()" class="btn btn-primary" style="flex: 1;">เข้าร่วม</button>
+                <button onclick="closeJoinPrivateModal()" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: เตะสมาชิก -->
+    <div id="kickMemberModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">⚠️ เตะสมาชิก</h2>
+            <p id="kickMemberName" style="margin-bottom: 20px;"></p>
+            <p style="color: #718096; margin-bottom: 24px;">คุณแน่ใจหรือไม่ว่าต้องการเตะสมาชิกคนนี้ออกจากห้อง?</p>
+            
+            <div style="display: flex; gap: 12px;">
+                <button onclick="confirmKickMember()" class="btn" style="flex: 1; background: #f56565; color: white;">เตะออก</button>
+                <button onclick="closeKickModal()" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
-    <script src="chat.js"></script>
+    <script>
+        // ========== GLOBAL VARIABLES ==========
+        let currentUser = null;
+        let currentRoom = null;
+        let currentRoomId = '00000000-0000-0000-0000-000000000000';
+        let messageSubscription = null;
+        let messagesContainer = document.getElementById('messagesContainer');
+        let messageInput = document.getElementById('messageInput');
+        let sendButton = document.getElementById('sendButton');
+        let typingTimeout = null;
+        
+        const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
+
+        // ========== INITIALIZATION ==========
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // ตรวจสอบการล็อกอิน
+                currentUser = await checkUser();
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // แสดงข้อมูลผู้ใช้
+                displayUserInfo();
+                
+                // โหลดรายการห้อง
+                await loadRooms();
+                
+                // เข้าร่วม public room อัตโนมัติ
+                await selectRoom(PUBLIC_ROOM_ID);
+                
+                // โหลดรายชื่อออนไลน์
+                await loadOnlineUsers();
+                
+                // ตั้งค่า Event Listeners
+                setupEventListeners();
+                
+                // ตั้งค่า Mobile Handler
+                initMobileHandler();
+                
+                console.log('✅ Chat initialized');
+            } catch (error) {
+                console.error('❌ Init error:', error);
+            }
+        });
+
+        // ========== USER INFO ==========
+        function displayUserInfo() {
+            const userProfile = document.getElementById('userProfile');
+            const username = currentUser.user_metadata?.display_name || 
+                            currentUser.user_metadata?.username || 
+                            'ผู้ใช้';
+            
+            userProfile.innerHTML = `
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" 
+                     alt="${username}" 
+                     class="avatar">
+                <span class="username">${username}</span>
+            `;
+        }
+
+        // ========== ROOM MANAGEMENT ==========
+        async function loadRooms(filter = 'all') {
+            try {
+                let query = supabaseClient
+                    .from('rooms')
+                    .select(`
+                        *,
+                        owner:owner_id (
+                            username,
+                            display_name
+                        ),
+                        room_members (
+                            user_id,
+                            role
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (filter === 'public') {
+                    query = query.eq('room_type', 'public');
+                } else if (filter === 'private') {
+                    query = query.eq('room_type', 'private');
+                }
+                
+                const { data: rooms, error } = await query;
+                if (error) throw error;
+                
+                displayRooms(rooms);
+            } catch (error) {
+                console.error('❌ Error loading rooms:', error);
+            }
+        }
+
+        function displayRooms(rooms) {
+            const roomList = document.getElementById('roomList');
+            if (!roomList) return;
+            
+            if (rooms.length === 0) {
+                roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #a0aec0;">📭 ยังไม่มีห้องแชท<br><small>คลิก "สร้างห้องใหม่" เพื่อเริ่มต้น</small></div>';
+                return;
+            }
+            
+            roomList.innerHTML = rooms.map(room => {
+                const isOwner = room.owner_id === currentUser?.id;
+                const memberCount = room.room_members?.length || 0;
+                const isActive = currentRoomId === room.id;
+                
+                return `
+                    <div class="room-item ${isActive ? 'active' : ''}" onclick="selectRoom('${room.id}')">
+                        <div class="room-header">
+                            <span class="room-name">
+                                ${room.room_type === 'private' ? '🔒' : '🌍'} ${room.name}
+                            </span>
+                            <span class="room-type-badge">
+                                ${room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'}
+                            </span>
+                        </div>
+                        <div class="room-meta">
+                            <span>👤 ${room.owner?.display_name || 'ไม่มีเจ้าของ'}</span>
+                            <span>👥 ${memberCount} คน</span>
+                            ${isOwner ? '<span style="color: #48bb78;">👑 เจ้าของ</span>' : ''}
+                        </div>
+                        ${room.description ? `<small style="color: #718096;">${room.description}</small>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function selectRoom(roomId) {
+            try {
+                // ตรวจสอบข้อมูลห้อง
+                const { data: room, error } = await supabaseClient
+                    .from('rooms')
+                    .select('*')
+                    .eq('id', roomId)
+                    .single();
+                    
+                if (error) throw error;
+                
+                // ถ้าเป็นห้องส่วนตัวและยังไม่เป็นสมาชิก
+                if (room.room_type === 'private') {
+                    const { data: member } = await supabaseClient
+                        .from('room_members')
+                        .select('*')
+                        .eq('room_id', roomId)
+                        .eq('user_id', currentUser.id)
+                        .maybeSingle();
+                        
+                    if (!member && room.owner_id !== currentUser.id) {
+                        showJoinPrivateModal(room);
+                        return;
+                    }
+                }
+                
+                await joinRoom(room);
+                
+            } catch (error) {
+                console.error('❌ Error selecting room:', error);
+            }
+        }
+
+        async function joinRoom(room) {
+            try {
+                // เข้าร่วมห้อง
+                const { data: existingMember } = await supabaseClient
+                    .from('room_members')
+                    .select('*')
+                    .eq('room_id', room.id)
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+                    
+                if (!existingMember) {
+                    await supabaseClient
+                        .from('room_members')
+                        .insert([{
+                            room_id: room.id,
+                            user_id: currentUser.id,
+                            role: room.owner_id === currentUser.id ? 'owner' : 'member',
+                            joined_at: new Date().toISOString()
+                        }]);
+                }
+                
+                // ตั้งค่าห้องปัจจุบัน
+                currentRoom = room;
+                currentRoomId = room.id;
+                
+                // อัปเดต UI
+                document.getElementById('currentRoomTitle').innerHTML = `
+                    ${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}
+                `;
+                document.getElementById('currentRoomTypeBadge').textContent = 
+                    room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+                document.getElementById('messageInputArea').style.display = 'block';
+                
+                // โหลดข้อความ
+                await loadMessages(room.id);
+                
+                // โหลดสมาชิก
+                await loadRoomMembers(room.id);
+                
+                // ตั้งค่า Realtime
+                setupMessageSubscription(room.id);
+                
+                // อัปเดตรายการห้อง
+                loadRooms();
+                
+            } catch (error) {
+                console.error('❌ Error joining room:', error);
+            }
+        }
+
+        // ========== MESSAGES ==========
+        async function loadMessages(roomId) {
+            try {
+                const { data: messages, error } = await supabaseClient
+                    .from('messages')
+                    .select(`
+                        *,
+                        profiles:user_id (
+                            username,
+                            display_name,
+                            avatar_url
+                        )
+                    `)
+                    .eq('room_id', roomId)
+                    .order('created_at', { ascending: true })
+                    .limit(50);
+                    
+                if (error) throw error;
+                
+                messagesContainer.innerHTML = '';
+                
+                if (messages.length === 0) {
+                    messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
+                } else {
+                    messages.forEach(msg => displayMessage(msg));
+                }
+                
+                scrollToBottom();
+                
+            } catch (error) {
+                console.error('❌ Error loading messages:', error);
+            }
+        }
+
+        function displayMessage(message) {
+            if (!messagesContainer) return;
+            
+            const isOwnMessage = message.user_id === currentUser?.id;
+            const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
+            const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
+            messageDiv.innerHTML = `
+                <img src="${avatarUrl}" alt="${author}" class="message-avatar"
+                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-author">${author}</span>
+                        <span class="message-time">${formatTime(message.created_at)}</span>
+                    </div>
+                    <div class="message-body">${linkify(message.message)}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !currentRoomId) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('messages')
+                    .insert([{
+                        user_id: currentUser.id,
+                        room_id: currentRoomId,
+                        message: message,
+                        created_at: new Date().toISOString()
+                    }]);
+                    
+                if (error) throw error;
+                
+                messageInput.value = '';
+                document.getElementById('charCount').textContent = '0/500';
+                
+            } catch (error) {
+                console.error('❌ Error sending message:', error);
+            }
+        }
+
+        // ========== REALTIME ==========
+        function setupMessageSubscription(roomId) {
+            if (messageSubscription) {
+                messageSubscription.unsubscribe();
+            }
+            
+            messageSubscription = supabaseClient
+                .channel(`room-${roomId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `room_id=eq.${roomId}`
+                    },
+                    async (payload) => {
+                        const { data: profile } = await supabaseClient
+                            .from('profiles')
+                            .select('username, display_name, avatar_url')
+                            .eq('id', payload.new.user_id)
+                            .single();
+                            
+                        displayMessage({
+                            ...payload.new,
+                            profiles: profile
+                        });
+                    }
+                )
+                .subscribe();
+        }
+
+        // ========== ROOM MEMBERS ==========
+        async function loadRoomMembers(roomId) {
+            try {
+                const { data: members, error } = await supabaseClient
+                    .from('room_members')
+                    .select(`
+                        user_id,
+                        role,
+                        joined_at,
+                        profiles:user_id (
+                            username,
+                            display_name,
+                            avatar_url
+                        )
+                    `)
+                    .eq('room_id', roomId);
+                    
+                if (error) throw error;
+                
+                displayRoomMembers(members);
+            } catch (error) {
+                console.error('❌ Error loading members:', error);
+            }
+        }
+
+        function displayRoomMembers(members) {
+            const container = document.getElementById('membersList');
+            if (!container) return;
+            
+            const isOwner = currentRoom?.owner_id === currentUser.id;
+            
+            container.innerHTML = members.map(member => {
+                const profile = member.profiles;
+                const isCurrentUser = member.user_id === currentUser.id;
+                const canKick = isOwner && !isCurrentUser && member.role !== 'owner';
+                
+                return `
+                    <div class="member-item">
+                        <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.display_name || profile?.username}`}" 
+                             alt="${profile?.display_name}" 
+                             class="member-avatar">
+                        <div class="member-info">
+                            <div class="member-name">
+                                ${profile?.display_name || profile?.username}
+                                ${isCurrentUser ? ' (คุณ)' : ''}
+                            </div>
+                            <div class="member-role">
+                                ${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}
+                            </div>
+                        </div>
+                        ${canKick ? `
+                            <button class="kick-btn" onclick="showKickModal('${member.user_id}', '${profile?.display_name || profile?.username}')">
+                                เตะออก
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== KICK MEMBER ==========
+        let kickMemberId = null;
+
+        function showKickModal(userId, username) {
+            kickMemberId = userId;
+            document.getElementById('kickMemberName').textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
+            document.getElementById('kickMemberModal').classList.add('active');
+        }
+
+        function closeKickModal() {
+            kickMemberId = null;
+            document.getElementById('kickMemberModal').classList.remove('active');
+        }
+
+        async function confirmKickMember() {
+            if (!kickMemberId || !currentRoomId) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('room_members')
+                    .delete()
+                    .eq('room_id', currentRoomId)
+                    .eq('user_id', kickMemberId);
+                    
+                if (error) throw error;
+                
+                alert('✅ เตะสมาชิกออกจากห้องแล้ว');
+                closeKickModal();
+                await loadRoomMembers(currentRoomId);
+                
+            } catch (error) {
+                console.error('❌ Error kicking member:', error);
+                alert('ไม่สามารถเตะสมาชิกได้');
+            }
+        }
+
+        // ========== CREATE ROOM ==========
+        async function createRoom(event) {
+            event.preventDefault();
+            
+            try {
+                const name = document.getElementById('roomName').value;
+                const description = document.getElementById('roomDescription').value;
+                const roomType = document.getElementById('roomType').value;
+                const password = document.getElementById('roomPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (roomType === 'private') {
+                    if (!password) {
+                        alert('กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว');
+                        return;
+                    }
+                    if (password !== confirmPassword) {
+                        alert('รหัสผ่านไม่ตรงกัน');
+                        return;
+                    }
+                }
+                
+                const { data: room, error } = await supabaseClient
+                    .from('rooms')
+                    .insert([{
+                        name: name,
+                        description: description,
+                        room_type: roomType,
+                        password: roomType === 'private' ? password : null,
+                        owner_id: currentUser.id,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+                    
+                if (error) throw error;
+                
+                // เพิ่มเจ้าของเป็นสมาชิก
+                await supabaseClient
+                    .from('room_members')
+                    .insert([{
+                        room_id: room.id,
+                        user_id: currentUser.id,
+                        role: 'owner',
+                        joined_at: new Date().toISOString()
+                    }]);
+                
+                alert('✅ สร้างห้องสำเร็จ!');
+                closeCreateRoomModal();
+                await loadRooms();
+                await selectRoom(room.id);
+                
+            } catch (error) {
+                console.error('❌ Error creating room:', error);
+                alert('เกิดข้อผิดพลาดในการสร้างห้อง');
+            }
+        }
+
+        // ========== ONLINE USERS ==========
+        async function loadOnlineUsers() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('username, display_name, avatar_url')
+                    .eq('is_online', true)
+                    .limit(30);
+                    
+                if (error) throw error;
+                
+                const userMap = new Map();
+                data.forEach(user => {
+                    if (!userMap.has(user.username)) {
+                        userMap.set(user.username, user);
+                    }
+                });
+                
+                const uniqueUsers = Array.from(userMap.values());
+                
+                const usersList = document.getElementById('onlineUsersList');
+                const totalUsers = document.getElementById('totalUsers');
+                
+                if (usersList) {
+                    if (uniqueUsers.length === 0) {
+                        usersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #a0aec0;">🟡 ไม่มีสมาชิกออนไลน์</div>';
+                    } else {
+                        usersList.innerHTML = uniqueUsers.map(user => `
+                            <div class="online-user">
+                                <img src="${user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.username)}&background=667eea&color=fff`}" 
+                                     alt="${user.display_name || user.username}" 
+                                     class="user-avatar">
+                                <span class="user-name">${user.display_name || user.username}</span>
+                                <span class="online-dot"></span>
+                            </div>
+                        `).join('');
+                    }
+                }
+                
+                if (totalUsers) {
+                    totalUsers.textContent = uniqueUsers.length;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading online users:', error);
+            }
+        }
+
+        // ========== MODAL CONTROLS ==========
+        function showCreateRoomModal() {
+            document.getElementById('createRoomModal').classList.add('active');
+        }
+
+        function closeCreateRoomModal() {
+            document.getElementById('createRoomModal').classList.remove('active');
+            document.getElementById('createRoomForm').reset();
+            document.getElementById('passwordField').classList.remove('show');
+        }
+
+        function togglePasswordField() {
+            const roomType = document.getElementById('roomType').value;
+            const passwordField = document.getElementById('passwordField');
+            passwordField.classList.toggle('show', roomType === 'private');
+        }
+
+        function showJoinPrivateModal(room) {
+            document.getElementById('joinRoomName').textContent = `ห้อง: ${room.name}`;
+            document.getElementById('joinPrivateRoomModal').dataset.roomId = room.id;
+            document.getElementById('joinPrivateRoomModal').classList.add('active');
+        }
+
+        function closeJoinPrivateModal() {
+            document.getElementById('joinPrivateRoomModal').classList.remove('active');
+            document.getElementById('joinRoomPassword').value = '';
+        }
+
+        async function confirmJoinPrivateRoom() {
+            const roomId = document.getElementById('joinPrivateRoomModal').dataset.roomId;
+            const password = document.getElementById('joinRoomPassword').value;
+            
+            try {
+                const { data: room, error } = await supabaseClient
+                    .from('rooms')
+                    .select('password')
+                    .eq('id', roomId)
+                    .single();
+                    
+                if (error) throw error;
+                
+                if (room.password !== password) {
+                    alert('❌ รหัสผ่านไม่ถูกต้อง');
+                    return;
+                }
+                
+                await selectRoom(roomId);
+                closeJoinPrivateModal();
+                
+            } catch (error) {
+                console.error('❌ Error joining private room:', error);
+                alert('ไม่สามารถเข้าร่วมห้องได้');
+            }
+        }
+
+        // ========== UI CONTROLS ==========
+        function filterRooms(filter, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loadRooms(filter);
+        }
+
+        function toggleMembersPanel() {
+            document.getElementById('membersPanel').classList.toggle('active');
+        }
+
+        // ========== EVENT LISTENERS ==========
+        function setupEventListeners() {
+            if (sendButton) {
+                sendButton.addEventListener('click', sendMessage);
+            }
+            
+            if (messageInput) {
+                messageInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+                
+                messageInput.addEventListener('input', () => {
+                    const count = messageInput.value.length;
+                    const charCount = document.getElementById('charCount');
+                    if (charCount) {
+                        charCount.textContent = `${count}/500`;
+                    }
+                    
+                    if (count > 500) {
+                        messageInput.value = messageInput.value.slice(0, 500);
+                    }
+                });
+            }
+            
+            document.getElementById('createRoomForm').addEventListener('submit', createRoom);
+        }
+
+        // ========== MOBILE HANDLER ==========
+        function initMobileHandler() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (!isMobile) return;
+            
+            let originalHeight = window.innerHeight;
+            
+            window.addEventListener('resize', () => {
+                const newHeight = window.innerHeight;
+                if (originalHeight - newHeight > 150) {
+                    document.body.classList.add('keyboard-open');
+                    setTimeout(() => {
+                        if (messageInput) {
+                            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 300);
+                } else {
+                    document.body.classList.remove('keyboard-open');
+                }
+            });
+        }
+
+        // ========== UTILITIES ==========
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (diff < 86400000 * 2) {
+                return 'เมื่อวาน';
+            }
+            return date.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function linkify(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, url => 
+                `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+            );
+        }
+
+        function scrollToBottom() {
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        // ========== LOGOUT ==========
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        // ========== CLEANUP ==========
+        window.addEventListener('beforeunload', () => {
+            if (messageSubscription) {
+                messageSubscription.unsubscribe();
+            }
+        });
+    </script>
 </body>
 </html>
