@@ -17,10 +17,7 @@
                     <small>ตัวอักษรภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น</small>
                 </div>
                 
-                <div class="form-group">
-                    <label for="email">อีเมล</label>
-                    <input type="email" id="email" placeholder="your@email.com" required>
-                </div>
+                <!-- ✅ ลบช่องอีเมลออกไปเลย! -->
                 
                 <div class="form-group">
                     <label for="password">รหัสผ่าน</label>
@@ -50,72 +47,64 @@
         </div>
     </div>
 
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
     <script>
-        // รอให้ DOM โหลดเสร็จ
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('registerForm');
-            if (!form) return;
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const displayName = document.getElementById('displayName').value.trim() || username;
+            const errorEl = document.getElementById('errorMessage');
+            
+            // ตรวจสอบความถูกต้อง
+            if (!username.match(/^[a-zA-Z0-9_]+$/)) {
+                errorEl.textContent = 'ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น';
+                return;
+            }
+            
+            if (username.length < 3) {
+                errorEl.textContent = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorEl.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                errorEl.textContent = 'รหัสผ่านไม่ตรงกัน';
+                return;
+            }
+            
+            // แสดงสถานะกำลังโหลด
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'กำลังสมัคร...';
+            submitBtn.disabled = true;
+            errorEl.textContent = '';
+            
+            try {
+                // ✅ แก้ตรงนี้! ส่งแค่ username, password, displayName
+                const result = await window.registerUser(username, password, displayName);
                 
-                const username = document.getElementById('username').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                const displayName = document.getElementById('displayName').value.trim() || username;
-                const errorEl = document.getElementById('errorMessage');
-                
-                // ตรวจสอบความถูกต้อง
-                if (!username.match(/^[a-zA-Z0-9_]+$/)) {
-                    errorEl.textContent = 'ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น';
-                    return;
+                if (result.success) {
+                    alert('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+                    window.location.href = 'login.html';
+                } else {
+                    errorEl.textContent = result.error || 'สมัครสมาชิกไม่สำเร็จ';
                 }
-                
-                if (password.length < 6) {
-                    errorEl.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    errorEl.textContent = 'รหัสผ่านไม่ตรงกัน';
-                    return;
-                }
-                
-                // ตรวจสอบว่า registerUser พร้อมใช้งาน
-                if (typeof window.registerUser !== 'function') {
-                    errorEl.textContent = 'ระบบยังไม่พร้อม กรุณารีเฟรชหน้าเว็บ';
-                    console.error('registerUser is not defined');
-                    return;
-                }
-                
-                // แสดงสถานะกำลังโหลด
-                const submitBtn = form.querySelector('button[type="submit"]');
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'กำลังสมัคร...';
-                submitBtn.disabled = true;
-                errorEl.textContent = '';
-                
-                try {
-                    const result = await window.registerUser(email, password, username, displayName);
-                    
-                    if (result.success) {
-                        alert('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
-                        window.location.href = 'login.html';
-                    } else {
-                        errorEl.textContent = result.error || 'สมัครสมาชิกไม่สำเร็จ';
-                    }
-                } catch (error) {
-                    console.error('Register error:', error);
-                    errorEl.textContent = 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง';
-                } finally {
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                }
-            });
+            } catch (error) {
+                console.error('Register error:', error);
+                errorEl.textContent = 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง';
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         });
     </script>
 </body>
