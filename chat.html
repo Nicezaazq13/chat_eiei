@@ -842,11 +842,30 @@
         window.isAdminMode = false;
         window.selectedMessages = new Set();
         
+        // ตัวแปรสำหรับรูปภาพ
+        window.selectedImageFile = null;
+        
+        // ตัวแปรสำหรับเพลง
+        window.currentMusic = null;
+        window.audioPlayer = null;
+        
+        // ตัวแปรสำหรับ read receipts
+        window.readReceiptObserver = null;
+        window.readReceiptsSubscription = null;
+        
         const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
+        
+        // ========== อิโมจิ ==========
+        const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
 
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // ตรวจสอบ elements
+                window.messagesContainer = document.getElementById('messagesContainer');
+                window.messageInput = document.getElementById('messageInput');
+                window.sendButton = document.getElementById('sendButton');
+                
                 window.currentUser = await checkUser();
                 if (!window.currentUser) {
                     window.location.href = 'login.html';
@@ -943,11 +962,10 @@
             }
         };
 
-        // ========== DELETE SELECTED MESSAGES (แอดมินลบได้ทุกข้อความ) ==========
+        // ========== DELETE SELECTED MESSAGES ==========
         window.deleteSelectedMessages = async function() {
             if (window.selectedMessages.size === 0) return;
             
-            // ✅ ตรวจสอบสิทธิ์: แอดมินลบได้หมด, ผู้ใช้ลบได้แค่ของตัวเอง
             if (!window.isAdminMode) {
                 const messageIds = Array.from(window.selectedMessages);
                 const { data: messages } = await supabaseClient
@@ -1002,7 +1020,7 @@
             }
         };
 
-        // ========== DELETE SINGLE MESSAGE (แอดมินลบได้ทุกข้อความ) ==========
+        // ========== DELETE SINGLE MESSAGE ==========
         window.deleteSingleMessage = async function(messageId, userId) {
             const canDelete = window.isAdminMode || userId === window.currentUser.id;
             
@@ -1237,6 +1255,13 @@
                 await loadMessages(room.id);
                 await loadRoomMembers(room.id);
                 setupMessageSubscription(room.id);
+                
+                // เพิ่ม subscription สำหรับ read receipts
+                if (window.readReceiptsSubscription) {
+                    window.readReceiptsSubscription.unsubscribe();
+                }
+                window.readReceiptsSubscription = window.subscribeToReadReceipts(room.id);
+                
                 loadRooms();
                 
             } catch (error) {
@@ -1288,6 +1313,11 @@
         // ========== MESSAGES ==========
         window.loadMessages = async function(roomId) {
             try {
+                if (!window.messagesContainer) {
+                    window.messagesContainer = document.getElementById('messagesContainer');
+                    if (!window.messagesContainer) return;
+                }
+                
                 const { data: messages, error } = await supabaseClient
                     .from('messages')
                     .select(`
@@ -1310,6 +1340,12 @@
                 
                 window.messagesContainer.innerHTML = '';
                 window.clearSelectedMessages();
+                
+                // สร้าง observer ใหม่
+                if (window.readReceiptObserver) {
+                    window.readReceiptObserver.disconnect();
+                }
+                window.setupReadReceiptObserver();
                 
                 if (messages.length === 0) {
                     window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
@@ -1348,6 +1384,17 @@
             const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
             const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
             
+            // แยกข้อความและรูปภาพ
+            let messageText = message.message || '';
+            let imageHtml = '';
+            
+            const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+            if (imageMatch) {
+                const imageUrl = imageMatch[1];
+                imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
+                messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
+            }
+            
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
             messageDiv.dataset.messageId = message.id;
@@ -1374,36 +1421,518 @@
                             </button>
                         ` : ''}
                     </div>
-                    <div class="message-body">${linkify(message.message)}</div>
+                    ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
+                    ${imageHtml}
                 </div>
             `;
             
             window.messagesContainer.appendChild(messageDiv);
+            
+            // เพิ่ม read receipts
+            if (isOwnMessage) {
+                window.displayReadReceipts(messageDiv, message.id, true);
+            }
+            
+            // สังเกตการณ์ข้อความของคนอื่น
+            if (!isOwnMessage && window.readReceiptObserver) {
+                window.readReceiptObserver.observe(messageDiv);
+            }
+            
             scrollToBottom();
         };
 
+        // ========== SEND MESSAGE WITH IMAGE ==========
         window.sendMessage = async function() {
-            const message = window.messageInput.value.trim();
-            if (!message || !window.currentRoomId) return;
+            const messageInput = document.getElementById('messageInput');
+            if (!messageInput) return;
+            
+            const message = messageInput.value.trim();
+            const hasImage = window.selectedImageFile !== null;
+            
+            if (!message && !hasImage) return;
+            if (!window.currentRoomId) {
+                alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ');
+                return;
+            }
             
             try {
+                let imageUrl = null;
+                
+                if (hasImage) {
+                    const fileExt = window.selectedImageFile.name.split('.').pop();
+                    const fileName = `${window.currentUser.id}/${Date.now()}.${fileExt}`;
+                    
+                    const { data: uploadData, error: uploadError } = await supabaseClient
+                        .storage
+                        .from('chat_files')
+                        .upload(fileName, window.selectedImageFile);
+                        
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: { publicUrl } } = supabaseClient
+                        .storage
+                        .from('chat_files')
+                        .getPublicUrl(fileName);
+                        
+                    imageUrl = publicUrl;
+                }
+                
+                const messageText = imageUrl 
+                    ? `${message} [IMAGE]${imageUrl}[/IMAGE]` 
+                    : message;
+                
                 const { error } = await supabaseClient
                     .from('messages')
                     .insert([{
                         user_id: window.currentUser.id,
                         room_id: window.currentRoomId,
-                        message: message,
+                        message: messageText,
                         created_at: new Date().toISOString()
                     }]);
                     
                 if (error) throw error;
                 
-                window.messageInput.value = '';
-                document.getElementById('charCount').textContent = '0/500';
+                messageInput.value = '';
+                window.clearImagePreview();
+                
+                const charCount = document.getElementById('charCount');
+                if (charCount) charCount.textContent = '0/500';
                 
             } catch (error) {
                 console.error('❌ Error sending message:', error);
+                alert('ไม่สามารถส่งข้อความได้: ' + error.message);
             }
+        };
+
+        // ========== EMOJI PICKER ==========
+        window.openEmojiPicker = function() {
+            const modal = document.getElementById('emojiPickerModal');
+            const grid = document.getElementById('emojiGrid');
+            if (!modal || !grid) return;
+            
+            grid.innerHTML = emojiList.map(emoji => 
+                `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`
+            ).join('');
+            
+            modal.classList.add('active');
+        };
+
+        window.closeEmojiPicker = function() {
+            const modal = document.getElementById('emojiPickerModal');
+            if (modal) modal.classList.remove('active');
+        };
+
+        window.insertEmoji = function(emoji) {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.value += emoji;
+                input.focus();
+                window.closeEmojiPicker();
+            }
+        };
+
+        // ========== IMAGE UPLOAD ==========
+        window.uploadImage = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    window.selectedImageFile = file;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const preview = document.getElementById('imagePreview');
+                        const img = document.getElementById('previewImg');
+                        if (preview && img) {
+                            img.src = e.target.result;
+                            preview.style.display = 'inline-block';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        };
+
+        window.clearImagePreview = function() {
+            window.selectedImageFile = null;
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            if (preview) preview.style.display = 'none';
+            if (previewImg) previewImg.src = '';
+        };
+
+        // ========== LIGHTBOX ==========
+        window.openLightbox = function(imageUrl) {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.onclick = function() { document.body.removeChild(lightbox); };
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'lightbox-close';
+            closeBtn.innerHTML = '✕';
+            closeBtn.onclick = function(e) {
+                e.stopPropagation();
+                document.body.removeChild(lightbox);
+            };
+            
+            lightbox.appendChild(img);
+            lightbox.appendChild(closeBtn);
+            document.body.appendChild(lightbox);
+        };
+
+        // ========== READ RECEIPTS ==========
+        window.markAsRead = async function(messageId, roomId) {
+            if (!window.currentUser || !messageId || !roomId) return;
+            if (!messageId || messageId === 'undefined') return;
+            
+            try {
+                const { data: existing } = await supabaseClient
+                    .from('read_receipts')
+                    .select('id')
+                    .eq('message_id', messageId)
+                    .eq('user_id', window.currentUser.id)
+                    .maybeSingle();
+                    
+                if (!existing) {
+                    await supabaseClient
+                        .from('read_receipts')
+                        .insert([{
+                            message_id: messageId,
+                            user_id: window.currentUser.id,
+                            room_id: roomId,
+                            read_at: new Date().toISOString()
+                        }]);
+                    console.log('✅ Marked as read:', messageId);
+                }
+            } catch (error) {
+                console.error('❌ Error marking as read:', error);
+            }
+        };
+
+        window.getReadReceipts = async function(messageId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('read_receipts')
+                    .select(`
+                        user_id,
+                        read_at,
+                        profiles:user_id (
+                            username,
+                            display_name,
+                            avatar_url
+                        )
+                    `)
+                    .eq('message_id', messageId)
+                    .order('read_at', { ascending: true });
+                    
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('❌ Error getting read receipts:', error);
+                return [];
+            }
+        };
+
+        window.displayReadReceipts = async function(messageDiv, messageId, isOwnMessage) {
+            if (!isOwnMessage) return;
+            if (!messageDiv || !messageId) return;
+            
+            const receipts = await window.getReadReceipts(messageId);
+            if (receipts.length === 0) return;
+            
+            const otherReaders = receipts.filter(r => r.user_id !== window.currentUser.id);
+            if (otherReaders.length === 0) return;
+            
+            let readByContainer = messageDiv.querySelector('.read-by-container');
+            if (readByContainer) readByContainer.remove();
+            
+            readByContainer = document.createElement('div');
+            readByContainer.className = 'read-by-container';
+            
+            const displayReaders = otherReaders.slice(0, 5);
+            
+            displayReaders.forEach(reader => {
+                const avatar = document.createElement('img');
+                avatar.src = reader.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(reader.profiles?.display_name || reader.profiles?.username)}&background=667eea&color=fff`;
+                avatar.alt = reader.profiles?.display_name || reader.profiles?.username || 'ผู้ใช้';
+                avatar.className = 'read-by-avatar';
+                avatar.title = `${reader.profiles?.display_name || reader.profiles?.username} อ่านเมื่อ ${window.formatTime(reader.read_at)}`;
+                readByContainer.appendChild(avatar);
+            });
+            
+            if (otherReaders.length > 5) {
+                const more = document.createElement('span');
+                more.className = 'read-by-more';
+                more.textContent = `+${otherReaders.length - 5}`;
+                more.title = `${otherReaders.length} คนอ่านแล้ว`;
+                readByContainer.appendChild(more);
+            }
+            
+            const readIcon = document.createElement('span');
+            readIcon.className = 'read-icon';
+            readIcon.innerHTML = '✓✓';
+            readIcon.title = `อ่านแล้ว ${otherReaders.length} คน`;
+            readByContainer.prepend(readIcon);
+            
+            const messageContent = messageDiv.querySelector('.message-content');
+            if (messageContent) {
+                messageContent.appendChild(readByContainer);
+            }
+        };
+
+        window.setupReadReceiptObserver = function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const messageDiv = entry.target;
+                        const messageId = messageDiv.dataset.messageId;
+                        const roomId = window.currentRoomId;
+                        
+                        if (messageId && roomId && messageId !== 'undefined') {
+                            if (messageDiv.dataset.userId !== window.currentUser.id) {
+                                window.markAsRead(messageId, roomId);
+                            }
+                        }
+                    }
+                });
+            }, {
+                threshold: 0.5,
+                rootMargin: '0px'
+            });
+            
+            window.readReceiptObserver = observer;
+        };
+
+        window.subscribeToReadReceipts = function(roomId) {
+            return supabaseClient
+                .channel(`read-receipts-${roomId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'read_receipts',
+                        filter: `room_id=eq.${roomId}`
+                    },
+                    async (payload) => {
+                        const messageDiv = document.querySelector(`[data-message-id="${payload.new.message_id}"]`);
+                        if (messageDiv) {
+                            const isOwnMessage = messageDiv.dataset.userId === window.currentUser.id;
+                            if (isOwnMessage) {
+                                const oldContainer = messageDiv.querySelector('.read-by-container');
+                                if (oldContainer) oldContainer.remove();
+                                await window.displayReadReceipts(messageDiv, payload.new.message_id, true);
+                            }
+                        }
+                    }
+                )
+                .subscribe();
+        };
+
+        // ========== MUSIC PLAYER ==========
+        window.openMusicPlayer = function() {
+            const modal = document.getElementById('musicPlayerModal');
+            if (modal) {
+                modal.classList.add('active');
+                window.loadPlaylist();
+            }
+        };
+
+        window.closeMusicPlayer = function() {
+            const modal = document.getElementById('musicPlayerModal');
+            if (modal) modal.classList.remove('active');
+        };
+
+        window.addMusicToRoom = async function() {
+            const urlInput = document.getElementById('musicUrlInput');
+            if (!urlInput) return;
+            
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('❌ กรุณาใส่ URL เพลง');
+                return;
+            }
+            
+            try {
+                const musicInfo = {
+                    title: url.split('/').pop() || 'เพลงไม่มีชื่อ',
+                    artist: window.currentUser.user_metadata?.username || 'ผู้ใช้'
+                };
+                
+                const { error } = await supabaseClient
+                    .from('room_music')
+                    .insert([{
+                        room_id: window.currentRoomId,
+                        user_id: window.currentUser.id,
+                        music_url: url,
+                        music_title: musicInfo.title,
+                        music_artist: musicInfo.artist,
+                        is_playing: false
+                    }]);
+                    
+                if (error) throw error;
+                
+                urlInput.value = '';
+                alert('✅ เพิ่มเพลงสำเร็จ');
+                window.loadPlaylist();
+                
+            } catch (error) {
+                console.error('❌ Error adding music:', error);
+                alert('ไม่สามารถเพิ่มเพลงได้');
+            }
+        };
+
+        window.loadPlaylist = async function() {
+            if (!window.currentRoomId) return;
+            
+            try {
+                const { data: playlist, error } = await supabaseClient
+                    .from('room_music')
+                    .select(`
+                        *,
+                        profiles:user_id (
+                            username,
+                            display_name
+                        )
+                    `)
+                    .eq('room_id', window.currentRoomId)
+                    .order('created_at', { ascending: false });
+                    
+                if (error) throw error;
+                
+                const container = document.getElementById('playlistItems');
+                if (!container) return;
+                
+                if (playlist.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">🎵 ยังไม่มีเพลงในเพลย์ลิสต์</div>';
+                    return;
+                }
+                
+                container.innerHTML = playlist.map(song => `
+                    <div class="playlist-item">
+                        <div class="playlist-info">
+                            <div class="playlist-title">${song.music_title}</div>
+                            <div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div>
+                        </div>
+                        <div class="playlist-controls">
+                            <button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>
+                            ${song.user_id === window.currentUser.id || window.isAdmin ? `
+                                <button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('❌ Error loading playlist:', error);
+            }
+        };
+
+        window.playMusic = async function(musicId, url) {
+            try {
+                if (window.audioPlayer) {
+                    window.audioPlayer.pause();
+                    window.audioPlayer = null;
+                }
+                
+                window.audioPlayer = new Audio(url);
+                window.audioPlayer.play();
+                
+                window.currentMusic = { id: musicId, url };
+                
+                const musicBar = document.getElementById('currentMusicBar');
+                const musicTitle = document.getElementById('currentMusicTitle');
+                const playPauseBtn = document.getElementById('playPauseBtn');
+                
+                if (musicBar) musicBar.style.display = 'flex';
+                if (musicTitle) musicTitle.textContent = 'กำลังเล่นเพลง...';
+                if (playPauseBtn) playPauseBtn.innerHTML = '⏸️';
+                
+                await supabaseClient
+                    .from('room_music')
+                    .update({ is_playing: true })
+                    .eq('id', musicId);
+                    
+            } catch (error) {
+                console.error('❌ Error playing music:', error);
+                alert('ไม่สามารถเล่นเพลงได้');
+            }
+        };
+
+        window.togglePlayPause = function() {
+            if (!window.audioPlayer) return;
+            
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if (!playPauseBtn) return;
+            
+            if (window.audioPlayer.paused) {
+                window.audioPlayer.play();
+                playPauseBtn.innerHTML = '⏸️';
+            } else {
+                window.audioPlayer.pause();
+                playPauseBtn.innerHTML = '▶️';
+            }
+        };
+
+        window.stopMusic = function() {
+            if (window.audioPlayer) {
+                window.audioPlayer.pause();
+                window.audioPlayer.currentTime = 0;
+                window.audioPlayer = null;
+            }
+            window.currentMusic = null;
+            
+            const musicBar = document.getElementById('currentMusicBar');
+            if (musicBar) musicBar.style.display = 'none';
+        };
+
+        window.hideMusicBar = function() {
+            const musicBar = document.getElementById('currentMusicBar');
+            if (musicBar) musicBar.style.display = 'none';
+        };
+
+        window.removeMusic = async function(musicId) {
+            if (!confirm('🗑️ ลบเพลงนี้ออกจากเพลย์ลิสต์?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('room_music')
+                    .delete()
+                    .eq('id', musicId);
+                    
+                if (error) throw error;
+                
+                alert('✅ ลบเพลงสำเร็จ');
+                window.loadPlaylist();
+                
+            } catch (error) {
+                console.error('❌ Error removing music:', error);
+                alert('ไม่สามารถลบเพลงได้');
+            }
+        };
+
+        window.setupMusicSubscription = function(roomId) {
+            return supabaseClient
+                .channel(`room-music-${roomId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'room_music',
+                        filter: `room_id=eq.${roomId}`
+                    },
+                    () => {
+                        window.loadPlaylist();
+                    }
+                )
+                .subscribe();
         };
 
         // ========== REALTIME ==========
@@ -1443,7 +1972,7 @@
                         table: 'messages',
                         filter: `room_id=eq.${roomId}`
                     },
-                    async (payload) => {
+                    async () => {
                         await window.loadMessages(roomId);
                     }
                 )
@@ -1462,7 +1991,8 @@
                         profiles:user_id (
                             username,
                             display_name,
-                            avatar_url
+                            avatar_url,
+                            is_admin
                         )
                     `)
                     .eq('room_id', roomId);
@@ -1488,7 +2018,7 @@
                 
                 return `
                     <div class="member-item">
-                        <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.display_name || profile?.username}`}" 
+                        <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=667eea&color=fff`}" 
                              alt="${profile?.display_name}" 
                              class="member-avatar">
                         <div class="member-info">
@@ -1516,13 +2046,16 @@
 
         window.showKickModal = function(userId, username) {
             window.kickMemberId = userId;
-            document.getElementById('kickMemberName').textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
-            document.getElementById('kickMemberModal').classList.add('active');
+            const modal = document.getElementById('kickMemberModal');
+            const nameEl = document.getElementById('kickMemberName');
+            if (nameEl) nameEl.textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
+            if (modal) modal.classList.add('active');
         };
 
         window.closeKickModal = function() {
             window.kickMemberId = null;
-            document.getElementById('kickMemberModal').classList.remove('active');
+            const modal = document.getElementById('kickMemberModal');
+            if (modal) modal.classList.remove('active');
         };
 
         window.confirmKickMember = async function() {
@@ -1538,8 +2071,8 @@
                 if (error) throw error;
                 
                 alert('✅ เตะสมาชิกออกจากห้องแล้ว');
-                closeKickModal();
-                await loadRoomMembers(window.currentRoomId);
+                window.closeKickModal();
+                await window.loadRoomMembers(window.currentRoomId);
                 
             } catch (error) {
                 console.error('❌ Error kicking member:', error);
@@ -1598,9 +2131,9 @@
                     }]);
                 
                 alert('✅ สร้างห้องสำเร็จ!');
-                closeCreateRoomModal();
-                await loadRooms();
-                await selectRoom(room.id);
+                window.closeCreateRoomModal();
+                await window.loadRooms();
+                await window.selectRoom(room.id);
                 
             } catch (error) {
                 console.error('❌ Error creating room:', error);
@@ -1658,35 +2191,51 @@
 
         // ========== MODAL CONTROLS ==========
         window.showCreateRoomModal = function() {
-            document.getElementById('createRoomModal').classList.add('active');
+            const modal = document.getElementById('createRoomModal');
+            if (modal) modal.classList.add('active');
         };
 
         window.closeCreateRoomModal = function() {
-            document.getElementById('createRoomModal').classList.remove('active');
-            document.getElementById('createRoomForm').reset();
-            document.getElementById('passwordField').classList.remove('show');
+            const modal = document.getElementById('createRoomModal');
+            const form = document.getElementById('createRoomForm');
+            const passwordField = document.getElementById('passwordField');
+            if (modal) modal.classList.remove('active');
+            if (form) form.reset();
+            if (passwordField) passwordField.classList.remove('show');
         };
 
         window.togglePasswordField = function() {
-            const roomType = document.getElementById('roomType').value;
+            const roomType = document.getElementById('roomType');
             const passwordField = document.getElementById('passwordField');
-            passwordField.classList.toggle('show', roomType === 'private');
+            if (roomType && passwordField) {
+                passwordField.classList.toggle('show', roomType.value === 'private');
+            }
         };
 
         window.showJoinPrivateModal = function(room) {
-            document.getElementById('joinRoomName').textContent = `ห้อง: ${room.name}`;
-            document.getElementById('joinPrivateRoomModal').dataset.roomId = room.id;
-            document.getElementById('joinPrivateRoomModal').classList.add('active');
+            const nameEl = document.getElementById('joinRoomName');
+            const modal = document.getElementById('joinPrivateRoomModal');
+            if (nameEl) nameEl.textContent = `ห้อง: ${room.name}`;
+            if (modal) {
+                modal.dataset.roomId = room.id;
+                modal.classList.add('active');
+            }
         };
 
         window.closeJoinPrivateModal = function() {
-            document.getElementById('joinPrivateRoomModal').classList.remove('active');
-            document.getElementById('joinRoomPassword').value = '';
+            const modal = document.getElementById('joinPrivateRoomModal');
+            const passwordInput = document.getElementById('joinRoomPassword');
+            if (modal) modal.classList.remove('active');
+            if (passwordInput) passwordInput.value = '';
         };
 
         window.confirmJoinPrivateRoom = async function() {
-            const roomId = document.getElementById('joinPrivateRoomModal').dataset.roomId;
-            const password = document.getElementById('joinRoomPassword').value;
+            const modal = document.getElementById('joinPrivateRoomModal');
+            const passwordInput = document.getElementById('joinRoomPassword');
+            if (!modal || !passwordInput) return;
+            
+            const roomId = modal.dataset.roomId;
+            const password = passwordInput.value;
             
             if (!password) {
                 alert('❌ กรุณากรอกรหัสผ่าน');
@@ -1739,42 +2288,55 @@
         window.filterRooms = function(filter, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            loadRooms(filter);
+            window.loadRooms(filter);
         };
 
         window.toggleMembersPanel = function() {
-            document.getElementById('membersPanel').classList.toggle('active');
+            const panel = document.getElementById('membersPanel');
+            if (panel) panel.classList.toggle('active');
         };
 
         // ========== EVENT LISTENERS ==========
         window.setupEventListeners = function() {
             if (window.sendButton) {
+                window.sendButton.removeEventListener('click', window.sendMessage);
                 window.sendButton.addEventListener('click', window.sendMessage);
             }
             
             if (window.messageInput) {
-                window.messageInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        window.sendMessage();
-                    }
-                });
+                window.messageInput.removeEventListener('keydown', handleKeyDown);
+                window.messageInput.addEventListener('keydown', handleKeyDown);
                 
-                window.messageInput.addEventListener('input', () => {
-                    const count = window.messageInput.value.length;
-                    const charCount = document.getElementById('charCount');
-                    if (charCount) {
-                        charCount.textContent = `${count}/500`;
-                    }
-                    
-                    if (count > 500) {
-                        window.messageInput.value = window.messageInput.value.slice(0, 500);
-                    }
-                });
+                window.messageInput.removeEventListener('input', handleInput);
+                window.messageInput.addEventListener('input', handleInput);
             }
             
-            document.getElementById('createRoomForm').addEventListener('submit', window.createRoom);
+            const createRoomForm = document.getElementById('createRoomForm');
+            if (createRoomForm) {
+                createRoomForm.removeEventListener('submit', window.createRoom);
+                createRoomForm.addEventListener('submit', window.createRoom);
+            }
         };
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                window.sendMessage();
+            }
+        }
+
+        function handleInput() {
+            if (!window.messageInput) return;
+            const count = window.messageInput.value.length;
+            const charCount = document.getElementById('charCount');
+            if (charCount) {
+                charCount.textContent = `${count}/500`;
+            }
+            
+            if (count > 500) {
+                window.messageInput.value = window.messageInput.value.slice(0, 500);
+            }
+        }
 
         // ========== MOBILE HANDLER ==========
         window.initMobileHandler = function() {
@@ -1844,559 +2406,21 @@
             if (window.messageSubscription) {
                 window.messageSubscription.unsubscribe();
             }
-        });
-    // ========== EMOJI PICKER ==========
-const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
-
-window.openEmojiPicker = function() {
-    const modal = document.getElementById('emojiPickerModal');
-    const grid = document.getElementById('emojiGrid');
-    
-    grid.innerHTML = emojiList.map(emoji => 
-        `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`
-    ).join('');
-    
-    modal.classList.add('active');
-};
-
-window.closeEmojiPicker = function() {
-    document.getElementById('emojiPickerModal').classList.remove('active');
-};
-
-window.insertEmoji = function(emoji) {
-    const input = document.getElementById('messageInput');
-    input.value += emoji;
-    input.focus();
-    window.closeEmojiPicker();
-};
-
-// ========== IMAGE UPLOAD ==========
-window.selectedImageFile = null;
-
-window.uploadImage = function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            window.selectedImageFile = file;
-            
-            // แสดง preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('imagePreview');
-                const img = document.getElementById('previewImg');
-                img.src = e.target.result;
-                preview.style.display = 'inline-block';
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-};
-
-window.clearImagePreview = function() {
-    window.selectedImageFile = null;
-    document.getElementById('imagePreview').style.display = 'none';
-    document.getElementById('previewImg').src = '';
-};
-
-// ========== SEND MESSAGE WITH IMAGE ==========
-window.sendMessage = async function() {
-    const message = window.messageInput.value.trim();
-    const hasImage = window.selectedImageFile !== null;
-    
-    if (!message && !hasImage) return;
-    if (!window.currentRoomId) return;
-    
-    try {
-        let imageUrl = null;
-        
-        // อัปโหลดรูปภาพ (ถ้ามี)
-        if (hasImage) {
-            const fileExt = window.selectedImageFile.name.split('.').pop();
-            const fileName = `${window.currentUser.id}/${Date.now()}.${fileExt}`;
-            
-            const { data: uploadData, error: uploadError } = await supabaseClient
-                .storage
-                .from('chat_files')
-                .upload(fileName, window.selectedImageFile);
-                
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabaseClient
-                .storage
-                .from('chat_files')
-                .getPublicUrl(fileName);
-                
-            imageUrl = publicUrl;
-        }
-        
-        // สร้างข้อความ
-        const messageText = imageUrl 
-            ? `${message} [IMAGE]${imageUrl}[/IMAGE]` 
-            : message;
-        
-        const { error } = await supabaseClient
-            .from('messages')
-            .insert([{
-                user_id: window.currentUser.id,
-                room_id: window.currentRoomId,
-                message: messageText,
-                created_at: new Date().toISOString()
-            }]);
-            
-        if (error) throw error;
-        
-        window.messageInput.value = '';
-        window.clearImagePreview();
-        document.getElementById('charCount').textContent = '0/500';
-        
-    } catch (error) {
-        console.error('❌ Error sending message:', error);
-        alert('ไม่สามารถส่งข้อความได้: ' + error.message);
-    }
-    };
-    
-    // ========== DISPLAY MESSAGE WITH IMAGE ==========
-    window.displayMessage = function(message) {
-        if (!window.messagesContainer) return;
-        
-        if (message.is_deleted) {
-            // ... (โค้ดเดิมสำหรับข้อความที่ถูกลบ)
-            return;
-        }
-        
-        const isOwnMessage = message.user_id === window.currentUser?.id;
-        const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
-        const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
-        
-        // แยกข้อความและรูปภาพ
-        let messageText = message.message || '';
-        let imageHtml = '';
-        
-        const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
-        if (imageMatch) {
-            const imageUrl = imageMatch[1];
-            imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
-            messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
-        }
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
-        messageDiv.dataset.messageId = message.id;
-        messageDiv.dataset.userId = message.user_id;
-        
-        const canSelect = window.isAdminMode || isOwnMessage;
-        const canDelete = window.isAdminMode || isOwnMessage;
-        
-        messageDiv.innerHTML = `
-            ${canSelect ? `
-                <div class="message-checkbox" onclick="event.stopPropagation()">
-                    <input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))">
-                </div>
-            ` : ''}
-            <img src="${avatarUrl}" alt="${author}" class="message-avatar"
-                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
-            <div class="message-content">
-                <div class="message-header">
-                    <span class="message-author">${author}</span>
-                    <span class="message-time">${formatTime(message.created_at)}</span>
-                    ${canDelete ? `
-                        <button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">
-                            🗑️
-                        </button>
-                    ` : ''}
-                </div>
-                ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
-                ${imageHtml}
-            </div>
-        `;
-        
-        window.messagesContainer.appendChild(messageDiv);
-        scrollToBottom();
-    };
-    
-    // ========== LIGHTBOX ==========
-    window.openLightbox = function(imageUrl) {
-        const lightbox = document.createElement('div');
-        lightbox.className = 'lightbox';
-        lightbox.onclick = function() { document.body.removeChild(lightbox); };
-        
-        const img = document.createElement('img');
-        img.src = imageUrl;
-        
-        const closeBtn = document.createElement('span');
-        closeBtn.className = 'lightbox-close';
-        closeBtn.innerHTML = '✕';
-        closeBtn.onclick = function() { document.body.removeChild(lightbox); };
-        
-        lightbox.appendChild(img);
-        lightbox.appendChild(closeBtn);
-        document.body.appendChild(lightbox);
-    };
-    
-    // ========== MUSIC PLAYER ==========
-    window.currentMusic = null;
-    window.audioPlayer = null;
-    
-    window.openMusicPlayer = function() {
-        document.getElementById('musicPlayerModal').classList.add('active');
-        window.loadPlaylist();
-    };
-    
-    window.closeMusicPlayer = function() {
-        document.getElementById('musicPlayerModal').classList.remove('active');
-    };
-    
-    window.addMusicToRoom = async function() {
-        const url = document.getElementById('musicUrlInput').value.trim();
-        if (!url) {
-            alert('❌ กรุณาใส่ URL เพลง');
-            return;
-        }
-        
-        try {
-            // ดึงข้อมูลเพลงจาก URL
-            const musicInfo = await window.fetchMusicInfo(url);
-            
-            const { error } = await supabaseClient
-                .from('room_music')
-                .insert([{
-                    room_id: window.currentRoomId,
-                    user_id: window.currentUser.id,
-                    music_url: url,
-                    music_title: musicInfo.title,
-                    music_artist: musicInfo.artist || window.currentUser.user_metadata?.username,
-                    is_playing: false
-                }]);
-                
-            if (error) throw error;
-            
-            document.getElementById('musicUrlInput').value = '';
-            alert('✅ เพิ่มเพลงสำเร็จ');
-            window.loadPlaylist();
-            
-        } catch (error) {
-            console.error('❌ Error adding music:', error);
-            alert('ไม่สามารถเพิ่มเพลงได้');
-        }
-    };
-    
-    window.fetchMusicInfo = async function(url) {
-        // ดึงข้อมูลจาก URL (YouTube, SoundCloud, ฯลฯ)
-        // ตัวอย่างง่ายๆ
-        return {
-            title: url.split('/').pop() || 'เพลงไม่มีชื่อ',
-            artist: 'ผู้ใช้'
-        };
-    };
-    
-    window.loadPlaylist = async function() {
-        if (!window.currentRoomId) return;
-        
-        try {
-            const { data: playlist, error } = await supabaseClient
-                .from('room_music')
-                .select(`
-                    *,
-                    profiles:user_id (
-                        username,
-                        display_name
-                    )
-                `)
-                .eq('room_id', window.currentRoomId)
-                .order('created_at', { ascending: false });
-                
-            if (error) throw error;
-            
-            const container = document.getElementById('playlistItems');
-            container.innerHTML = playlist.map(song => `
-                <div class="playlist-item">
-                    <div class="playlist-info">
-                        <div class="playlist-title">${song.music_title}</div>
-                        <div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div>
-                    </div>
-                    <div class="playlist-controls">
-                        <button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>
-                        ${song.user_id === window.currentUser.id || window.isAdmin ? `
-                            <button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>
-                        ` : ''}
-                    </div>
-                </div>
-            `).join('');
-            
-        } catch (error) {
-            console.error('❌ Error loading playlist:', error);
-        }
-    };
-    
-    window.playMusic = async function(musicId, url) {
-        try {
-            // หยุดเพลงเก่า
+            if (window.readReceiptsSubscription) {
+                window.readReceiptsSubscription.unsubscribe();
+            }
+            if (window.readReceiptObserver) {
+                window.readReceiptObserver.disconnect();
+            }
             if (window.audioPlayer) {
                 window.audioPlayer.pause();
                 window.audioPlayer = null;
             }
-            
-            // สร้าง audio player ใหม่
-            window.audioPlayer = new Audio(url);
-            window.audioPlayer.play();
-            
-            // อัปเดต UI
-            window.currentMusic = { id: musicId, url };
-            document.getElementById('currentMusicTitle').textContent = 'กำลังเล่นเพลง...';
-            document.getElementById('currentMusicBar').style.display = 'flex';
-            document.getElementById('playPauseBtn').innerHTML = '⏸️';
-            
-            // อัปเดตสถานะในฐานข้อมูล
-            await supabaseClient
-                .from('room_music')
-                .update({ is_playing: true })
-                .eq('id', musicId);
-                
-        } catch (error) {
-            console.error('❌ Error playing music:', error);
-            alert('ไม่สามารถเล่นเพลงได้');
-        }
-    };
-    
-    window.togglePlayPause = function() {
-        if (!window.audioPlayer) return;
-        
-        if (window.audioPlayer.paused) {
-            window.audioPlayer.play();
-            document.getElementById('playPauseBtn').innerHTML = '⏸️';
-        } else {
-            window.audioPlayer.pause();
-            document.getElementById('playPauseBtn').innerHTML = '▶️';
-        }
-    };
-    
-    window.stopMusic = function() {
-        if (window.audioPlayer) {
-            window.audioPlayer.pause();
-            window.audioPlayer.currentTime = 0;
-            window.audioPlayer = null;
-        }
-        window.currentMusic = null;
-        document.getElementById('currentMusicBar').style.display = 'none';
-    };
-    
-    window.hideMusicBar = function() {
-        document.getElementById('currentMusicBar').style.display = 'none';
-    };
-    
-    window.removeMusic = async function(musicId) {
-        if (!confirm('🗑️ ลบเพลงนี้ออกจากเพลย์ลิสต์?')) return;
-        
-        try {
-            const { error } = await supabaseClient
-                .from('room_music')
-                .delete()
-                .eq('id', musicId);
-                
-            if (error) throw error;
-            
-            alert('✅ ลบเพลงสำเร็จ');
-            window.loadPlaylist();
-            
-        } catch (error) {
-            console.error('❌ Error removing music:', error);
-            alert('ไม่สามารถลบเพลงได้');
-        }
-    };
-    
-    // ========== REALTIME MUSIC ==========
-    window.setupMusicSubscription = function(roomId) {
-        return supabaseClient
-            .channel(`room-music-${roomId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'room_music',
-                    filter: `room_id=eq.${roomId}`
-                },
-                () => {
-                    window.loadPlaylist();
-                }
-            )
-            .subscribe();
-    };
-    // ========== READ RECEIPTS ==========
-
-// มาร์คว่าผู้ใช้อ่านข้อความแล้ว
-window.markAsRead = async function(messageId, roomId) {
-    if (!window.currentUser || !messageId || !roomId) return;
-    
-    try {
-        // ตรวจสอบว่ามี read receipt อยู่แล้วหรือไม่
-        const { data: existing } = await supabaseClient
-            .from('read_receipts')
-            .select('id')
-            .eq('message_id', messageId)
-            .eq('user_id', window.currentUser.id)
-            .maybeSingle();
-            
-        if (!existing) {
-            // ถ้ายังไม่มี ให้เพิ่มใหม่
-            await supabaseClient
-                .from('read_receipts')
-                .insert([{
-                    message_id: messageId,
-                    user_id: window.currentUser.id,
-                    room_id: roomId,
-                    read_at: new Date().toISOString()
-                }]);
-            console.log('✅ Marked as read:', messageId);
-        }
-    } catch (error) {
-        console.error('❌ Error marking as read:', error);
-    }
-};
-
-// ดึงข้อมูล read receipts ของข้อความ
-window.getReadReceipts = async function(messageId) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('read_receipts')
-            .select(`
-                user_id,
-                read_at,
-                profiles:user_id (
-                    username,
-                    display_name,
-                    avatar_url
-                )
-            `)
-            .eq('message_id', messageId)
-            .order('read_at', { ascending: true });
-            
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error('❌ Error getting read receipts:', error);
-        return [];
-    }
-};
-
-// แสดง read receipts ในข้อความ
-window.displayReadReceipts = async function(messageDiv, messageId, isOwnMessage) {
-    if (!isOwnMessage) return; // แสดงเฉพาะข้อความของตัวเอง
-    
-    const receipts = await window.getReadReceipts(messageId);
-    if (receipts.length === 0) return;
-    
-    // กรองเอาแค่คนอื่น (ไม่รวมตัวเอง)
-    const otherReaders = receipts.filter(r => r.user_id !== window.currentUser.id);
-    if (otherReaders.length === 0) return;
-    
-    // สร้าง container สำหรับแสดงรูปโปรไฟล์คนอ่าน
-    const readByContainer = document.createElement('div');
-    readByContainer.className = 'read-by-container';
-    
-    // แสดงรูปโปรไฟล์สูงสุด 5 คน
-    const displayReaders = otherReaders.slice(0, 5);
-    
-    displayReaders.forEach(reader => {
-        const avatar = document.createElement('img');
-        avatar.src = reader.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(reader.profiles?.display_name || reader.profiles?.username)}&background=667eea&color=fff`;
-        avatar.alt = reader.profiles?.display_name || reader.profiles?.username || 'ผู้ใช้';
-        avatar.className = 'read-by-avatar';
-        avatar.title = `${reader.profiles?.display_name || reader.profiles?.username} อ่านเมื่อ ${window.formatTime(reader.read_at)}`;
-        readByContainer.appendChild(avatar);
-    });
-    
-    // ถ้ามีมากกว่า 5 คน
-    if (otherReaders.length > 5) {
-        const more = document.createElement('span');
-        more.className = 'read-by-more';
-        more.textContent = `+${otherReaders.length - 5}`;
-        more.title = `${otherReaders.length} คนอ่านแล้ว`;
-        readByContainer.appendChild(more);
-    }
-    
-    // เพิ่ม tooltip "อ่านแล้ว"
-    const readIcon = document.createElement('span');
-    readIcon.className = 'read-icon';
-    readIcon.innerHTML = '✓✓';
-    readIcon.title = `อ่านแล้ว ${otherReaders.length} คน`;
-    readByContainer.prepend(readIcon);
-    
-    messageDiv.querySelector('.message-content').appendChild(readByContainer);
-};
-
-// ตรวจสอบว่าข้อความอยู่ใน viewport หรือไม่
-window.isElementInViewport = function(el) {
-    const rect = el.getBoundingClientRect();
-    return (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-    );
-};
-
-// สังเกตการณ์การเลื่อนเพื่อมาร์คอ่าน
-window.setupReadReceiptObserver = function() {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const messageDiv = entry.target;
-                const messageId = messageDiv.dataset.messageId;
-                const roomId = window.currentRoomId;
-                
-                if (messageId && roomId) {
-                    // ถ้าเป็นข้อความของตัวเอง ไม่ต้องมาร์คอ่าน
-                    if (messageDiv.dataset.userId !== window.currentUser.id) {
-                        window.markAsRead(messageId, roomId);
-                    }
-                }
-            }
         });
-    }, {
-        threshold: 0.5, // เห็นอย่างน้อย 50%
-        rootMargin: '0px'
-    });
-    
-    // เก็บ observer ไว้ใช้ภายหลัง
-    window.readReceiptObserver = observer;
-};
-
-// อัปเดต read receipts แบบ realtime
-window.subscribeToReadReceipts = function(roomId) {
-    return supabaseClient
-        .channel(`read-receipts-${roomId}`)
-        .on(
-            'postgres_changes',
-            {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'read_receipts',
-                filter: `room_id=eq.${roomId}`
-            },
-            async (payload) => {
-                // เมื่อมี read receipt ใหม่ ให้อัปเดตข้อความนั้น
-                const messageDiv = document.querySelector(`[data-message-id="${payload.new.message_id}"]`);
-                if (messageDiv) {
-                    const isOwnMessage = messageDiv.dataset.userId === window.currentUser.id;
-                    if (isOwnMessage) {
-                        // ลบของเก่าแล้วแสดงใหม่
-                        const oldContainer = messageDiv.querySelector('.read-by-container');
-                        if (oldContainer) oldContainer.remove();
-                        await window.displayReadReceipts(messageDiv, payload.new.message_id, true);
-                    }
-                }
-            }
-        )
-        .subscribe();
-};
     </script>
 </body>
 </html>
+
 
 
 
