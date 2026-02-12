@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ห้องแชท - ChatApp</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .rooms-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+            background: white;
+        }
+        
+        .rooms-sidebar {
+            background: #f7fafc;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .create-room-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .create-room-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .room-tabs {
+            display: flex;
+            padding: 16px 20px;
+            gap: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .room-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .room-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        
+        .room-item:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .room-item.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .room-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .room-type-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .room-item.active .room-type-badge {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .room-meta {
+            font-size: 12px;
+            color: #718096;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .room-item.active .room-meta {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .room-main {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: white;
+        }
+        
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .room-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .room-title {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .room-description {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .members-list {
+            position: fixed;
+            right: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .members-list.active {
+            right: 0;
+        }
+        
+        .members-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .members-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #f7fafc;
+        }
+        
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .member-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .kick-btn {
+            padding: 6px 12px;
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 450px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .password-field {
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .password-field.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .rooms-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .rooms-sidebar {
+                position: fixed;
+                left: -100%;
+                width: 85%;
+                height: 100vh;
+                z-index: 1500;
+                transition: left 0.3s;
+            }
+            
+            .rooms-sidebar.active {
+                left: 0;
+            }
+            
+            .members-list {
+                width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="rooms-container">
+        <!-- Sidebar: รายการห้อง -->
+        <div class="rooms-sidebar" id="roomsSidebar">
+            <div class="sidebar-header">
+                <button class="create-room-btn" onclick="showCreateRoomModal()">
+                    + สร้างห้องใหม่
+                </button>
+            </div>
+            
+            <div class="room-tabs">
+                <button class="tab-btn active" onclick="filterRooms('all')">ทั้งหมด</button>
+                <button class="tab-btn" onclick="filterRooms('public')">สาธารณะ</button>
+                <button class="tab-btn" onclick="filterRooms('private')">ส่วนตัว</button>
+            </div>
+            
+            <div class="room-list" id="roomList">
+                <!-- รายการห้องจะโหลดมาใส่ที่นี่ -->
+            </div>
+        </div>
+        
+        <!-- Main: ห้องแชท -->
+        <div class="room-main">
+            <div class="chat-header">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()" style="display: none; font-size: 24px;">☰</button>
+                    <div class="room-info" id="roomInfo">
+                        <div class="room-title">
+                            <span id="currentRoomIcon">💬</span>
+                            <span id="currentRoomName">เลือกห้องแชท</span>
+                        </div>
+                        <div class="room-description" id="currentRoomDesc"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button onclick="toggleMembersList()" class="btn btn-outline btn-small">
+                        👥 สมาชิก
+                    </button>
+                    <button onclick="logout()" class="btn btn-outline btn-small">
+                        ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Messages Area -->
+            <div class="chat-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="messages-container" id="messagesContainer" style="flex: 1; overflow-y: auto; padding: 20px;"></div>
+                
+                <div id="typingIndicator" class="typing-indicator" style="padding: 8px 20px;"></div>
+                
+                <!-- Input Area -->
+                <div class="message-input-area" id="messageInputArea" style="display: none;">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="พิมพ์ข้อความ..." 
+                            rows="1"
+                        ></textarea>
+                        <button id="sendButton" class="btn-send">
+                            📤 ส่ง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Members Sidebar -->
+    <div class="members-list" id="membersList">
+        <div class="members-header">
+            <h3>👥 สมาชิกในห้อง</h3>
+            <button onclick="toggleMembersList()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+        <div class="members-content" id="membersContent"></div>
+    </div>
+    
+    <!-- Modal: สร้างห้อง -->
+    <div id="createRoomModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">📝 สร้างห้องใหม่</h2>
+            <form id="createRoomForm">
+                <div class="form-group">
+                    <label>ชื่อห้อง <span style="color: #e53e3e;">*</span></label>
+                    <input type="text" id="roomName" placeholder="เช่น ห้องเล่นเกม" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>คำอธิบาย</label>
+                    <textarea id="roomDescription" placeholder="รายละเอียดห้อง..." rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>ประเภทห้อง</label>
+                    <select id="roomType" onchange="togglePasswordField()">
+                        <option value="public">🌍 สาธารณะ - ทุกคนเข้าได้</option>
+                        <option value="private">🔒 ส่วนตัว - ต้องใช้รหัสผ่าน</option>
+                    </select>
+                </div>
+                
+                <div id="passwordField" class="password-field">
+                    <div class="form-group">
+                        <label>รหัสผ่านห้อง</label>
+                        <input type="password" id="roomPassword" placeholder="ตั้งรหัสผ่าน">
+                    </div>
+                    <div class="form-group">
+                        <label>ยืนยันรหัสผ่าน</label>
+                        <input type="password" id="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">สร้างห้อง</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateRoomModal()">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal: เข้าร่วมห้องส่วนตัว -->
+    <div id="joinPrivateRoomModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">🔐 เข้าร่วมห้องส่วนตัว</h2>
+            <p id="joinRoomName" style="margin-bottom: 20px; font-weight: 600;"></p>
+            
+            <div class="form-group">
+                <label>รหัสผ่านห้อง</label>
+                <input type="password" id="joinRoomPassword" placeholder="กรอกรหัสผ่าน">
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="confirmJoinPrivateRoom()" class="btn btn-primary" style="flex: 1;">เข้าร่วม</button>
+                <button onclick="closeJoinPrivateModal()" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: เตะสมาชิก -->
+    <div id="kickMemberModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px;">⚠️ เตะสมาชิก</h2>
+            <p id="kickMemberName" style="margin-bottom: 20px;"></p>
+            <p style="color: #718096; margin-bottom: 24px;">คุณแน่ใจหรือไม่ว่าต้องการเตะสมาชิกคนนี้ออกจากห้อง?</p>
+            
+            <div style="display: flex; gap: 12px;">
+                <button onclick="confirmKickMember()" class="btn" style="flex: 1; background: #f56565; color: white;">เตะออก</button>
+                <button onclick="closeKickModal()" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="rooms.js"></script>
+</body>
+</html>
