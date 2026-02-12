@@ -1197,7 +1197,40 @@ body {
 .mobile-menu-btn:hover {
     color: var(--primary-color);
 }
+/* ========== SIDEBAR OVERLAY ========== */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1900;
+}
 
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* ========== ROOMS PANEL MOBILE ========== */
+@media (max-width: 768px) {
+    .rooms-panel {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        width: 85% !important;
+        height: 100vh !important;
+        z-index: 2000;
+        transition: left 0.3s ease;
+        background: white;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .rooms-panel.mobile-active {
+        left: 0 !important;
+    }
+}
 /* ========== SIDEBAR OVERLAY ========== */
 .sidebar-overlay {
     display: none;
@@ -3387,9 +3420,94 @@ body {
                 window.audioPlayer = null;
             }
         });
+    // ========== MOBILE SIDEBAR ==========
+window.toggleMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (!sidebar) return;
+    
+    sidebar.classList.toggle('mobile-active');
+    
+    if (!overlay) {
+        const newOverlay = document.createElement('div');
+        newOverlay.id = 'sidebarOverlay';
+        newOverlay.className = 'sidebar-overlay';
+        newOverlay.onclick = window.closeMobileSidebar;
+        document.body.appendChild(newOverlay);
+        newOverlay.classList.toggle('active');
+    } else {
+        overlay.classList.toggle('active');
+    }
+};
+
+window.closeMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar) sidebar.classList.remove('mobile-active');
+    if (overlay) overlay.classList.remove('active');
+};
+
+window.initMobileLayout = function() {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        const menuBtn = document.querySelector('.mobile-menu-btn');
+        if (menuBtn) menuBtn.style.display = 'inline-block';
+        
+        const roomsPanel = document.querySelector('.rooms-panel');
+        if (roomsPanel) {
+            roomsPanel.style.position = 'fixed';
+            roomsPanel.style.left = '-100%';
+            roomsPanel.style.top = '0';
+            roomsPanel.style.width = '85%';
+            roomsPanel.style.height = '100vh';
+            roomsPanel.style.zIndex = '2000';
+            roomsPanel.style.transition = 'left 0.3s';
+        }
+        
+        // บังคับเข้าห้องสาธารณะ
+        setTimeout(() => {
+            if (window.selectRoom) {
+                window.selectRoom(PUBLIC_ROOM_ID);
+            }
+        }, 100);
+    }
+};
+    // ========== INITIALIZATION ==========
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // ตรวจสอบ elements
+        window.messagesContainer = document.getElementById('messagesContainer');
+        window.messageInput = document.getElementById('messageInput');
+        window.sendButton = document.getElementById('sendButton');
+        
+        window.currentUser = await checkUser();
+        if (!window.currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        await checkAdminStatus();
+        
+        displayUserInfo();
+        await loadRooms();
+        await selectRoom(PUBLIC_ROOM_ID);
+        await loadOnlineUsers();
+        setupEventListeners();
+        initMobileHandler();
+        initMobileLayout(); // ✅ เพิ่มตรงนี้!
+        
+        console.log('✅ Chat initialized');
+    } catch (error) {
+        console.error('❌ Init error:', error);
+    }
+});
     </script>
 </body>
 </html>
+
 
 
 
