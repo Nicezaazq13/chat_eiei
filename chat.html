@@ -1254,62 +1254,47 @@
             height: 100%;
         }
 
-        /* ========== MOBILE RESPONSIVE ========== */
+        /* ========== MOBILE SIDEBAR ========== */
         @media (max-width: 768px) {
-            .chat-main {
-                flex-direction: column;
-                position: relative;
-            }
-
             .rooms-panel {
                 position: fixed !important;
                 left: -100%;
                 top: 0;
                 width: 85% !important;
                 height: 100vh !important;
-                z-index: 2000 !important;  /* สูงกว่า overlay */
+                z-index: 2000 !important;
                 transition: left 0.3s ease;
-                background: var(--bg-white);
+                background: white;
                 box-shadow: 2px 0 10px rgba(0,0,0,0.1);
                 overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
             }
-
+        
             .rooms-panel.mobile-active {
                 left: 0 !important;
-                z-index: 2000 !important;
             }
-
+        
+            /* ✅ สำคัญ: ให้ room-item คลิกได้ */
             .rooms-panel .room-item {
                 pointer-events: auto !important;
                 cursor: pointer !important;
-                position: relative;
-                z-index: 2001 !important;  /* สูงสุด */
             }
-
-            .rooms-panel .room-item:active {
-                background: var(--primary-color) !important;
-                color: white !important;
-                transform: scale(0.98);
-            }
-
-            .rooms-panel .room-item * {
-                pointer-events: none !important;
-            }
-
-            .rooms-panel .room-item button,
-            .rooms-panel .room-item a {
-                pointer-events: auto !important;
-                z-index: 2002 !important;
-            }
-
+        
+            /* ✅ SIDEBAR OVERLAY */
             .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
                 z-index: 1999 !important;
             }
-
+        
             .sidebar-overlay.active {
                 display: block !important;
             }
+        }
 
             .chat-header {
                 padding: 12px 16px;
@@ -1964,48 +1949,72 @@
             }
         });
 
-        // ========== MOBILE SIDEBAR ==========
-        window.toggleMobileSidebar = function() {
-            const sidebar = document.querySelector('.rooms-panel');
-            const overlay = document.getElementById('sidebarOverlay');
-            
-            if (!sidebar) return;
-            
-            sidebar.classList.toggle('mobile-active');
-            
-            if (overlay) {
-                if (sidebar.classList.contains('mobile-active')) {
-                    overlay.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    
-                    // ✅ จัดการ z-index
-                    sidebar.style.zIndex = '2000';
-                    overlay.style.zIndex = '1999';
-                } else {
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                    document.body.style.position = '';
-                }
-            }
-        };
+       // ========== MOBILE SIDEBAR ==========
+window.toggleMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (!sidebar) return;
+    
+    sidebar.classList.toggle('mobile-active');
+    
+    if (overlay) {
+        overlay.classList.toggle('active', sidebar.classList.contains('mobile-active'));
+    }
+    
+    // ป้องกันการ scroll
+    document.body.style.overflow = sidebar.classList.contains('mobile-active') ? 'hidden' : '';
+};
 
-        window.closeMobileSidebar = function() {
-            const sidebar = document.querySelector('.rooms-panel');
-            const overlay = document.getElementById('sidebarOverlay');
-            
-            if (sidebar) {
-                sidebar.classList.remove('mobile-active');
-                sidebar.style.zIndex = '';
-            }
-            if (overlay) {
-                overlay.classList.remove('active');
-                overlay.style.zIndex = '';
-            }
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-        };
+window.closeMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar) sidebar.classList.remove('mobile-active');
+    if (overlay) overlay.classList.remove('active');
+    document.body.style.overflow = '';
+};
 
+// ✅ ปิด sidebar เมื่อคลิก overlay
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', window.closeMobileSidebar);
+    }
+});
+
+// ✅ ปิด sidebar เมื่อเลือกห้อง
+window.selectRoom = async function(roomId) {
+    window.closeMobileSidebar(); // ปิด sidebar ก่อน
+    
+    try {
+        const { data: room, error } = await supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('id', roomId)
+            .single();
+            
+        if (error) throw error;
+        
+        if (room.room_type === 'private') {
+            const { data: member } = await supabaseClient
+                .from('room_members')
+                .select('*')
+                .eq('room_id', roomId)
+                .eq('user_id', window.currentUser.id)
+                .maybeSingle();
+                
+            if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                showJoinPrivateModal(room);
+                return;
+            }
+        }
+        
+        await joinRoom(room);
+    } catch (error) {
+        console.error('❌ Error selecting room:', error);
+    }
+};
         // ========== SELECT ROOM ==========
         window.selectRoom = async function(roomId) {
             // ✅ ปิด sidebar อัตโนมัติเมื่อเลือกห้อง
@@ -2848,3 +2857,4 @@
     </script>
 </body>
 </html>
+
