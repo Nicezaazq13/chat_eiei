@@ -1600,7 +1600,46 @@
         .keyboard-open .messages-container {
             padding-bottom: 120px;
         }
-
+        /* ========== CALL TOAST NOTIFICATION ========== */
+        .call-toast {
+            animation: slideIn 0.3s ease;
+            margin-bottom: 12px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .call-toast {
+                top: auto !important;
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+            }
+            
+            .call-toast > div {
+                width: 100%;
+            }
+        }
         /* ========== iOS SPECIFIC FIXES ========== */
         @supports (-webkit-touch-callout: none) {
             .chat-container {
@@ -1708,6 +1747,7 @@
                         <button type="button" class="toolbar-btn" onclick="window.uploadImage()" title="รูปภาพ">📷</button>
                         <button type="button" class="toolbar-btn" onclick="window.openMusicPlayer()" title="เพลง">🎵</button>
                         <button type="button" class="toolbar-btn" onclick="window.toggleActivitiesPanel()" title="กิจกรรม">🎮</button>
+                        <button type="button" class="toolbar-btn" onclick="window.startCall()" title="โทร">📞 โทร</button>
                         <button type="button" class="toolbar-btn" onclick="window.toggleMembersPanel()" title="สมาชิก">👥</button>
                     </div>
                     
@@ -1854,7 +1894,25 @@
             </div>
         </div>
     </div>
-
+    <!-- ========== MODAL: JITSI CALL ========== -->
+<div id="jitsiCallModal" class="modal" style="z-index: 2100;">
+    <div class="modal-content" style="max-width: 1000px; width: 95%; height: 80vh; padding: 0; overflow: hidden; border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: #f7fafc; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+                <span>📞</span> <span id="jitsiRoomName">ห้องสนทนา</span>
+            </h3>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="window.copyCallLink()" class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">
+                    🔗 แชร์ลิงก์
+                </button>
+                <button onclick="window.endCall()" class="btn-icon" style="font-size: 24px;">✕</button>
+            </div>
+        </div>
+        
+        <!-- Jitsi Container -->
+        <div id="jitsi-container" style="width: 100%; height: calc(100% - 73px);"></div>
+    </div>
+</div>
     <!-- ========== MODAL: สร้างกิจกรรม ========== -->
     <div id="createActivityModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
@@ -2003,6 +2061,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="https://meet.jit.si/external_api.js"></script>
     <script src="supabase-client.js"></script>
     
     <script>
@@ -3484,7 +3543,359 @@
                 window.loadPlaylist();
             } catch (error) { console.error('❌ Error removing music:', error); alert('ไม่สามารถลบเพลงได้'); }
         };
+// ========== REAL-TIME CALL NOTIFICATIONS ==========
 
+// สถานะการโทรปัจจุบัน
+window.activeCall = {
+    isActive: false,
+    roomId: null,
+    callRoom: null,
+    participants: new Set()
+};
+
+// เริ่มการโทร (เรียลไทม์)
+window.startCall = async function() {
+    if (!window.currentRoomId) {
+        alert('❌ กรุณาเลือกห้องก่อนโทร');
+        return;
+    }
+    
+    try {
+        // สร้างชื่อห้องประชุม
+        const callRoom = `chatapp-${window.currentRoomId}-${Date.now()}`;
+        
+        // แสดง modal
+        const modal = document.getElementById('jitsiCallModal');
+        const roomEl = document.getElementById('jitsiRoomName');
+        roomEl.textContent = `📞 ${window.currentRoom?.name || 'ประชุม'}`;
+        modal.classList.add('active');
+        
+        // สร้าง Jitsi Meet
+        await initJitsiCall(callRoom);
+        
+        // ✅ ส่ง Realtime Notification ไปทั้งห้อง
+        await sendRealtimeNotification({
+            type: 'call_started',
+            roomId: window.currentRoomId,
+            callRoom: callRoom,
+            startedBy: window.currentUser.id,
+            startedByName: window.currentUser.user_metadata?.display_name || 
+                          window.currentUser.user_metadata?.username || 
+                          'ผู้ใช้',
+            timestamp: new Date().toISOString()
+        });
+        
+        // ✅ บันทึกประวัติการโทร
+        await logCallActivity(callRoom);
+        
+        // ✅ Subscribe สถานะการโทร
+        subscribeToCallStatus(window.currentRoomId);
+        
+    } catch (error) {
+        console.error('❌ Error starting call:', error);
+        alert('ไม่สามารถเริ่มการโทรได้');
+    }
+};
+
+// ========== JITSI INIT ==========
+async function initJitsiCall(callRoom) {
+    return new Promise((resolve, reject) => {
+        try {
+            const container = document.getElementById('jitsi-container');
+            container.innerHTML = '';
+            
+            const domain = 'meet.jit.si';
+            const options = {
+                roomName: callRoom,
+                width: '100%',
+                height: '100%',
+                parentNode: container,
+                configOverwrite: {
+                    startWithAudioMuted: false,
+                    startWithVideoMuted: false,
+                    enableWelcomePage: false,
+                    enableClosePage: false,
+                    disableInviteFunctions: true,
+                    prejoinPageEnabled: false,
+                    resolution: 720,
+                    constraints: {
+                        video: {
+                            height: { ideal: 720, max: 720, min: 240 }
+                        }
+                    }
+                },
+                interfaceConfigOverwrite: {
+                    TOOLBAR_BUTTONS: [
+                        'microphone', 'camera', 'closedcaptions', 'desktop',
+                        'fullscreen', 'fodeviceselection', 'hangup',
+                        'profile', 'chat', 'recording', 'etherpad',
+                        'settings', 'raisehand', 'videoquality', 
+                        'filmstrip', 'stats', 'shortcuts', 'tileview'
+                    ],
+                    SHOW_JITSI_WATERMARK: false,
+                    SHOW_WATERMARK_FOR_GUESTS: false,
+                    DEFAULT_BACKGROUND: '#0a0a0a',
+                    DEFAULT_LOGO_URL: null,
+                    MOBILE_APP_PROMO: false,
+                    TOOLBAR_ALWAYS_VISIBLE: true
+                },
+                userInfo: {
+                    displayName: window.currentUser?.user_metadata?.display_name || 
+                                window.currentUser?.user_metadata?.username || 
+                                'ผู้ใช้',
+                    email: window.currentUser?.email || ''
+                }
+            };
+            
+            window.jitsiApi = new JitsiMeetExternalAPI(domain, options);
+            
+            // ✅ Event Listeners แบบ Real-time
+            window.jitsiApi.addEventListeners({
+                readyToClose: () => endCall(),
+                videoConferenceJoined: (participant) => {
+                    console.log('✅ Joined call:', participant);
+                    window.activeCall.isActive = true;
+                    window.activeCall.participants.add(participant.id);
+                    
+                    // ส่ง Notification เข้าร่วม
+                    sendRealtimeNotification({
+                        type: 'call_joined',
+                        callRoom: callRoom,
+                        userId: window.currentUser.id,
+                        userName: options.userInfo.displayName,
+                        timestamp: new Date().toISOString()
+                    });
+                },
+                participantJoined: (participant) => {
+                    console.log('👤 Participant joined:', participant);
+                    window.activeCall.participants.add(participant.id);
+                    
+                    // ส่งข้อความในแชท
+                    sendSystemMessage(`👤 ${participant.displayName} เข้าร่วมการโทร`);
+                    
+                    // อัปเดตจำนวนผู้เข้าร่วม Real-time
+                    updateParticipantsCount();
+                },
+                participantLeft: (participant) => {
+                    console.log('👤 Participant left:', participant);
+                    window.activeCall.participants.delete(participant.id);
+                    
+                    sendSystemMessage(`👤 ${participant.displayName} ออกจากการโทร`);
+                    updateParticipantsCount();
+                },
+                audioMuteStatusChanged: (data) => {
+                    // อัปเดตสถานะไมค์ (optional)
+                },
+                videoMuteStatusChanged: (data) => {
+                    // อัปเดตสถานะกล้อง (optional)
+                },
+                screenSharingStatusChanged: (data) => {
+                    // อัปเดตสถานะแชร์หน้าจอ (optional)
+                }
+            });
+            
+            resolve();
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+        // ========== REAL-TIME NOTIFICATIONS ==========
+        async function sendRealtimeNotification(data) {
+            if (!window.currentRoomId) return;
+            
+            try {
+                // ✅ 1. ส่งผ่าน Supabase Realtime
+                await supabaseClient
+                    .from('call_notifications')
+                    .insert([{
+                        room_id: window.currentRoomId,
+                        call_data: data,
+                        created_at: new Date().toISOString()
+                    }]);
+                    
+                // ✅ 2. ส่งข้อความในแชท
+                if (data.type === 'call_started') {
+                    await sendSystemMessage(`📞 ${data.startedByName} เริ่มการโทร - คลิกปุ่ม 📞 เพื่อเข้าร่วม`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error sending notification:', error);
+            }
+        }
+        
+        // ========== SUBSCRIBE CALL STATUS ==========
+        function subscribeToCallStatus(roomId) {
+            if (window.callStatusSubscription) {
+                window.callStatusSubscription.unsubscribe();
+            }
+            
+            window.callStatusSubscription = supabaseClient
+                .channel(`call-status-${roomId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'call_notifications',
+                        filter: `room_id=eq.${roomId}`
+                    },
+                    (payload) => {
+                        // ✅ รับ Notification แบบ Real-time
+                        const data = payload.new.call_data;
+                        console.log('📢 Call notification:', data);
+                        
+                        // แสดง Toast Notification
+                        if (data.type === 'call_started' && 
+                            data.startedBy !== window.currentUser.id) {
+                            showCallNotification(data);
+                        }
+                    }
+                )
+                .subscribe();
+        }
+        
+        // ========== SHOW CALL NOTIFICATION ==========
+        function showCallNotification(data) {
+            // สร้าง Toast แจ้งเตือน
+            const toast = document.createElement('div');
+            toast.className = 'call-toast';
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <span style="font-size: 24px;">📞</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${data.startedByName} เริ่มการโทร</div>
+                        <div style="font-size: 12px; opacity: 0.9;">คลิกเพื่อเข้าร่วม</div>
+                    </div>
+                    <button onclick="window.joinCall('${data.callRoom}')" style="padding: 8px 16px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        เข้าร่วม
+                    </button>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">✕</button>
+                </div>
+            `;
+            
+            toast.style.position = 'fixed';
+            toast.style.top = '20px';
+            toast.style.right = '20px';
+            toast.style.zIndex = '9999';
+            toast.style.animation = 'slideIn 0.3s ease';
+            
+            document.body.appendChild(toast);
+            
+            // ซ่อนอัตโนมัติหลังจาก 10 วินาที
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 10000);
+        }
+        
+        // ========== JOIN CALL ==========
+        window.joinCall = async function(callRoom) {
+            if (!callRoom) return;
+            
+            // ตรวจสอบว่ามีการโทรอยู่แล้วหรือไม่
+            if (window.activeCall.isActive) {
+                // อยู่ระหว่างการโทร ให้ถามก่อน
+                if (!confirm('คุณกำลังอยู่ในการโทรอยู่แล้ว ต้องการออกจากการโทรเดิมและเข้าร่วมใหม่หรือไม่?')) {
+                    return;
+                }
+                await endCall();
+            }
+            
+            // เข้าร่วมการโทร
+            window.currentCallRoom = callRoom;
+            const modal = document.getElementById('jitsiCallModal');
+            modal.classList.add('active');
+            
+            await initJitsiCall(callRoom);
+            
+            // ส่ง Notification เข้าร่วม
+            await sendRealtimeNotification({
+                type: 'call_joined',
+                callRoom: callRoom,
+                userId: window.currentUser.id,
+                userName: window.currentUser.user_metadata?.display_name || 
+                          window.currentUser.user_metadata?.username || 
+                          'ผู้ใช้',
+                timestamp: new Date().toISOString()
+            });
+        };
+        
+        // ========== UPDATE PARTICIPANTS COUNT ==========
+        function updateParticipantsCount() {
+            const count = window.activeCall.participants.size;
+            const title = document.getElementById('jitsiRoomName');
+            if (title) {
+                title.innerHTML = `📞 ${window.currentRoom?.name || 'ประชุม'} <span style="font-size: 14px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px;">${count} คน</span>`;
+            }
+        }
+        
+        // ========== SEND SYSTEM MESSAGE ==========
+        window.sendSystemMessage = async function(text) {
+            if (!window.currentRoomId) return;
+            
+            try {
+                await supabaseClient.from('messages').insert([{
+                    user_id: '00000000-0000-0000-0000-000000000000', // system
+                    room_id: window.currentRoomId,
+                    message: `📢 ${text}`,
+                    created_at: new Date().toISOString()
+                }]);
+            } catch (error) {
+                console.error('Error sending system message:', error);
+            }
+        };
+        
+        // ========== END CALL ==========
+        window.endCall = async function() {
+            const modal = document.getElementById('jitsiCallModal');
+            modal.classList.remove('active');
+            
+            if (window.jitsiApi) {
+                window.jitsiApi.dispose();
+                window.jitsiApi = null;
+            }
+            
+            // ส่ง Notification จบการโทร
+            if (window.activeCall.isActive) {
+                await sendRealtimeNotification({
+                    type: 'call_ended',
+                    callRoom: window.currentCallRoom,
+                    userId: window.currentUser.id,
+                    timestamp: new Date().toISOString()
+                });
+                
+                await sendSystemMessage(`การโทรสิ้นสุดลง`);
+            }
+            
+            // เคลียร์สถานะ
+            window.activeCall = {
+                isActive: false,
+                roomId: null,
+                callRoom: null,
+                participants: new Set()
+            };
+            
+            window.currentCallRoom = null;
+            
+            const container = document.getElementById('jitsi-container');
+            container.innerHTML = '';
+        };
+        
+        // ========== COPY CALL LINK ==========
+        window.copyCallLink = function() {
+            if (!window.currentCallRoom) return;
+            
+            const url = `https://meet.jit.si/${window.currentCallRoom}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ คัดลอกลิงก์เชิญแล้ว');
+            }).catch(() => {
+                prompt('📋 คัดลอกลิงก์นี้:', url);
+            });
+        };
         // ========== REALTIME ==========
         window.setupMessageSubscription = function(roomId) {
             if (window.messageSubscription) window.messageSubscription.unsubscribe();
@@ -3664,3 +4075,4 @@
     </script>
 </body>
 </html>
+
