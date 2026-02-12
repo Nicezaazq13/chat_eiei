@@ -2748,9 +2748,11 @@
                 </div>
                 <div class="activity-actions">
                     ${activity.activity_type === 'youtube' && activity.content ? `
-                        <button onclick="window.openYoutubePlayer('${activity.id}', '${activity.content}')" class="view-activity-btn">
-                            📺 ดู
-                        </button>
+                       <button type="button" 
+                                class="view-activity-btn" 
+                                onclick="console.log('🔵 Clicked view button'); event.preventDefault(); event.stopPropagation(); window.openYoutubePlayer && window.openYoutubePlayer('8', 'LfTtW4urxl0'); return false;">
+                        📺 ดู
+                    </button>
                     ` : ''}
                     <button onclick="window.toggleJoinActivity('${activity.id}')" 
                             class="join-activity-btn ${isJoined ? 'joined' : ''}">
@@ -4023,6 +4025,7 @@ window.resizeYoutubePlayer = function() {
 </script>
 </body>
 </html>
+
 
 
 
