@@ -1524,9 +1524,14 @@ body {
 </head>
 <body>
     <div class="chat-container">
-        <!-- Header -->
+        <!-- ========== HEADER ========== -->
         <div class="chat-header">
             <div class="chat-header-left">
+                <!-- ปุ่มเมนู 3 ขีดสำหรับมือถือ -->
+                <button class="mobile-menu-btn" onclick="window.toggleMobileSidebar()">
+                    ☰
+                </button>
+                
                 <div class="current-room-info">
                     <h2 id="currentRoomTitle">💬 ห้องแชทสาธารณะ</h2>
                     <span class="room-badge" id="currentRoomTypeBadge">สาธารณะ</span>
@@ -1545,10 +1550,10 @@ body {
             </div>
         </div>
         
-        <!-- Main Chat Area -->
+        <!-- ========== MAIN CHAT AREA ========== -->
         <div class="chat-main">
-            <!-- Rooms Panel (ซ้าย) -->
-            <div class="rooms-panel">
+            <!-- ===== ROOMS PANEL (ซ้าย) ===== -->
+            <div class="rooms-panel" id="roomsPanel">
                 <div class="rooms-header">
                     <button class="create-room-btn" onclick="window.showCreateRoomModal()">
                         + สร้างห้องใหม่
@@ -1568,7 +1573,7 @@ body {
                 </div>
             </div>
             
-            <!-- Messages Area (กลาง) -->
+            <!-- ===== MESSAGES AREA (กลาง) ===== -->
             <div class="chat-content">
                 <div class="messages-container" id="messagesContainer">
                     <!-- Messages will be loaded here -->
@@ -1583,7 +1588,7 @@ body {
                 </div>
                 
                 <!-- Input Area พร้อมปุ่มอิโมจิ รูปภาพ และเพลง -->
-                <div class="message-input-area" id="messageInputArea" style="display: none;">
+                <div class="message-input-area" id="messageInputArea">
                     <!-- Toolbar สำหรับอิโมจิ รูปภาพ และเพลง -->
                     <div class="input-toolbar">
                         <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()" title="เพิ่มอิโมจิ">
@@ -1621,7 +1626,7 @@ body {
                 </div>
             </div>
             
-            <!-- Members Panel (ขวา) -->
+            <!-- ===== MEMBERS PANEL (ขวา) ===== -->
             <div class="members-panel" id="membersPanel">
                 <div class="members-header">
                     <h3>👥 สมาชิกในห้อง</h3>
@@ -1631,6 +1636,9 @@ body {
             </div>
         </div>
     </div>
+
+    <!-- ========== SIDEBAR OVERLAY ========== -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="window.closeMobileSidebar()"></div>
 
     <!-- ========== MODAL: อิโมจิ ========== -->
     <div id="emojiPickerModal" class="modal">
@@ -1649,7 +1657,7 @@ body {
         </div>
     </div>
 
-    <!-- Modal: สร้างห้อง -->
+    <!-- ========== MODAL: สร้างห้อง ========== -->
     <div id="createRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">📝 สร้างห้องใหม่</h2>
@@ -1691,7 +1699,7 @@ body {
         </div>
     </div>
     
-    <!-- Modal: เข้าร่วมห้องส่วนตัว -->
+    <!-- ========== MODAL: เข้าร่วมห้องส่วนตัว ========== -->
     <div id="joinPrivateRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">🔐 เข้าร่วมห้องส่วนตัว</h2>
@@ -1709,7 +1717,7 @@ body {
         </div>
     </div>
     
-    <!-- Modal: เตะสมาชิก -->
+    <!-- ========== MODAL: เตะสมาชิก ========== -->
     <div id="kickMemberModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">⚠️ เตะสมาชิก</h2>
@@ -1723,7 +1731,7 @@ body {
         </div>
     </div>
     
-    <!-- Modal: ลบห้อง -->
+    <!-- ========== MODAL: ลบห้อง ========== -->
     <div id="deleteRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px; color: #f56565;">⚠️ ลบห้อง</h2>
@@ -1744,7 +1752,7 @@ body {
         </div>
     </div>
     
-    <!-- ========== MUSIC PLAYER MODAL ========== -->
+    <!-- ========== MODAL: เครื่องเล่นเพลง ========== -->
     <div id="musicPlayerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
@@ -1776,7 +1784,7 @@ body {
         </div>
     </div>
     
-    <!-- ========== CURRENT MUSIC BAR ========== -->
+    <!-- ========== MUSIC BAR ========== -->
     <div id="currentMusicBar" class="music-bar" style="display: none;">
         <div class="music-info">
             <span class="music-icon">🎵</span>
@@ -3382,6 +3390,7 @@ body {
     </script>
 </body>
 </html>
+
 
 
 
