@@ -7,9 +7,14 @@ let messageInput = document.getElementById('messageInput');
 let sendButton = document.getElementById('sendButton');
 let typingTimeout = null;
 
+// ========== CONSTANTS ==========
+const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000'; // ห้องสาธารณะกลาง
+
 // ========== INITIALIZATION ==========
 async function initChat() {
     try {
+        console.log('🚀 Initializing chat...');
+        
         // ตรวจสอบการล็อกอิน
         currentUser = await checkUser();
         if (!currentUser) {
@@ -22,6 +27,12 @@ async function initChat() {
         messageInput = document.getElementById('messageInput');
         sendButton = document.getElementById('sendButton');
 
+        // ตรวจสอบและสร้าง public room
+        await initPublicRoom();
+        
+        // เข้าร่วม public room อัตโนมัติ
+        await joinPublicRoom();
+        
         // โหลดประวัติข้อความ
         await loadMessages();
         
@@ -46,14 +57,108 @@ async function initChat() {
     }
 }
 
+// ========== PUBLIC ROOM MANAGEMENT ==========
+async function initPublicRoom() {
+    try {
+        // ตรวจสอบว่ามี public room หรือยัง
+        const { data: existingRoom, error } = await supabaseClient
+            .from('rooms')
+            .select('id')
+            .eq('id', PUBLIC_ROOM_ID)
+            .maybeSingle();
+            
+        if (error) throw error;
+        
+        if (!existingRoom) {
+            // สร้าง public room ถ้ายังไม่มี
+            const { error: insertError } = await supabaseClient
+                .from('rooms')
+                .insert([
+                    {
+                        id: PUBLIC_ROOM_ID,
+                        name: 'ห้องแชทสาธารณะ',
+                        description: 'ห้องแชทหลักสำหรับทุกคน',
+                        room_type: 'public',
+                        created_at: new Date().toISOString()
+                    }
+                ]);
+                
+            if (insertError) throw insertError;
+            console.log('✅ Created public room');
+        } else {
+            console.log('✅ Public room already exists');
+        }
+    } catch (error) {
+        console.error('❌ Error initializing public room:', error);
+    }
+}
+
+async function joinPublicRoom() {
+    try {
+        if (!currentUser) return;
+        
+        // ตรวจสอบว่าเป็นสมาชิกอยู่แล้วหรือไม่
+        const { data: existingMember, error: checkError } = await supabaseClient
+            .from('room_members')
+            .select('*')
+            .eq('room_id', PUBLIC_ROOM_ID)
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+            
+        if (checkError) throw checkError;
+        
+        if (!existingMember) {
+            // เข้าร่วม public room
+            const { error: joinError } = await supabaseClient
+                .from('room_members')
+                .insert([
+                    {
+                        room_id: PUBLIC_ROOM_ID,
+                        user_id: currentUser.id,
+                        role: 'member',
+                        joined_at: new Date().toISOString()
+                    }
+                ]);
+                
+            if (joinError) throw joinError;
+            console.log('✅ Joined public room');
+        }
+    } catch (error) {
+        console.error('❌ Error joining public room:', error);
+    }
+}
+
 // ========== MESSAGES ==========
 async function loadMessages() {
     try {
-        const messages = await getMessages(50);
+        console.log('📨 Loading messages from public room...');
+        
+        // โหลดเฉพาะข้อความจาก public room
+        const { data: messages, error } = await supabaseClient
+            .from('messages')
+            .select(`
+                id,
+                message,
+                created_at,
+                user_id,
+                room_id,
+                profiles:user_id (
+                    username,
+                    display_name,
+                    avatar_url
+                )
+            `)
+            .eq('room_id', PUBLIC_ROOM_ID)  // สำคัญ! โหลดเฉพาะ public room
+            .order('created_at', { ascending: true })
+            .limit(50);
+
+        if (error) throw error;
+        
         if (messagesContainer) {
             messagesContainer.innerHTML = '';
             messages.forEach(msg => displayMessage(msg));
             scrollToBottom();
+            console.log(`✅ Loaded ${messages.length} messages`);
         }
     } catch (error) {
         console.error('❌ Error loading messages:', error);
@@ -89,26 +194,106 @@ function displayMessage(message) {
     }
 }
 
+async function sendMessageHandler() {
+    try {
+        const message = messageInput.value.trim();
+        
+        if (message) {
+            console.log('📤 Sending message to public room...');
+            
+            // ส่งข้อความไปยัง public room
+            const { data, error } = await supabaseClient
+                .from('messages')
+                .insert([
+                    {
+                        user_id: currentUser.id,
+                        room_id: PUBLIC_ROOM_ID,  // สำคัญ! ส่งไป public room
+                        message: message,
+                        created_at: new Date().toISOString()
+                    }
+                ])
+                .select();
+
+            if (error) throw error;
+            
+            messageInput.value = '';
+            
+            const charCount = document.getElementById('charCount');
+            if (charCount) {
+                charCount.textContent = '0/500';
+            }
+            
+            // หยุดสถานะกำลังพิมพ์
+            emitTyping(false);
+            clearTimeout(typingTimeout);
+            
+            console.log('✅ Message sent');
+        }
+    } catch (error) {
+        console.error('❌ Error sending message:', error);
+        alert('ส่งข้อความไม่สำเร็จ กรุณาลองอีกครั้ง');
+    }
+}
+
 // ========== REALTIME ==========
 function setupRealtimeSubscriptions() {
     try {
-        // รับข้อความใหม่
+        console.log('📡 Setting up realtime subscriptions...');
+        
+        // รับข้อความใหม่ - เฉพาะ public room
         if (messageSubscription) {
             messageSubscription.unsubscribe();
         }
         
-        messageSubscription = subscribeToMessages((newMessage) => {
-            displayMessage(newMessage);
-        });
+        messageSubscription = supabaseClient
+            .channel('public-room-messages')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `room_id=eq.${PUBLIC_ROOM_ID}`  // สำคัญ! เฉพาะ public room
+                },
+                async (payload) => {
+                    console.log('📨 New message received');
+                    
+                    // ดึงข้อมูล profile
+                    const { data: profile } = await supabaseClient
+                        .from('profiles')
+                        .select('username, display_name, avatar_url')
+                        .eq('id', payload.new.user_id)
+                        .single();
+                    
+                    displayMessage({
+                        ...payload.new,
+                        profiles: profile
+                    });
+                }
+            )
+            .subscribe((status) => {
+                console.log('📡 Realtime status:', status);
+            });
         
         // รับสถานะผู้ใช้
         if (userStatusSubscription) {
             userStatusSubscription.unsubscribe();
         }
         
-        userStatusSubscription = subscribeToUserStatus((updatedProfile) => {
-            updateUserStatusUI(updatedProfile);
-        });
+        userStatusSubscription = supabaseClient
+            .channel('public-user-status')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'profiles'
+                },
+                () => {
+                    loadOnlineUsers();
+                }
+            )
+            .subscribe();
         
         console.log('✅ Realtime subscriptions setup complete');
     } catch (error) {
@@ -139,12 +324,30 @@ function displayUserInfo() {
 
 async function loadOnlineUsers() {
     try {
-        const onlineUsers = await getOnlineUsers();
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('username, display_name, avatar_url')
+            .eq('is_online', true)
+            .limit(20);
+            
+        if (error) throw error;
+        
+        // กรองไม่ให้ username ซ้ำ
+        const uniqueUsers = [];
+        const seen = new Set();
+        
+        data.forEach(user => {
+            if (!seen.has(user.username)) {
+                seen.add(user.username);
+                uniqueUsers.push(user);
+            }
+        });
+        
         const usersList = document.getElementById('onlineUsersList');
         const totalUsers = document.getElementById('totalUsers');
         
         if (usersList) {
-            usersList.innerHTML = onlineUsers.map(user => `
+            usersList.innerHTML = uniqueUsers.map(user => `
                 <div class="online-user">
                     <img src="${user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.username)}&background=667eea&color=fff`}" 
                          alt="${user.display_name || user.username}" 
@@ -156,15 +359,14 @@ async function loadOnlineUsers() {
         }
         
         if (totalUsers) {
-            totalUsers.textContent = onlineUsers.length;
+            totalUsers.textContent = uniqueUsers.length;
         }
     } catch (error) {
         console.error('❌ Error loading online users:', error);
     }
 }
 
-function updateUserStatusUI(profile) {
-    // อัปเดตสถานะผู้ใช้แบบ realtime
+function updateUserStatusUI() {
     loadOnlineUsers();
 }
 
@@ -218,31 +420,8 @@ function handleMessageInput() {
     }
 }
 
-async function sendMessageHandler() {
-    try {
-        const message = messageInput.value.trim();
-        
-        if (message) {
-            await sendMessage(message);
-            messageInput.value = '';
-            
-            const charCount = document.getElementById('charCount');
-            if (charCount) {
-                charCount.textContent = '0/500';
-            }
-            
-            // หยุดสถานะกำลังพิมพ์
-            emitTyping(false);
-            clearTimeout(typingTimeout);
-        }
-    } catch (error) {
-        console.error('❌ Error sending message:', error);
-    }
-}
-
 // ========== MOBILE KEYBOARD HANDLER ==========
 function initMobileKeyboardHandler() {
-    // ตรวจสอบว่าเป็นมือถือหรือไม่
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (!isMobile) return;
     
@@ -255,24 +434,19 @@ function initMobileKeyboardHandler() {
         const currentHeight = window.innerHeight;
         const heightDiff = originalViewportHeight - currentHeight;
         
-        // ถ้า height ลดลงมากกว่า 150px แสดงว่า keyboard เปิด
         if (heightDiff > 150 && !isKeyboardOpen) {
             isKeyboardOpen = true;
             document.body.classList.add('keyboard-open');
             
-            // เลื่อน input ให้เห็น
             setTimeout(() => {
                 if (messageInput) {
                     messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-                
-                // เลื่อนข้อความล่าสุดให้เห็น
                 if (messagesContainer) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
             }, 300);
         } 
-        // ถ้า height กลับมาใกล้เคียงเดิม แสดงว่า keyboard ปิด
         else if (heightDiff < 50 && isKeyboardOpen) {
             isKeyboardOpen = false;
             document.body.classList.remove('keyboard-open');
@@ -281,7 +455,6 @@ function initMobileKeyboardHandler() {
     
     window.addEventListener('resize', handleResize);
     
-    // จัดการ focus บน input
     if (messageInput) {
         messageInput.addEventListener('focus', () => {
             setTimeout(() => {
@@ -292,14 +465,12 @@ function initMobileKeyboardHandler() {
         });
     }
     
-    // ป้องกันการ zoom เมื่อ focus input บน iOS
     document.addEventListener('touchstart', function(e) {
         if (e.target.nodeName === 'TEXTAREA' || e.target.nodeName === 'INPUT') {
             e.target.style.fontSize = '16px';
         }
     });
     
-    // เพิ่มปุ่มปิด sidebar บนมือถือ
     addMobileMenuButton();
 }
 
@@ -310,7 +481,6 @@ function addMobileMenuButton() {
     const headerLeft = document.querySelector('.chat-header-left');
     if (!headerLeft) return;
     
-    // เช็คว่ามีปุ่มเมนูอยู่แล้วหรือไม่
     if (document.querySelector('.mobile-menu-btn')) return;
     
     const menuBtn = document.createElement('span');
@@ -324,7 +494,6 @@ function addMobileMenuButton() {
     `;
     
     menuBtn.onclick = toggleMobileSidebar;
-    
     headerLeft.insertBefore(menuBtn, headerLeft.firstChild);
 }
 
@@ -337,7 +506,6 @@ function toggleMobileSidebar() {
     sidebar.classList.toggle('active');
     
     if (!overlay) {
-        // สร้าง overlay ถ้ายังไม่มี
         const newOverlay = document.createElement('div');
         newOverlay.id = 'sidebarOverlay';
         newOverlay.className = 'sidebar-overlay';
@@ -368,7 +536,6 @@ function formatTime(timestamp) {
         const now = new Date();
         const diff = now - date;
         
-        // ถ้าเป็นวันนี้ แสดงเวลา
         if (date.toDateString() === now.toDateString()) {
             return date.toLocaleTimeString('th-TH', { 
                 hour: '2-digit', 
@@ -376,12 +543,10 @@ function formatTime(timestamp) {
             });
         }
         
-        // ถ้าเป็นเมื่อวาน แสดง "เมื่อวาน"
         if (diff < 86400000 * 2) {
             return 'เมื่อวาน';
         }
         
-        // ถ้าเกิน 2 วัน แสดงวันที่
         return date.toLocaleDateString('th-TH', {
             day: 'numeric',
             month: 'short',
@@ -425,7 +590,6 @@ window.addEventListener('beforeunload', async () => {
 });
 
 // ========== INITIALIZE ==========
-// เรียกใช้เมื่อ DOM พร้อม
 document.addEventListener('DOMContentLoaded', () => {
     initChat();
 });
