@@ -453,6 +453,159 @@
             background: #fed7d7;
             color: #e53e3e;
         }
+                /* ========== INPUT TOOLBAR ========== */
+        .input-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 0 4px;
+        }
+        
+        .toolbar-btn {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .toolbar-btn:hover {
+            background: #f7fafc;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        /* ========== IMAGE PREVIEW ========== */
+        .image-preview {
+            position: relative;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        
+        .image-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .remove-preview {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .remove-preview:hover {
+            background: #e53e3e;
+            transform: scale(1.1);
+        }
+        
+        /* ========== EMOJI GRID ========== */
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            padding: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .emoji-item {
+            font-size: 24px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .emoji-item:hover {
+            background: #667eea;
+            transform: scale(1.2);
+            color: white;
+        }
+        
+        /* ========== MESSAGE IMAGES ========== */
+        .message-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 12px;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .message-image:hover {
+            transform: scale(1.02);
+            border-color: #667eea;
+        }
+        
+        /* ========== LIGHTBOX ========== */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            cursor: pointer;
+        }
+        
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -469,7 +622,6 @@
             </div>
             <div class="chat-header-right">
                 <div class="user-profile" id="userProfile"></div>
-                <!-- ✅ เพิ่มปุ่มแอดมินตรงนี้ -->
                 <button id="adminModeBtn" onclick="window.toggleAdminMode()" class="btn btn-admin" style="display: none;">
                     👑 แอดมิน (ปิด)
                 </button>
@@ -511,13 +663,24 @@
                 <!-- Typing Indicator -->
                 <div id="typingIndicator" class="typing-indicator"></div>
                 
-                <!-- ✅ เพิ่มปุ่มลบหลายข้อความตรงนี้ -->
+                <!-- ปุ่มลบหลายข้อความ -->
                 <div id="deleteSelectedBtn" class="delete-selected-btn" style="display: none;" onclick="window.deleteSelectedMessages()">
                     🗑️ ลบ 0 ข้อความ
                 </div>
                 
-                <!-- Input Area -->
+                <!-- Input Area พร้อมปุ่มอิโมจิและรูปภาพ -->
                 <div class="message-input-area" id="messageInputArea" style="display: none;">
+                    <!-- Toolbar สำหรับอิโมจิและรูปภาพ -->
+                    <div class="input-toolbar">
+                        <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()" title="เพิ่มอิโมจิ">
+                            😊
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="window.uploadImage()" title="อัปโหลดรูปภาพ">
+                            📷
+                        </button>
+                    </div>
+                    
+                    <!-- Wrapper สำหรับข้อความและปุ่มส่ง -->
                     <div class="input-wrapper">
                         <textarea 
                             id="messageInput" 
@@ -528,6 +691,13 @@
                             📤 ส่ง
                         </button>
                     </div>
+                    
+                    <!-- พรีวิวรูปภาพก่อนส่ง -->
+                    <div id="imagePreview" class="image-preview" style="display: none;">
+                        <img id="previewImg" src="" alt="Preview">
+                        <button type="button" class="remove-preview" onclick="window.clearImagePreview()">✕</button>
+                    </div>
+                    
                     <div class="input-footer">
                         <span class="character-count" id="charCount">0/500</span>
                     </div>
@@ -541,6 +711,23 @@
                     <button onclick="window.toggleMembersPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
                 </div>
                 <div class="members-list" id="membersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: อิโมจิ ========== -->
+    <div id="emojiPickerModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>😊</span> เลือกอิโมจิ
+            </h3>
+            <div class="emoji-grid" id="emojiGrid">
+                <!-- อิโมจิจะถูกโหลดมาใส่ที่นี่โดย JavaScript -->
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button onclick="window.closeEmojiPicker()" class="btn btn-secondary" style="flex: 1;">
+                    ปิด
+                </button>
             </div>
         </div>
     </div>
@@ -639,7 +826,6 @@
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
@@ -2043,6 +2229,7 @@ window.sendMessage = async function() {
     </script>
 </body>
 </html>
+
 
 
 
