@@ -1952,6 +1952,8 @@
     window.activitySyncSubscription = null;
 
     const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
+    const STORAGE_KEY = 'chat_last_room_id'; // Key สำหรับเก็บห้องล่าสุด
+    
     const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
 
     // ========== YOUTUBE API ==========
@@ -1987,7 +1989,12 @@
             await checkAdminStatus();
             displayUserInfo();
             await loadRooms();
-            await selectRoom(PUBLIC_ROOM_ID);
+            
+            // ✅ โหลดห้องล่าสุดจาก localStorage
+            const lastRoomId = localStorage.getItem(STORAGE_KEY);
+            const initialRoomId = lastRoomId || PUBLIC_ROOM_ID;
+            
+            await selectRoom(initialRoomId);
             await loadOnlineUsers();
             setupEventListeners();
             initMobileHandler();
@@ -2138,6 +2145,9 @@
             
             window.currentRoom = room;
             window.currentRoomId = room.id;
+            
+            // ✅ บันทึกห้องล่าสุดลง localStorage
+            localStorage.setItem(STORAGE_KEY, room.id);
             
             document.getElementById('currentRoomTitle').innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}`;
             document.getElementById('currentRoomTypeBadge').textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
@@ -2583,8 +2593,13 @@
             const { error } = await supabaseClient.from('rooms').delete().eq('id', roomId);
             if (error) throw error;
             alert('✅ ลบห้องสำเร็จ');
-            await window.selectRoom(PUBLIC_ROOM_ID);
-            await window.loadRooms();
+            
+            // ✅ ถ้าลบห้องที่กำลังอยู่ ให้กลับไปห้องสาธารณะ
+            if (window.currentRoomId === roomId) {
+                await window.selectRoom(PUBLIC_ROOM_ID);
+            } else {
+                await window.loadRooms();
+            }
         } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); }
     };
 
@@ -2602,6 +2617,12 @@
             if (error) throw error;
             alert('✅ ลบห้องสำเร็จ');
             window.closeDeleteRoomModal();
+            
+            // ✅ ลบห้องที่ถูกลบออกจาก localStorage
+            if (localStorage.getItem(STORAGE_KEY) === window.currentRoomId) {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+            
             await selectRoom(PUBLIC_ROOM_ID);
             await loadRooms();
         } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); window.closeDeleteRoomModal(); }
@@ -2757,6 +2778,12 @@
             
             if (activityType === 'youtube') {
                 let url = document.getElementById('youtubeUrl').value;
+                if (!url) {
+                    alert('❌ กรุณาใส่ URL YouTube');
+                    return;
+                }
+                
+                // Extract video ID
                 if (url.includes('youtube.com/watch?v=')) {
                     videoId = url.split('v=')[1]?.split('&')[0];
                 } else if (url.includes('youtu.be/')) {
@@ -2764,7 +2791,12 @@
                 } else if (url.includes('youtube.com/embed/')) {
                     videoId = url.split('/embed/')[1].split('?')[0];
                 }
-                content = videoId || url;
+                
+                if (!videoId) {
+                    alert('❌ ไม่พบ Video ID กรุณาตรวจสอบ URL');
+                    return;
+                }
+                content = videoId;
             } else if (activityType === 'game') {
                 content = document.getElementById('gameName').value;
             } else if (activityType === 'poll') {
@@ -2795,8 +2827,8 @@
                 await supabaseClient.from('activity_sync').upsert({
                     activity_id: data.id,
                     user_id: window.currentUser.id,
-                    player_state: 2,
-                    current_time: 0,
+                    player_state: 2, // paused
+                    playback_time: 0,
                     video_id: videoId,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'activity_id,user_id' });
@@ -2833,7 +2865,7 @@
                 
                 if (activity?.activity_type === 'youtube') {
                     const { data: otherSync } = await supabaseClient.from('activity_sync')
-                        .select('video_id, current_time, player_state')
+                        .select('video_id, playback_time, player_state')
                         .eq('activity_id', activityId)
                         .neq('user_id', window.currentUser.id)
                         .limit(1)
@@ -2843,7 +2875,7 @@
                         activity_id: activityId,
                         user_id: window.currentUser.id,
                         player_state: otherSync?.player_state || 2,
-                        current_time: otherSync?.current_time || 0,
+                        playback_time: otherSync?.playback_time || 0,
                         video_id: otherSync?.video_id || activity.content,
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'activity_id,user_id' });
@@ -2890,27 +2922,37 @@
         modal.classList.add('active');
         window.youtubeActivityId = activityId;
         
-        setTimeout(() => {
-            window.youtubePlayer = new YT.Player('youtube-player-container', {
-                height: '100%',
-                width: '100%',
-                videoId: videoId,
-                playerVars: {
-                    'autoplay': 0,
-                    'controls': 1,
-                    'rel': 0,
-                    'showinfo': 0,
-                    'modestbranding': 1,
-                    'enablejsapi': 1,
-                    'origin': window.location.origin
-                },
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError
-                }
-            });
-        }, 100);
+        // โหลด YouTube API ถ้ายังไม่โหลด
+        loadYouTubeAPI();
+        
+        // รอให้ YouTube API พร้อม
+        const initPlayer = () => {
+            if (window.YT && window.YT.Player) {
+                window.youtubePlayer = new YT.Player('youtube-player-container', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 1,
+                        'rel': 0,
+                        'showinfo': 0,
+                        'modestbranding': 1,
+                        'enablejsapi': 1,
+                        'origin': window.location.origin
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange,
+                        'onError': onPlayerError
+                    }
+                });
+            } else {
+                setTimeout(initPlayer, 100);
+            }
+        };
+        
+        setTimeout(initPlayer, 100);
         
         window.loadActivityParticipants(activityId);
         window.subscribeToActivitySync(activityId);
@@ -2976,172 +3018,29 @@
 
     function onPlayerError(event) {
         console.error('❌ YouTube Player error:', event.data);
-        alert('ไม่สามารถเล่นวิดีโอนี้ได้');
+        alert('ไม่สามารถเล่นวิดีโอนี้ได้ (รหัส: ' + event.data + ')');
     }
 
-   // ในฟังก์ชัน syncStateToServer
-async function syncStateToServer(state) {
-    if (!window.youtubeActivityId || !window.youtubePlayer) return;
-    
-    try {
-        await supabaseClient
-            .from('activity_sync')
-            .upsert({
-                activity_id: window.youtubeActivityId,
-                user_id: window.currentUser.id,
-                player_state: state,
-                playback_time: window.youtubePlayer.getCurrentTime(), // ✅ เปลี่ยนจาก current_time
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'activity_id,user_id'
-            });
-    } catch (error) {
-        console.error('❌ Error syncing state:', error);
-    }
-}
-
-// ในฟังก์ชัน syncTimeToServer
-async function syncTimeToServer() {
-    if (!window.youtubeActivityId || !window.youtubePlayer || window.youtubeIsSeeking) return;
-    
-    try {
-        await supabaseClient
-            .from('activity_sync')
-            .update({
-                playback_time: window.youtubePlayer.getCurrentTime(), // ✅ เปลี่ยนจาก current_time
-                updated_at: new Date().toISOString()
-            })
-            .eq('activity_id', window.youtubeActivityId)
-            .eq('user_id', window.currentUser.id);
-    } catch (error) {
-        console.error('❌ Error syncing time:', error);
-    }
-}
-
-// ในฟังก์ชัน loadSyncTime
-async function loadSyncTime() {
-    if (!window.youtubeActivityId || !window.youtubePlayer) return;
-    
-    try {
-        const { data: syncs, error } = await supabaseClient
-            .from('activity_sync')
-            .select('*')
-            .eq('activity_id', window.youtubeActivityId)
-            .order('updated_at', { ascending: false })
-            .limit(1);
+    // Sync functions
+    async function syncStateToServer(state) {
+        if (!window.youtubeActivityId || !window.youtubePlayer) return;
         
-        if (error) throw error;
-        
-        if (syncs && syncs.length > 0) {
-            const host = syncs[0];
-            if (host.user_id !== window.currentUser.id) {
-                window.youtubePlayer.seekTo(host.playback_time, true); // ✅ เปลี่ยนจาก current_time
-                if (host.player_state === YT.PlayerState.PLAYING) {
-                    window.youtubePlayer.playVideo();
-                }
-            }
+        try {
+            await supabaseClient
+                .from('activity_sync')
+                .upsert({
+                    activity_id: window.youtubeActivityId,
+                    user_id: window.currentUser.id,
+                    player_state: state,
+                    playback_time: window.youtubePlayer.getCurrentTime(),
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'activity_id,user_id'
+                });
+        } catch (error) {
+            console.error('❌ Error syncing state:', error);
         }
-    } catch (error) {
-        console.error('❌ Error loading sync time:', error);
     }
-}
-
-// ใน subscribe function
-window.subscribeToActivitySync = function(activityId) {
-    if (window.activitySyncSubscription) {
-        window.activitySyncSubscription.unsubscribe();
-    }
-    
-    window.activitySyncSubscription = supabaseClient
-        .channel(`activity-sync-${activityId}`)
-        .on('postgres_changes', 
-            { 
-                event: '*', 
-                schema: 'public', 
-                table: 'activity_sync', 
-                filter: `activity_id=eq.${activityId}` 
-            },
-            (payload) => {
-                if (!window.youtubePlayer || payload.new.user_id === window.currentUser.id) return;
-                
-                // Sync player state
-                if (payload.new.player_state !== undefined) {
-                    if (payload.new.player_state === YT.PlayerState.PLAYING) {
-                        window.youtubePlayer.playVideo();
-                    } else if (payload.new.player_state === YT.PlayerState.PAUSED) {
-                        window.youtubePlayer.pauseVideo();
-                    }
-                }
-                
-                // Sync playback time
-                if (!window.youtubeIsSeeking && payload.new.playback_time) { // ✅ เปลี่ยนจาก current_time
-                    const currentTime = window.youtubePlayer.getCurrentTime();
-                    const timeDiff = Math.abs(currentTime - payload.new.playback_time);
-                    
-                    if (timeDiff > 2) {
-                        window.youtubePlayer.seekTo(payload.new.playback_time, true);
-                    }
-                }
-            }
-        )
-        .subscribe();
-    
-    return window.activitySyncSubscription;
-};
-
-// ในฟังก์ชัน createActivity
-window.createActivity = async function(event) {
-    event.preventDefault();
-    try {
-        // ... existing code ...
-        
-        if (activityType === 'youtube' && videoId) {
-            await supabaseClient.from('activity_sync').upsert({
-                activity_id: data.id,
-                user_id: window.currentUser.id,
-                player_state: 2,
-                playback_time: 0, // ✅ เปลี่ยนจาก current_time
-                video_id: videoId,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'activity_id,user_id' });
-        }
-        
-        // ... existing code ...
-    } catch (error) { 
-        console.error('❌ Error creating activity:', error); 
-        alert('ไม่สามารถสร้างกิจกรรมได้: ' + error.message); 
-    }
-};
-
-// ในฟังก์ชัน toggleJoinActivity
-window.toggleJoinActivity = async function(activityId) {
-    try {
-        // ... existing code ...
-        
-        if (activity?.activity_type === 'youtube') {
-            const { data: otherSync } = await supabaseClient.from('activity_sync')
-                .select('video_id, playback_time, player_state') // ✅ เปลี่ยนจาก current_time
-                .eq('activity_id', activityId)
-                .neq('user_id', window.currentUser.id)
-                .limit(1)
-                .maybeSingle();
-            
-            await supabaseClient.from('activity_sync').upsert({
-                activity_id: activityId,
-                user_id: window.currentUser.id,
-                player_state: otherSync?.player_state || 2,
-                playback_time: otherSync?.playback_time || 0, // ✅ เปลี่ยนจาก current_time
-                video_id: otherSync?.video_id || activity.content,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'activity_id,user_id' });
-        }
-        
-        // ... existing code ...
-    } catch (error) { 
-        console.error('❌ Error joining activity:', error); 
-        alert('ไม่สามารถเข้าร่วมกิจกรรมได้'); 
-    }
-};
 
     async function syncTimeToServer() {
         if (!window.youtubeActivityId || !window.youtubePlayer || window.youtubeIsSeeking) return;
@@ -3150,7 +3049,7 @@ window.toggleJoinActivity = async function(activityId) {
             await supabaseClient
                 .from('activity_sync')
                 .update({
-                    current_time: window.youtubePlayer.getCurrentTime(),
+                    playback_time: window.youtubePlayer.getCurrentTime(),
                     updated_at: new Date().toISOString()
                 })
                 .eq('activity_id', window.youtubeActivityId)
@@ -3176,7 +3075,7 @@ window.toggleJoinActivity = async function(activityId) {
             if (syncs && syncs.length > 0) {
                 const host = syncs[0];
                 if (host.user_id !== window.currentUser.id) {
-                    window.youtubePlayer.seekTo(host.current_time, true);
+                    window.youtubePlayer.seekTo(host.playback_time, true);
                     if (host.player_state === YT.PlayerState.PLAYING) {
                         window.youtubePlayer.playVideo();
                     }
@@ -3240,6 +3139,7 @@ window.toggleJoinActivity = async function(activityId) {
                 (payload) => {
                     if (!window.youtubePlayer || payload.new.user_id === window.currentUser.id) return;
                     
+                    // Sync player state
                     if (payload.new.player_state !== undefined) {
                         if (payload.new.player_state === YT.PlayerState.PLAYING) {
                             window.youtubePlayer.playVideo();
@@ -3248,12 +3148,13 @@ window.toggleJoinActivity = async function(activityId) {
                         }
                     }
                     
-                    if (!window.youtubeIsSeeking && payload.new.current_time) {
+                    // Sync playback time - เฉพาะเมื่อห่างกันเกิน 2 วินาที
+                    if (!window.youtubeIsSeeking && payload.new.playback_time) {
                         const currentTime = window.youtubePlayer.getCurrentTime();
-                        const timeDiff = Math.abs(currentTime - payload.new.current_time);
+                        const timeDiff = Math.abs(currentTime - payload.new.playback_time);
                         
                         if (timeDiff > 2) {
-                            window.youtubePlayer.seekTo(payload.new.current_time, true);
+                            window.youtubePlayer.seekTo(payload.new.playback_time, true);
                         }
                     }
                 }
@@ -3649,6 +3550,7 @@ window.toggleJoinActivity = async function(activityId) {
 </script>
 </body>
 </html>
+
 
 
 
