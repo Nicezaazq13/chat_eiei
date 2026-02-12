@@ -2226,9 +2226,178 @@ window.sendMessage = async function() {
             )
             .subscribe();
     };
+    // ========== READ RECEIPTS ==========
+
+// มาร์คว่าผู้ใช้อ่านข้อความแล้ว
+window.markAsRead = async function(messageId, roomId) {
+    if (!window.currentUser || !messageId || !roomId) return;
+    
+    try {
+        // ตรวจสอบว่ามี read receipt อยู่แล้วหรือไม่
+        const { data: existing } = await supabaseClient
+            .from('read_receipts')
+            .select('id')
+            .eq('message_id', messageId)
+            .eq('user_id', window.currentUser.id)
+            .maybeSingle();
+            
+        if (!existing) {
+            // ถ้ายังไม่มี ให้เพิ่มใหม่
+            await supabaseClient
+                .from('read_receipts')
+                .insert([{
+                    message_id: messageId,
+                    user_id: window.currentUser.id,
+                    room_id: roomId,
+                    read_at: new Date().toISOString()
+                }]);
+            console.log('✅ Marked as read:', messageId);
+        }
+    } catch (error) {
+        console.error('❌ Error marking as read:', error);
+    }
+};
+
+// ดึงข้อมูล read receipts ของข้อความ
+window.getReadReceipts = async function(messageId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('read_receipts')
+            .select(`
+                user_id,
+                read_at,
+                profiles:user_id (
+                    username,
+                    display_name,
+                    avatar_url
+                )
+            `)
+            .eq('message_id', messageId)
+            .order('read_at', { ascending: true });
+            
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('❌ Error getting read receipts:', error);
+        return [];
+    }
+};
+
+// แสดง read receipts ในข้อความ
+window.displayReadReceipts = async function(messageDiv, messageId, isOwnMessage) {
+    if (!isOwnMessage) return; // แสดงเฉพาะข้อความของตัวเอง
+    
+    const receipts = await window.getReadReceipts(messageId);
+    if (receipts.length === 0) return;
+    
+    // กรองเอาแค่คนอื่น (ไม่รวมตัวเอง)
+    const otherReaders = receipts.filter(r => r.user_id !== window.currentUser.id);
+    if (otherReaders.length === 0) return;
+    
+    // สร้าง container สำหรับแสดงรูปโปรไฟล์คนอ่าน
+    const readByContainer = document.createElement('div');
+    readByContainer.className = 'read-by-container';
+    
+    // แสดงรูปโปรไฟล์สูงสุด 5 คน
+    const displayReaders = otherReaders.slice(0, 5);
+    
+    displayReaders.forEach(reader => {
+        const avatar = document.createElement('img');
+        avatar.src = reader.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(reader.profiles?.display_name || reader.profiles?.username)}&background=667eea&color=fff`;
+        avatar.alt = reader.profiles?.display_name || reader.profiles?.username || 'ผู้ใช้';
+        avatar.className = 'read-by-avatar';
+        avatar.title = `${reader.profiles?.display_name || reader.profiles?.username} อ่านเมื่อ ${window.formatTime(reader.read_at)}`;
+        readByContainer.appendChild(avatar);
+    });
+    
+    // ถ้ามีมากกว่า 5 คน
+    if (otherReaders.length > 5) {
+        const more = document.createElement('span');
+        more.className = 'read-by-more';
+        more.textContent = `+${otherReaders.length - 5}`;
+        more.title = `${otherReaders.length} คนอ่านแล้ว`;
+        readByContainer.appendChild(more);
+    }
+    
+    // เพิ่ม tooltip "อ่านแล้ว"
+    const readIcon = document.createElement('span');
+    readIcon.className = 'read-icon';
+    readIcon.innerHTML = '✓✓';
+    readIcon.title = `อ่านแล้ว ${otherReaders.length} คน`;
+    readByContainer.prepend(readIcon);
+    
+    messageDiv.querySelector('.message-content').appendChild(readByContainer);
+};
+
+// ตรวจสอบว่าข้อความอยู่ใน viewport หรือไม่
+window.isElementInViewport = function(el) {
+    const rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+};
+
+// สังเกตการณ์การเลื่อนเพื่อมาร์คอ่าน
+window.setupReadReceiptObserver = function() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const messageDiv = entry.target;
+                const messageId = messageDiv.dataset.messageId;
+                const roomId = window.currentRoomId;
+                
+                if (messageId && roomId) {
+                    // ถ้าเป็นข้อความของตัวเอง ไม่ต้องมาร์คอ่าน
+                    if (messageDiv.dataset.userId !== window.currentUser.id) {
+                        window.markAsRead(messageId, roomId);
+                    }
+                }
+            }
+        });
+    }, {
+        threshold: 0.5, // เห็นอย่างน้อย 50%
+        rootMargin: '0px'
+    });
+    
+    // เก็บ observer ไว้ใช้ภายหลัง
+    window.readReceiptObserver = observer;
+};
+
+// อัปเดต read receipts แบบ realtime
+window.subscribeToReadReceipts = function(roomId) {
+    return supabaseClient
+        .channel(`read-receipts-${roomId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'read_receipts',
+                filter: `room_id=eq.${roomId}`
+            },
+            async (payload) => {
+                // เมื่อมี read receipt ใหม่ ให้อัปเดตข้อความนั้น
+                const messageDiv = document.querySelector(`[data-message-id="${payload.new.message_id}"]`);
+                if (messageDiv) {
+                    const isOwnMessage = messageDiv.dataset.userId === window.currentUser.id;
+                    if (isOwnMessage) {
+                        // ลบของเก่าแล้วแสดงใหม่
+                        const oldContainer = messageDiv.querySelector('.read-by-container');
+                        if (oldContainer) oldContainer.remove();
+                        await window.displayReadReceipts(messageDiv, payload.new.message_id, true);
+                    }
+                }
+            }
+        )
+        .subscribe();
+};
     </script>
 </body>
 </html>
+
 
 
 
