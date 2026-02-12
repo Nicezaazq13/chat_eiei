@@ -667,7 +667,6 @@
                     return;
                 }
 
-                // ตรวจสอบสถานะแอดมิน
                 await checkAdminStatus();
                 
                 displayUserInfo();
@@ -698,7 +697,6 @@
                 
                 window.isAdmin = data?.is_admin || false;
                 
-                // แสดง/ซ่อนปุ่มแอดมิน
                 const adminBtn = document.getElementById('adminModeBtn');
                 if (adminBtn) {
                     adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
@@ -759,9 +757,24 @@
             }
         };
 
-        // ========== DELETE MESSAGES ==========
+        // ========== DELETE SELECTED MESSAGES (แอดมินลบได้ทุกข้อความ) ==========
         window.deleteSelectedMessages = async function() {
             if (window.selectedMessages.size === 0) return;
+            
+            // ✅ ตรวจสอบสิทธิ์: แอดมินลบได้หมด, ผู้ใช้ลบได้แค่ของตัวเอง
+            if (!window.isAdminMode) {
+                const messageIds = Array.from(window.selectedMessages);
+                const { data: messages } = await supabaseClient
+                    .from('messages')
+                    .select('user_id')
+                    .in('id', messageIds);
+                    
+                const hasOtherMessages = messages.some(msg => msg.user_id !== window.currentUser.id);
+                if (hasOtherMessages) {
+                    alert('❌ คุณสามารถลบได้เฉพาะข้อความของตัวเองเท่านั้น');
+                    return;
+                }
+            }
             
             const confirmMsg = window.isAdminMode 
                 ? `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความ (ในฐานะแอดมิน)` 
@@ -772,14 +785,14 @@
             try {
                 const messageIds = Array.from(window.selectedMessages);
                 
-                // หาชื่อผู้ใช้สำหรับแสดงในข้อความที่ถูกลบ
                 const { data: userData } = await supabaseClient
                     .from('profiles')
                     .select('username, display_name')
                     .eq('id', window.currentUser.id)
                     .single();
                     
-                const deletedByName = userData?.display_name || userData?.username || 'แอดมิน';
+                const deletedByName = userData?.display_name || userData?.username || 
+                                     (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
                 
                 const { error } = await supabaseClient
                     .from('messages')
@@ -803,25 +816,26 @@
             }
         };
 
+        // ========== DELETE SINGLE MESSAGE (แอดมินลบได้ทุกข้อความ) ==========
         window.deleteSingleMessage = async function(messageId, userId) {
             const canDelete = window.isAdminMode || userId === window.currentUser.id;
             
             if (!canDelete) {
-                alert('คุณไม่มีสิทธิ์ลบข้อความนี้');
+                alert('❌ คุณไม่มีสิทธิ์ลบข้อความนี้');
                 return;
             }
             
             if (!confirm('⚠️ ลบข้อความนี้?')) return;
             
             try {
-                // หาชื่อผู้ใช้สำหรับแสดงในข้อความที่ถูกลบ
                 const { data: userData } = await supabaseClient
                     .from('profiles')
                     .select('username, display_name')
                     .eq('id', window.currentUser.id)
                     .single();
                     
-                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
+                const deletedByName = userData?.display_name || userData?.username || 
+                                     (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
                 
                 const { error } = await supabaseClient
                     .from('messages')
@@ -1016,7 +1030,6 @@
                 const roomActions = document.getElementById('roomActions');
                 roomActions.innerHTML = '';
                 
-                // ปุ่มลบห้องสำหรับเจ้าของ
                 if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
                     roomActions.innerHTML += `
                         <button onclick="window.showDeleteRoomModal()" class="delete-room-btn">
@@ -1025,7 +1038,6 @@
                     `;
                 }
                 
-                // ปุ่มลบห้องสำหรับแอดมิน
                 if (window.isAdmin && room.id !== PUBLIC_ROOM_ID) {
                     roomActions.innerHTML += `
                         <button onclick="window.adminDeleteRoom('${room.id}', '${room.name}')" class="admin-delete-room-btn">
@@ -1129,7 +1141,6 @@
         window.displayMessage = function(message) {
             if (!window.messagesContainer) return;
             
-            // แสดงข้อความที่ถูกลบ
             if (message.is_deleted) {
                 const deletedDiv = document.createElement('div');
                 deletedDiv.className = 'message deleted-message';
@@ -1156,8 +1167,8 @@
             messageDiv.dataset.messageId = message.id;
             messageDiv.dataset.userId = message.user_id;
             
-            const canSelect = isOwnMessage || window.isAdminMode;
-            const canDelete = isOwnMessage || window.isAdminMode;
+            const canSelect = window.isAdminMode || isOwnMessage;
+            const canDelete = window.isAdminMode || isOwnMessage;
             
             messageDiv.innerHTML = `
                 ${canSelect ? `
@@ -1247,7 +1258,6 @@
                         filter: `room_id=eq.${roomId}`
                     },
                     async (payload) => {
-                        // รีโหลดข้อความเมื่อมีการอัปเดต (ลบข้อความ)
                         await window.loadMessages(roomId);
                     }
                 )
@@ -1652,6 +1662,7 @@
     </script>
 </body>
 </html>
+
 
 
 
