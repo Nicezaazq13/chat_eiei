@@ -242,7 +242,7 @@
             padding: 20px;
         }
 
-        /* ===== ROOM ITEMS - แก้ไขให้คลิกได้ ===== */
+        /* ===== ROOM ITEMS - แก้ไขให้คลิกได้ 100% ===== */
         .room-item {
             background: var(--bg-white);
             border-radius: var(--radius-lg);
@@ -252,8 +252,8 @@
             box-shadow: var(--shadow-sm);
             position: relative;
             transition: all 0.2s;
-            cursor: pointer;
-            pointer-events: auto;
+            cursor: pointer !important;
+            pointer-events: auto !important;
         }
 
         .room-item:hover {
@@ -267,13 +267,17 @@
             color: white;
         }
 
+        /* ปิดการคลิกที่ elements ลูกทั้งหมด */
         .room-item * {
-            pointer-events: none;
+            pointer-events: none !important;
         }
 
+        /* เฉพาะปุ่มให้คลิกได้ */
         .room-item button,
-        .room-item a {
-            pointer-events: auto;
+        .room-item a,
+        .room-item .delete-room-btn,
+        .room-item .admin-delete-room-btn {
+            pointer-events: auto !important;
             position: relative;
             z-index: 10;
         }
@@ -1289,6 +1293,15 @@
                 transform: scale(0.98);
             }
 
+            .rooms-panel .room-item * {
+                pointer-events: none !important;
+            }
+
+            .rooms-panel .room-item button,
+            .rooms-panel .room-item a {
+                pointer-events: auto !important;
+            }
+
             .sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -1298,6 +1311,7 @@
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.5);
                 z-index: 1999;
+                pointer-events: auto;
             }
 
             .sidebar-overlay.active {
@@ -1431,10 +1445,12 @@
                 box-shadow: -2px 0 10px rgba(0,0,0,0.1);
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
+                pointer-events: none;
             }
 
             .members-panel.active {
                 right: 0 !important;
+                pointer-events: auto !important;
             }
 
             .members-panel.active .member-item {
@@ -1940,10 +1956,7 @@
             const sidebar = document.querySelector('.rooms-panel');
             const overlay = document.getElementById('sidebarOverlay');
             
-            if (!sidebar) {
-                console.error('❌ ไม่พบ sidebar');
-                return;
-            }
+            if (!sidebar) return;
             
             sidebar.classList.toggle('mobile-active');
             
@@ -1952,12 +1965,10 @@
                     overlay.classList.add('active');
                     document.body.style.overflow = 'hidden';
                     document.body.style.position = 'fixed';
-                    console.log('📱 เปิด sidebar');
                 } else {
                     overlay.classList.remove('active');
                     document.body.style.overflow = '';
                     document.body.style.position = '';
-                    console.log('📱 ปิด sidebar');
                 }
             }
         };
@@ -1974,7 +1985,6 @@
             }
             document.body.style.overflow = '';
             document.body.style.position = '';
-            console.log('📱 ปิด sidebar');
         };
 
         // ========== INIT MOBILE HANDLER ==========
@@ -2005,7 +2015,6 @@
                 window.isAdmin = data?.is_admin || false;
                 const adminBtn = document.getElementById('adminModeBtn');
                 if (adminBtn) adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
-                console.log('👑 Admin status:', window.isAdmin);
                 return window.isAdmin;
             } catch (error) {
                 console.error('❌ Error checking admin:', error);
@@ -2027,7 +2036,7 @@
 
         // ========== SELECT ROOM ==========
         window.selectRoom = async function(roomId) {
-            // ปิด sidebar ก่อน
+            // ✅ ปิด sidebar อัตโนมัติเมื่อเลือกห้อง
             closeMobileSidebar();
             
             try {
@@ -2170,6 +2179,76 @@
             } catch (error) {
                 console.error('❌ Error loading messages:', error);
             }
+        };
+
+        // ========== DISPLAY MESSAGE ==========
+        window.displayMessage = function(message) {
+            if (!window.messagesContainer) return;
+            
+            if (message.is_deleted) {
+                const deletedDiv = document.createElement('div');
+                deletedDiv.className = 'message deleted-message';
+                const deleterName = message.deleter?.display_name || message.deleter?.username || 'ระบบ';
+                deletedDiv.innerHTML = `<div class="deleted-content">
+                    <span class="deleted-icon">🗑️</span>
+                    <span class="deleted-text">${message.message || `ข้อความถูกลบโดย ${deleterName}`}</span>
+                    <span class="deleted-time">${formatTime(message.deleted_at || message.created_at)}</span>
+                </div>`;
+                window.messagesContainer.appendChild(deletedDiv);
+                return;
+            }
+            
+            const isOwnMessage = message.user_id === window.currentUser?.id;
+            const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
+            const avatarUrl = message.profiles?.avatar_url || 
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
+            
+            let messageText = message.message || '';
+            let imageHtml = '';
+            
+            const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+            if (imageMatch) {
+                const imageUrl = imageMatch[1];
+                imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
+                messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
+            messageDiv.dataset.messageId = message.id;
+            messageDiv.dataset.userId = message.user_id;
+            
+            const canSelect = window.isAdminMode || isOwnMessage;
+            const canDelete = window.isAdminMode || isOwnMessage;
+            
+            messageDiv.innerHTML = `
+                ${canSelect ? `<div class="message-checkbox" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))">
+                </div>` : ''}
+                <img src="${avatarUrl}" alt="${author}" class="message-avatar"
+                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-author">${author}</span>
+                        <span class="message-time">${formatTime(message.created_at)}</span>
+                        ${canDelete ? `<button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">🗑️</button>` : ''}
+                    </div>
+                    ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
+                    ${imageHtml}
+                </div>
+            `;
+            
+            window.messagesContainer.appendChild(messageDiv);
+            
+            if (isOwnMessage) {
+                window.displayReadReceipts(messageDiv, message.id, true);
+            }
+            
+            if (!isOwnMessage && window.readReceiptObserver) {
+                window.readReceiptObserver.observe(messageDiv);
+            }
+            
+            scrollToBottom();
         };
 
         // ========== SEND MESSAGE ==========
@@ -2407,7 +2486,6 @@
                         room_id: roomId,
                         read_at: new Date().toISOString()
                     }]);
-                    console.log('✅ Marked as read:', messageId);
                 }
             } catch (error) { 
                 console.error('❌ Error marking as read:', error); 
@@ -3043,75 +3121,6 @@
             if (window.messagesContainer) {
                 window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight;
             }
-        };
-
-        window.displayMessage = function(message) {
-            if (!window.messagesContainer) return;
-            
-            if (message.is_deleted) {
-                const deletedDiv = document.createElement('div');
-                deletedDiv.className = 'message deleted-message';
-                const deleterName = message.deleter?.display_name || message.deleter?.username || 'ระบบ';
-                deletedDiv.innerHTML = `<div class="deleted-content">
-                    <span class="deleted-icon">🗑️</span>
-                    <span class="deleted-text">${message.message || `ข้อความถูกลบโดย ${deleterName}`}</span>
-                    <span class="deleted-time">${formatTime(message.deleted_at || message.created_at)}</span>
-                </div>`;
-                window.messagesContainer.appendChild(deletedDiv);
-                return;
-            }
-            
-            const isOwnMessage = message.user_id === window.currentUser?.id;
-            const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
-            const avatarUrl = message.profiles?.avatar_url || 
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
-            
-            let messageText = message.message || '';
-            let imageHtml = '';
-            
-            const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
-            if (imageMatch) {
-                const imageUrl = imageMatch[1];
-                imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
-                messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
-            }
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
-            messageDiv.dataset.messageId = message.id;
-            messageDiv.dataset.userId = message.user_id;
-            
-            const canSelect = window.isAdminMode || isOwnMessage;
-            const canDelete = window.isAdminMode || isOwnMessage;
-            
-            messageDiv.innerHTML = `
-                ${canSelect ? `<div class="message-checkbox" onclick="event.stopPropagation()">
-                    <input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))">
-                </div>` : ''}
-                <img src="${avatarUrl}" alt="${author}" class="message-avatar"
-                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
-                <div class="message-content">
-                    <div class="message-header">
-                        <span class="message-author">${author}</span>
-                        <span class="message-time">${formatTime(message.created_at)}</span>
-                        ${canDelete ? `<button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">🗑️</button>` : ''}
-                    </div>
-                    ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
-                    ${imageHtml}
-                </div>
-            `;
-            
-            window.messagesContainer.appendChild(messageDiv);
-            
-            if (isOwnMessage) {
-                window.displayReadReceipts(messageDiv, message.id, true);
-            }
-            
-            if (!isOwnMessage && window.readReceiptObserver) {
-                window.readReceiptObserver.observe(messageDiv);
-            }
-            
-            scrollToBottom();
         };
 
         // ========== LOGOUT ==========
