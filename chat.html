@@ -506,6 +506,9 @@
         window.messagesContainer = document.getElementById('messagesContainer');
         window.messageInput = document.getElementById('messageInput');
         window.sendButton = document.getElementById('sendButton');
+        window.isAdmin = false;
+        window.isAdminMode = false;
+        window.selectedMessages = new Set();
         
         const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -518,6 +521,9 @@
                     return;
                 }
 
+                // ตรวจสอบสถานะแอดมิน
+                await checkAdminStatus();
+                
                 displayUserInfo();
                 await loadRooms();
                 await selectRoom(PUBLIC_ROOM_ID);
@@ -531,6 +537,193 @@
             }
         });
 
+        // ========== ADMIN FUNCTIONS ==========
+        window.checkAdminStatus = async function() {
+            try {
+                if (!window.currentUser) return false;
+                
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', window.currentUser.id)
+                    .single();
+                    
+                if (error) throw error;
+                
+                window.isAdmin = data?.is_admin || false;
+                
+                // แสดง/ซ่อนปุ่มแอดมิน
+                const adminBtn = document.getElementById('adminModeBtn');
+                if (adminBtn) {
+                    adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
+                }
+                
+                console.log('👑 Admin status:', window.isAdmin);
+                return window.isAdmin;
+                
+            } catch (error) {
+                console.error('❌ Error checking admin:', error);
+                return false;
+            }
+        };
+
+        window.toggleAdminMode = async function() {
+            if (!window.isAdmin) {
+                alert('คุณไม่ใช่แอดมิน');
+                return;
+            }
+            
+            window.isAdminMode = !window.isAdminMode;
+            
+            const adminBtn = document.getElementById('adminModeBtn');
+            if (adminBtn) {
+                adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
+                adminBtn.classList.toggle('active', window.isAdminMode);
+            }
+            
+            await window.loadMessages(window.currentRoomId);
+            alert(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน');
+        };
+
+        // ========== MESSAGE SELECTION ==========
+        window.toggleSelectMessage = function(messageId, element) {
+            if (window.selectedMessages.has(messageId)) {
+                window.selectedMessages.delete(messageId);
+                element.classList.remove('selected');
+            } else {
+                window.selectedMessages.add(messageId);
+                element.classList.add('selected');
+            }
+            
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.style.display = window.selectedMessages.size > 0 ? 'flex' : 'none';
+                deleteSelectedBtn.innerHTML = `🗑️ ลบ ${window.selectedMessages.size} ข้อความ`;
+            }
+        };
+
+        window.clearSelectedMessages = function() {
+            window.selectedMessages.clear();
+            document.querySelectorAll('.message.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.style.display = 'none';
+            }
+        };
+
+        // ========== DELETE MESSAGES ==========
+        window.deleteSelectedMessages = async function() {
+            if (window.selectedMessages.size === 0) return;
+            
+            const confirmMsg = window.isAdminMode 
+                ? `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความ (ในฐานะแอดมิน)` 
+                : `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความของตัวเอง`;
+                
+            if (!confirm(confirmMsg + '\n\nดำเนินการต่อ?')) return;
+            
+            try {
+                const messageIds = Array.from(window.selectedMessages);
+                
+                // หาชื่อผู้ใช้สำหรับแสดงในข้อความที่ถูกลบ
+                const { data: userData } = await supabaseClient
+                    .from('profiles')
+                    .select('username, display_name')
+                    .eq('id', window.currentUser.id)
+                    .single();
+                    
+                const deletedByName = userData?.display_name || userData?.username || 'แอดมิน';
+                
+                const { error } = await supabaseClient
+                    .from('messages')
+                    .update({
+                        is_deleted: true,
+                        deleted_by: window.currentUser.id,
+                        deleted_at: new Date().toISOString(),
+                        message: `[ข้อความถูกลบโดย ${deletedByName}]`
+                    })
+                    .in('id', messageIds);
+                    
+                if (error) throw error;
+                
+                alert(`✅ ลบ ${messageIds.length} ข้อความสำเร็จ`);
+                window.clearSelectedMessages();
+                await window.loadMessages(window.currentRoomId);
+                
+            } catch (error) {
+                console.error('❌ Error deleting messages:', error);
+                alert('ไม่สามารถลบข้อความได้: ' + error.message);
+            }
+        };
+
+        window.deleteSingleMessage = async function(messageId, userId) {
+            const canDelete = window.isAdminMode || userId === window.currentUser.id;
+            
+            if (!canDelete) {
+                alert('คุณไม่มีสิทธิ์ลบข้อความนี้');
+                return;
+            }
+            
+            if (!confirm('⚠️ ลบข้อความนี้?')) return;
+            
+            try {
+                // หาชื่อผู้ใช้สำหรับแสดงในข้อความที่ถูกลบ
+                const { data: userData } = await supabaseClient
+                    .from('profiles')
+                    .select('username, display_name')
+                    .eq('id', window.currentUser.id)
+                    .single();
+                    
+                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
+                
+                const { error } = await supabaseClient
+                    .from('messages')
+                    .update({
+                        is_deleted: true,
+                        deleted_by: window.currentUser.id,
+                        deleted_at: new Date().toISOString(),
+                        message: `[ข้อความถูกลบโดย ${deletedByName}]`
+                    })
+                    .eq('id', messageId);
+                    
+                if (error) throw error;
+                
+                await window.loadMessages(window.currentRoomId);
+                
+            } catch (error) {
+                console.error('❌ Error deleting message:', error);
+                alert('ไม่สามารถลบข้อความได้');
+            }
+        };
+
+        // ========== ADMIN DELETE ROOM ==========
+        window.adminDeleteRoom = async function(roomId, roomName) {
+            if (!window.isAdmin) {
+                alert('เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้');
+                return;
+            }
+            
+            if (!confirm(`⚠️ คุณกำลังจะลบห้อง "${roomName}" ในฐานะแอดมิน\n\nข้อความและสมาชิกทั้งหมดจะถูกลบ!\n\nดำเนินการต่อ?`)) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('rooms')
+                    .delete()
+                    .eq('id', roomId);
+                    
+                if (error) throw error;
+                
+                alert('✅ ลบห้องสำเร็จ');
+                await window.selectRoom(PUBLIC_ROOM_ID);
+                await window.loadRooms();
+                
+            } catch (error) {
+                console.error('❌ Error deleting room:', error);
+                alert('ไม่สามารถลบห้องได้: ' + error.message);
+            }
+        };
+
         // ========== USER INFO ==========
         window.displayUserInfo = function() {
             const userProfile = document.getElementById('userProfile');
@@ -542,7 +735,7 @@
                 <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" 
                      alt="${username}" 
                      class="avatar">
-                <span class="username">${username}</span>
+                <span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>
             `;
         };
 
@@ -632,7 +825,7 @@
                         .eq('user_id', window.currentUser.id)
                         .maybeSingle();
                         
-                    if (!member && room.owner_id !== window.currentUser.id) {
+                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
                         showJoinPrivateModal(room);
                         return;
                     }
@@ -654,7 +847,7 @@
                     .eq('user_id', window.currentUser.id)
                     .maybeSingle();
                     
-                if (!existingMember) {
+                if (!existingMember && !window.isAdmin) {
                     await supabaseClient
                         .from('room_members')
                         .insert([{
@@ -675,14 +868,24 @@
                     room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
                 
                 const roomActions = document.getElementById('roomActions');
+                roomActions.innerHTML = '';
+                
+                // ปุ่มลบห้องสำหรับเจ้าของ
                 if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
-                    roomActions.innerHTML = `
+                    roomActions.innerHTML += `
                         <button onclick="window.showDeleteRoomModal()" class="delete-room-btn">
                             🗑️ ลบห้อง
                         </button>
                     `;
-                } else {
-                    roomActions.innerHTML = '';
+                }
+                
+                // ปุ่มลบห้องสำหรับแอดมิน
+                if (window.isAdmin && room.id !== PUBLIC_ROOM_ID) {
+                    roomActions.innerHTML += `
+                        <button onclick="window.adminDeleteRoom('${room.id}', '${room.name}')" class="admin-delete-room-btn">
+                            👑 ลบห้อง (แอดมิน)
+                        </button>
+                    `;
                 }
                 
                 document.getElementById('messageInputArea').style.display = 'block';
@@ -697,7 +900,7 @@
             }
         };
 
-        // ========== DELETE ROOM ==========
+        // ========== DELETE ROOM (OWNER) ==========
         window.showDeleteRoomModal = function() {
             if (!window.currentRoom) return;
             document.getElementById('deleteRoomName').innerHTML = 
@@ -717,8 +920,6 @@
             }
             
             try {
-                console.log('🗑️ กำลังลบห้อง:', window.currentRoomId);
-                
                 const { error } = await supabaseClient
                     .from('rooms')
                     .delete()
@@ -751,6 +952,10 @@
                             username,
                             display_name,
                             avatar_url
+                        ),
+                        deleter:deleted_by (
+                            username,
+                            display_name
                         )
                     `)
                     .eq('room_id', roomId)
@@ -760,6 +965,7 @@
                 if (error) throw error;
                 
                 window.messagesContainer.innerHTML = '';
+                window.clearSelectedMessages();
                 
                 if (messages.length === 0) {
                     window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
@@ -777,19 +983,53 @@
         window.displayMessage = function(message) {
             if (!window.messagesContainer) return;
             
+            // แสดงข้อความที่ถูกลบ
+            if (message.is_deleted) {
+                const deletedDiv = document.createElement('div');
+                deletedDiv.className = 'message deleted-message';
+                
+                const deleterName = message.deleter?.display_name || message.deleter?.username || 'ระบบ';
+                
+                deletedDiv.innerHTML = `
+                    <div class="deleted-content">
+                        <span class="deleted-icon">🗑️</span>
+                        <span class="deleted-text">${message.message || `ข้อความถูกลบโดย ${deleterName}`}</span>
+                        <span class="deleted-time">${formatTime(message.deleted_at || message.created_at)}</span>
+                    </div>
+                `;
+                window.messagesContainer.appendChild(deletedDiv);
+                return;
+            }
+            
             const isOwnMessage = message.user_id === window.currentUser?.id;
             const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
             const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
             
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
+            messageDiv.dataset.messageId = message.id;
+            messageDiv.dataset.userId = message.user_id;
+            
+            const canSelect = isOwnMessage || window.isAdminMode;
+            const canDelete = isOwnMessage || window.isAdminMode;
+            
             messageDiv.innerHTML = `
+                ${canSelect ? `
+                    <div class="message-checkbox" onclick="event.stopPropagation()">
+                        <input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))">
+                    </div>
+                ` : ''}
                 <img src="${avatarUrl}" alt="${author}" class="message-avatar"
                      onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-author">${author}</span>
                         <span class="message-time">${formatTime(message.created_at)}</span>
+                        ${canDelete ? `
+                            <button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">
+                                🗑️
+                            </button>
+                        ` : ''}
                     </div>
                     <div class="message-body">${linkify(message.message)}</div>
                 </div>
@@ -852,6 +1092,19 @@
                         });
                     }
                 )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `room_id=eq.${roomId}`
+                    },
+                    async (payload) => {
+                        // รีโหลดข้อความเมื่อมีการอัปเดต (ลบข้อความ)
+                        await window.loadMessages(roomId);
+                    }
+                )
                 .subscribe();
         };
 
@@ -889,7 +1142,7 @@
             container.innerHTML = members.map(member => {
                 const profile = member.profiles;
                 const isCurrentUser = member.user_id === window.currentUser.id;
-                const canKick = isOwner && !isCurrentUser && member.role !== 'owner';
+                const canKick = (isOwner || window.isAdmin) && !isCurrentUser && member.role !== 'owner';
                 
                 return `
                     <div class="member-item">
@@ -900,6 +1153,7 @@
                             <div class="member-name">
                                 ${profile?.display_name || profile?.username}
                                 ${isCurrentUser ? ' (คุณ)' : ''}
+                                ${profile?.is_admin ? ' 👑' : ''}
                             </div>
                             <div class="member-role">
                                 ${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}
@@ -971,6 +1225,10 @@
                         alert('รหัสผ่านไม่ตรงกัน');
                         return;
                     }
+                    if (password.length < 4) {
+                        alert('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
+                        return;
+                    }
                 }
                 
                 const { data: room, error } = await supabaseClient
@@ -1004,7 +1262,7 @@
                 
             } catch (error) {
                 console.error('❌ Error creating room:', error);
-                alert('เกิดข้อผิดพลาดในการสร้างห้อง');
+                alert('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message);
             }
         };
 
@@ -1013,7 +1271,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('profiles')
-                    .select('username, display_name, avatar_url')
+                    .select('username, display_name, avatar_url, is_admin')
                     .eq('is_online', true)
                     .limit(30);
                     
@@ -1040,7 +1298,7 @@
                                 <img src="${user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.username)}&background=667eea&color=fff`}" 
                                      alt="${user.display_name || user.username}" 
                                      class="user-avatar">
-                                <span class="user-name">${user.display_name || user.username}</span>
+                                <span class="user-name">${user.display_name || user.username} ${user.is_admin ? '👑' : ''}</span>
                                 <span class="online-dot"></span>
                             </div>
                         `).join('');
@@ -1084,7 +1342,6 @@
             document.getElementById('joinRoomPassword').value = '';
         };
 
-        // ========== ✅ FIXED: JOIN PRIVATE ROOM ==========
         window.confirmJoinPrivateRoom = async function() {
             const roomId = document.getElementById('joinPrivateRoomModal').dataset.roomId;
             const password = document.getElementById('joinRoomPassword').value;
@@ -1095,9 +1352,6 @@
             }
             
             try {
-                console.log('🔐 กำลังตรวจสอบรหัสผ่านห้อง:', roomId);
-                
-                // 1. ตรวจสอบรหัสผ่าน
                 const { data: room, error } = await supabaseClient
                     .from('rooms')
                     .select('*')
@@ -1106,18 +1360,13 @@
                     
                 if (error) throw error;
                 
-                // 2. เปรียบเทียบรหัสผ่าน
                 if (room.password !== password) {
                     alert('❌ รหัสผ่านไม่ถูกต้อง');
                     return;
                 }
                 
-                console.log('✅ รหัสผ่านถูกต้อง');
-                
-                // 3. ปิด modal
                 window.closeJoinPrivateModal();
                 
-                // 4. ตรวจสอบและเพิ่มสมาชิก
                 const { data: existingMember } = await supabaseClient
                     .from('room_members')
                     .select('*')
@@ -1126,8 +1375,7 @@
                     .maybeSingle();
                 
                 if (!existingMember) {
-                    console.log('➕ กำลังเพิ่มสมาชิกใหม่');
-                    const { error: insertError } = await supabaseClient
+                    await supabaseClient
                         .from('room_members')
                         .insert([{
                             room_id: roomId,
@@ -1135,13 +1383,8 @@
                             role: 'member',
                             joined_at: new Date().toISOString()
                         }]);
-                        
-                    if (insertError) throw insertError;
-                    console.log('✅ เพิ่มสมาชิกสำเร็จ');
                 }
                 
-                // 5. เข้าห้อง
-                console.log('🚪 กำลังเข้าห้อง:', room.name);
                 await window.selectRoom(roomId);
                 
             } catch (error) {
@@ -1215,6 +1458,7 @@
 
         // ========== UTILITIES ==========
         window.formatTime = function(timestamp) {
+            if (!timestamp) return '';
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
@@ -1234,6 +1478,7 @@
         };
 
         window.linkify = function(text) {
+            if (!text) return '';
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             return text.replace(urlRegex, url => 
                 `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
@@ -1261,4 +1506,5 @@
     </script>
 </body>
 </html>
+
 
