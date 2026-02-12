@@ -63,37 +63,22 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
             const displayName = document.getElementById('displayName').value.trim() || username;
             
-            // ตรวจสอบความถูกต้อง
-            if (!username.match(/^[a-zA-Z0-9_]+$/)) {
-                showError('ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showError('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
-                return;
-            }
-            
             if (password !== confirmPassword) {
-                showError('รหัสผ่านไม่ตรงกัน');
+                document.getElementById('errorMessage').textContent = 'รหัสผ่านไม่ตรงกัน';
                 return;
             }
             
+            // ตอนนี้ registerUser จะถูกนิยามแล้ว!
             const result = await registerUser(email, password, username, displayName);
             
             if (result.success) {
                 alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
                 window.location.href = 'login.html';
             } else {
-                showError(result.error);
+                document.getElementById('errorMessage').textContent = result.error;
             }
         });
-        
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-        }
     </script>
 </body>
+
 </html>
