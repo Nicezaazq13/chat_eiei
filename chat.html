@@ -2979,25 +2979,169 @@
         alert('ไม่สามารถเล่นวิดีโอนี้ได้');
     }
 
-    async function syncStateToServer(state) {
-        if (!window.youtubeActivityId || !window.youtubePlayer) return;
-        
-        try {
-            await supabaseClient
-                .from('activity_sync')
-                .upsert({
-                    activity_id: window.youtubeActivityId,
-                    user_id: window.currentUser.id,
-                    player_state: state,
-                    current_time: window.youtubePlayer.getCurrentTime(),
-                    updated_at: new Date().toISOString()
-                }, {
-                    onConflict: 'activity_id,user_id'
-                });
-        } catch (error) {
-            console.error('❌ Error syncing state:', error);
-        }
+   // ในฟังก์ชัน syncStateToServer
+async function syncStateToServer(state) {
+    if (!window.youtubeActivityId || !window.youtubePlayer) return;
+    
+    try {
+        await supabaseClient
+            .from('activity_sync')
+            .upsert({
+                activity_id: window.youtubeActivityId,
+                user_id: window.currentUser.id,
+                player_state: state,
+                playback_time: window.youtubePlayer.getCurrentTime(), // ✅ เปลี่ยนจาก current_time
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'activity_id,user_id'
+            });
+    } catch (error) {
+        console.error('❌ Error syncing state:', error);
     }
+}
+
+// ในฟังก์ชัน syncTimeToServer
+async function syncTimeToServer() {
+    if (!window.youtubeActivityId || !window.youtubePlayer || window.youtubeIsSeeking) return;
+    
+    try {
+        await supabaseClient
+            .from('activity_sync')
+            .update({
+                playback_time: window.youtubePlayer.getCurrentTime(), // ✅ เปลี่ยนจาก current_time
+                updated_at: new Date().toISOString()
+            })
+            .eq('activity_id', window.youtubeActivityId)
+            .eq('user_id', window.currentUser.id);
+    } catch (error) {
+        console.error('❌ Error syncing time:', error);
+    }
+}
+
+// ในฟังก์ชัน loadSyncTime
+async function loadSyncTime() {
+    if (!window.youtubeActivityId || !window.youtubePlayer) return;
+    
+    try {
+        const { data: syncs, error } = await supabaseClient
+            .from('activity_sync')
+            .select('*')
+            .eq('activity_id', window.youtubeActivityId)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+        
+        if (error) throw error;
+        
+        if (syncs && syncs.length > 0) {
+            const host = syncs[0];
+            if (host.user_id !== window.currentUser.id) {
+                window.youtubePlayer.seekTo(host.playback_time, true); // ✅ เปลี่ยนจาก current_time
+                if (host.player_state === YT.PlayerState.PLAYING) {
+                    window.youtubePlayer.playVideo();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error loading sync time:', error);
+    }
+}
+
+// ใน subscribe function
+window.subscribeToActivitySync = function(activityId) {
+    if (window.activitySyncSubscription) {
+        window.activitySyncSubscription.unsubscribe();
+    }
+    
+    window.activitySyncSubscription = supabaseClient
+        .channel(`activity-sync-${activityId}`)
+        .on('postgres_changes', 
+            { 
+                event: '*', 
+                schema: 'public', 
+                table: 'activity_sync', 
+                filter: `activity_id=eq.${activityId}` 
+            },
+            (payload) => {
+                if (!window.youtubePlayer || payload.new.user_id === window.currentUser.id) return;
+                
+                // Sync player state
+                if (payload.new.player_state !== undefined) {
+                    if (payload.new.player_state === YT.PlayerState.PLAYING) {
+                        window.youtubePlayer.playVideo();
+                    } else if (payload.new.player_state === YT.PlayerState.PAUSED) {
+                        window.youtubePlayer.pauseVideo();
+                    }
+                }
+                
+                // Sync playback time
+                if (!window.youtubeIsSeeking && payload.new.playback_time) { // ✅ เปลี่ยนจาก current_time
+                    const currentTime = window.youtubePlayer.getCurrentTime();
+                    const timeDiff = Math.abs(currentTime - payload.new.playback_time);
+                    
+                    if (timeDiff > 2) {
+                        window.youtubePlayer.seekTo(payload.new.playback_time, true);
+                    }
+                }
+            }
+        )
+        .subscribe();
+    
+    return window.activitySyncSubscription;
+};
+
+// ในฟังก์ชัน createActivity
+window.createActivity = async function(event) {
+    event.preventDefault();
+    try {
+        // ... existing code ...
+        
+        if (activityType === 'youtube' && videoId) {
+            await supabaseClient.from('activity_sync').upsert({
+                activity_id: data.id,
+                user_id: window.currentUser.id,
+                player_state: 2,
+                playback_time: 0, // ✅ เปลี่ยนจาก current_time
+                video_id: videoId,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'activity_id,user_id' });
+        }
+        
+        // ... existing code ...
+    } catch (error) { 
+        console.error('❌ Error creating activity:', error); 
+        alert('ไม่สามารถสร้างกิจกรรมได้: ' + error.message); 
+    }
+};
+
+// ในฟังก์ชัน toggleJoinActivity
+window.toggleJoinActivity = async function(activityId) {
+    try {
+        // ... existing code ...
+        
+        if (activity?.activity_type === 'youtube') {
+            const { data: otherSync } = await supabaseClient.from('activity_sync')
+                .select('video_id, playback_time, player_state') // ✅ เปลี่ยนจาก current_time
+                .eq('activity_id', activityId)
+                .neq('user_id', window.currentUser.id)
+                .limit(1)
+                .maybeSingle();
+            
+            await supabaseClient.from('activity_sync').upsert({
+                activity_id: activityId,
+                user_id: window.currentUser.id,
+                player_state: otherSync?.player_state || 2,
+                playback_time: otherSync?.playback_time || 0, // ✅ เปลี่ยนจาก current_time
+                video_id: otherSync?.video_id || activity.content,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'activity_id,user_id' });
+        }
+        
+        // ... existing code ...
+    } catch (error) { 
+        console.error('❌ Error joining activity:', error); 
+        alert('ไม่สามารถเข้าร่วมกิจกรรมได้'); 
+    }
+};
 
     async function syncTimeToServer() {
         if (!window.youtubeActivityId || !window.youtubePlayer || window.youtubeIsSeeking) return;
@@ -3505,5 +3649,6 @@
 </script>
 </body>
 </html>
+
 
 
