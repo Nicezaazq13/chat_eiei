@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -10,9 +10,8 @@
     <div class="container">
         <nav class="navbar">
             <div class="nav-brand">💬 ChatApp</div>
-            <div class="nav-menu">
-                <a href="login.html" class="nav-link">เข้าสู่ระบบ</a>
-                <a href="register.html" class="nav-link">สมัครสมาชิก</a>
+            <div class="nav-menu" id="navMenu">
+                <!-- จะถูกเติมด้วย JavaScript -->
             </div>
         </nav>
 
@@ -21,9 +20,49 @@
             <p>แชทกับเพื่อนของคุณได้ทันที ฟรี ไม่มีค่าใช้จ่าย</p>
             <div class="hero-buttons">
                 <a href="login.html" class="btn btn-primary">เข้าสู่ระบบ</a>
-                <a href="register.html"class="btn btn-secondary">สมัครสมาชิก</a>
+                <a href="register.html" class="btn btn-secondary">สมัครสมาชิก</a>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>เรียลไทม์</h3>
+                <p>ส่งข้อความถึงกันได้ทันที</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>ปลอดภัย</h3>
+                <p>ระบบยืนยันตัวตนที่ปลอดภัย</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>ทุกอุปกรณ์</h3>
+                <p>ใช้ได้ทั้งมือถือและคอมพิวเตอร์</p>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        // ตรวจสอบสถานะการล็อกอิน
+        checkUser().then(user => {
+            const navMenu = document.getElementById('navMenu');
+            if (user) {
+                navMenu.innerHTML = `
+                    <span class="user-name">👤 ${user.user_metadata?.username || 'ผู้ใช้'}</span>
+                    <a href="chat.html" class="nav-link">ห้องแชท</a>
+                    <button onclick="logout()" class="btn btn-small">ออกจากระบบ</button>
+                `;
+            } else {
+                navMenu.innerHTML = `
+                    <a href="login.html" class="nav-link">เข้าสู่ระบบ</a>
+                    <a href="register.html" class="nav-link">สมัครสมาชิก</a>
+                `;
+            }
+        });
+    </script>
 </body>
 </html>
