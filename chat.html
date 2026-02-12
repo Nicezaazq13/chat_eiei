@@ -113,9 +113,11 @@ body {
     border: none;
     font-size: 24px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 8px;
     color: var(--text-light);
     transition: color 0.2s;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .mobile-menu-btn:hover {
@@ -241,7 +243,6 @@ body {
     padding: 20px;
 }
 
-/* ===== FIXED ROOM ITEMS - ไม่มี pointer-events ปัญหา ===== */
 .room-item {
     background: var(--bg-white);
     border-radius: var(--radius-lg);
@@ -252,7 +253,6 @@ body {
     border: 1px solid transparent;
     box-shadow: var(--shadow-sm);
     position: relative;
-    z-index: 1;
 }
 
 .room-item:hover {
@@ -264,20 +264,6 @@ body {
 .room-item.active {
     background: var(--primary-color);
     color: white;
-}
-
-/* ให้ทุกอย่างใน room-item คลิกได้ผ่าน parent */
-.room-item * {
-    pointer-events: none;
-}
-
-/* แต่ปุ่มและ elements ที่ต้องการให้คลิกได้ */
-.room-item button,
-.room-item input,
-.room-item a {
-    pointer-events: auto;
-    position: relative;
-    z-index: 2;
 }
 
 .room-header {
@@ -1226,7 +1212,6 @@ body {
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1999;
-    pointer-events: auto;
 }
 
 .sidebar-overlay.active {
@@ -1241,14 +1226,14 @@ body.sidebar-open {
     height: 100%;
 }
 
-/* ========== MOBILE RESPONSIVE ========== */
+/* ========== MOBILE RESPONSIVE (ไม่มี pointer-events) ========== */
 @media (max-width: 768px) {
     .chat-main {
         flex-direction: column;
         position: relative;
     }
     
-    /* ===== ROOMS PANEL ===== */
+    /* ===== ROOMS PANEL - ใช้แค่ left ควบคุม ===== */
     .rooms-panel {
         position: fixed !important;
         left: -100%;
@@ -1259,49 +1244,26 @@ body.sidebar-open {
         transition: left 0.3s ease;
         background: var(--bg-white);
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        pointer-events: none;  /* ปิดการคลิกเมื่อซ่อน */
-        overflow-y: auto;      /* ให้เลื่อนดูห้องเยอะๆ ได้ */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        /* ไม่มี pointer-events */
     }
     
-    /* เมื่อ active - เปิดการคลิกทั้งหมด */
     .rooms-panel.mobile-active {
         left: 0 !important;
-        pointer-events: auto !important;
+        /* ไม่มี pointer-events */
     }
     
-    /* ให้ทุกอย่างใน rooms-panel คลิกได้เมื่อ active */
-    .rooms-panel.mobile-active,
-    .rooms-panel.mobile-active * {
-        pointer-events: auto !important;
-    }
-    
-    /* จัดการ room items */
-    .rooms-panel.mobile-active .room-item {
-        pointer-events: auto !important;
+    /* ===== ROOM ITEMS - คลิกได้ปกติ ===== */
+    .room-item {
         cursor: pointer;
-        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2); /* feedback ตอนกด */
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2);
     }
     
-    .rooms-panel.mobile-active .room-item:active {
+    .room-item:active {
         background: var(--primary-color);
         color: white;
         transform: scale(0.98);
-    }
-    
-    .rooms-panel.mobile-active .room-item.active {
-        background: var(--primary-color);
-        color: white;
-    }
-    
-    /* ให้ปุ่มต่างๆ คลิกได้ */
-    .rooms-panel.mobile-active .delete-room-btn,
-    .rooms-panel.mobile-active .admin-delete-room-btn,
-    .rooms-panel.mobile-active .create-room-btn,
-    .rooms-panel.mobile-active .tab-btn {
-        pointer-events: auto !important;
-        cursor: pointer;
-        z-index: 2001;
-        position: relative;
     }
     
     /* ===== SIDEBAR OVERLAY ===== */
@@ -1314,7 +1276,6 @@ body.sidebar-open {
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
         z-index: 1999;
-        pointer-events: auto;
     }
     
     .sidebar-overlay.active {
@@ -1332,9 +1293,6 @@ body.sidebar-open {
     
     .mobile-menu-btn {
         display: inline-block !important;
-        padding: 8px;
-        min-width: 44px;  /* เพิ่มพื้นที่กด */
-        min-height: 44px;
     }
     
     .current-room-info h2 {
@@ -1360,16 +1318,14 @@ body.sidebar-open {
     
     .avatar {
         margin-right: 0;
-        width: 40px;         /* เพิ่มขนาด avatar */
+        width: 40px;
         height: 40px;
     }
     
     .btn-outline,
     .btn-admin {
-        padding: 8px 12px;   /* เพิ่มพื้นที่กด */
+        padding: 8px 12px;
         font-size: 13px;
-        min-width: 44px;
-        min-height: 44px;
     }
     
     /* ===== MESSAGES ===== */
@@ -1419,10 +1375,8 @@ body.sidebar-open {
     }
     
     .toolbar-btn {
-        padding: 10px 16px;  /* เพิ่มพื้นที่กด */
+        padding: 10px 16px;
         font-size: 16px;
-        min-width: 44px;
-        min-height: 44px;
     }
     
     .input-wrapper {
@@ -1430,15 +1384,12 @@ body.sidebar-open {
     }
     
     .input-wrapper textarea {
-        padding: 12px 0;     /* เพิ่มพื้นที่พิมพ์ */
+        padding: 12px 0;
         font-size: 16px;
-        min-height: 44px;
     }
     
     .btn-send {
-        padding: 12px 24px;  /* เพิ่มพื้นที่กด */
-        min-width: 44px;
-        min-height: 44px;
+        padding: 12px 24px;
     }
     
     .input-footer {
@@ -1456,42 +1407,31 @@ body.sidebar-open {
         transition: right 0.3s;
         background: var(--bg-white);
         box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-        pointer-events: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        /* ไม่มี pointer-events */
     }
     
     .members-panel.active {
         right: 0;
-        pointer-events: auto !important;
-    }
-    
-    .members-panel.active * {
-        pointer-events: auto !important;
-    }
-    
-    .members-list {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        /* ไม่มี pointer-events */
     }
     
     .member-item {
-        padding: 16px;       /* เพิ่มพื้นที่กด */
+        padding: 16px;
     }
     
     .kick-btn {
-        padding: 10px 16px;  /* เพิ่มพื้นที่กด */
-        min-width: 44px;
-        min-height: 44px;
+        padding: 10px 16px;
     }
     
     /* ===== DELETE SELECTED BUTTON ===== */
     .delete-selected-btn {
         position: fixed;
         bottom: 100px;
-        padding: 14px 28px;  /* เพิ่มพื้นที่กด */
+        padding: 14px 28px;
         font-size: 15px;
         z-index: 2001;
-        min-width: 44px;
-        min-height: 44px;
     }
     
     /* ===== READ RECEIPTS ===== */
@@ -1523,13 +1463,6 @@ body.sidebar-open {
         padding: 24px;
         width: 95%;
         max-height: 80vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .modal .btn {
-        padding: 14px 20px;
-        min-height: 48px;
     }
     
     /* ===== EMOJI GRID ===== */
@@ -1542,8 +1475,6 @@ body.sidebar-open {
     .emoji-item {
         font-size: 28px;
         padding: 12px;
-        min-width: 44px;
-        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1555,7 +1486,6 @@ body.sidebar-open {
     .form-group select {
         font-size: 16px;
         padding: 14px;
-        min-height: 48px;
     }
     
     .form-group label {
@@ -1571,17 +1501,39 @@ body.sidebar-open {
     .tab-btn {
         padding: 12px;
         font-size: 15px;
-        min-height: 48px;
     }
     
     /* ===== CREATE ROOM BUTTON ===== */
     .create-room-btn {
         padding: 14px;
         font-size: 16px;
-        min-height: 52px;
     }
     
-    /* ===== SCROLLBAR ซ่อนบนมือถือ ===== */
+    /* ===== MINIMUM TOUCH TARGETS ===== */
+    button, 
+    .btn, 
+    .room-item,
+    .tab-btn,
+    .toolbar-btn,
+    .kick-btn,
+    .delete-room-btn,
+    .admin-delete-room-btn,
+    .create-room-btn,
+    .mobile-menu-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* ===== TOUCH FEEDBACK ===== */
+    .room-item:active,
+    .tab-btn:active,
+    .btn:active,
+    button:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+    
+    /* ===== HIDE SCROLLBAR ===== */
     .rooms-panel::-webkit-scrollbar,
     .members-list::-webkit-scrollbar,
     .messages-container::-webkit-scrollbar {
@@ -1590,7 +1542,7 @@ body.sidebar-open {
     }
 }
 
-/* ========== SMALL PHONES ========== */
+/* ========== SMALL PHONES (375px) ========== */
 @media (max-width: 375px) {
     .current-room-info h2 {
         max-width: 130px;
@@ -1623,65 +1575,6 @@ body.sidebar-open {
     
     .modal-content {
         padding: 20px;
-    }
-}
-
-/* ========== ป้องกันการซูมเมื่อกด input ========== */
-@media (max-width: 768px) {
-    input, select, textarea {
-        font-size: 16px !important;
-    }
-}
-
-/* ========== เพิ่มพื้นที่กดสำหรับปุ่มต่างๆ ========== */
-@media (max-width: 768px) {
-    button, 
-    .btn, 
-    .room-item,
-    .tab-btn,
-    .toolbar-btn,
-    .kick-btn,
-    .delete-room-btn,
-    .admin-delete-room-btn,
-    .create-room-btn,
-    .mobile-menu-btn {
-        min-height: 44px;
-        min-width: 44px;
-    }
-    
-    /* ปรับ touch feedback */
-    .room-item:active,
-    .tab-btn:active,
-    .btn:active,
-    button:active {
-        opacity: 0.7;
-        transform: scale(0.98);
-    }
-}
-/* ========== SMALL PHONES ========== */
-@media (max-width: 375px) {
-    .current-room-info h2 {
-        max-width: 150px;
-        font-size: 16px;
-    }
-    
-    .btn-outline,
-    .btn-admin {
-        padding: 4px 10px;
-        font-size: 12px;
-    }
-    
-    .toolbar-btn {
-        padding: 4px 10px;
-        font-size: 13px;
-    }
-    
-    .message {
-        max-width: 90%;
-    }
-    
-    .emoji-grid {
-        grid-template-columns: repeat(5, 1fr);
     }
 }
 
@@ -1724,6 +1617,11 @@ body.sidebar-open {
 }
 
 /* ========== ANIMATIONS ========== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes slideIn {
     from { transform: translateX(-100%); }
     to { transform: translateX(0); }
@@ -1757,6 +1655,13 @@ body.sidebar-open {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-light);
+}
+
+/* ========== ป้องกันการซูมบนมือถือ ========== */
+@media (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
 }
 </style>
     </style>
@@ -3687,6 +3592,7 @@ body.sidebar-open {
 </script>
 </body>
 </html>
+
 
 
 
