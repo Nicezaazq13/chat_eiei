@@ -1248,6 +1248,7 @@ body.sidebar-open {
         position: relative;
     }
     
+    /* ===== ROOMS PANEL ===== */
     .rooms-panel {
         position: fixed !important;
         left: -100%;
@@ -1258,19 +1259,52 @@ body.sidebar-open {
         transition: left 0.3s ease;
         background: var(--bg-white);
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        pointer-events: none;
+        pointer-events: none;  /* ปิดการคลิกเมื่อซ่อน */
+        overflow-y: auto;      /* ให้เลื่อนดูห้องเยอะๆ ได้ */
     }
     
+    /* เมื่อ active - เปิดการคลิกทั้งหมด */
     .rooms-panel.mobile-active {
         left: 0 !important;
         pointer-events: auto !important;
     }
     
+    /* ให้ทุกอย่างใน rooms-panel คลิกได้เมื่อ active */
+    .rooms-panel.mobile-active,
+    .rooms-panel.mobile-active * {
+        pointer-events: auto !important;
+    }
+    
+    /* จัดการ room items */
     .rooms-panel.mobile-active .room-item {
         pointer-events: auto !important;
         cursor: pointer;
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2); /* feedback ตอนกด */
     }
     
+    .rooms-panel.mobile-active .room-item:active {
+        background: var(--primary-color);
+        color: white;
+        transform: scale(0.98);
+    }
+    
+    .rooms-panel.mobile-active .room-item.active {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    /* ให้ปุ่มต่างๆ คลิกได้ */
+    .rooms-panel.mobile-active .delete-room-btn,
+    .rooms-panel.mobile-active .admin-delete-room-btn,
+    .rooms-panel.mobile-active .create-room-btn,
+    .rooms-panel.mobile-active .tab-btn {
+        pointer-events: auto !important;
+        cursor: pointer;
+        z-index: 2001;
+        position: relative;
+    }
+    
+    /* ===== SIDEBAR OVERLAY ===== */
     .sidebar-overlay {
         display: none;
         position: fixed;
@@ -1278,7 +1312,7 @@ body.sidebar-open {
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 1999;
         pointer-events: auto;
     }
@@ -1287,6 +1321,7 @@ body.sidebar-open {
         display: block;
     }
     
+    /* ===== CHAT HEADER ===== */
     .chat-header {
         padding: 12px 16px;
     }
@@ -1297,6 +1332,9 @@ body.sidebar-open {
     
     .mobile-menu-btn {
         display: inline-block !important;
+        padding: 8px;
+        min-width: 44px;  /* เพิ่มพื้นที่กด */
+        min-height: 44px;
     }
     
     .current-room-info h2 {
@@ -1322,14 +1360,19 @@ body.sidebar-open {
     
     .avatar {
         margin-right: 0;
+        width: 40px;         /* เพิ่มขนาด avatar */
+        height: 40px;
     }
     
     .btn-outline,
     .btn-admin {
-        padding: 6px 12px;
+        padding: 8px 12px;   /* เพิ่มพื้นที่กด */
         font-size: 13px;
+        min-width: 44px;
+        min-height: 44px;
     }
     
+    /* ===== MESSAGES ===== */
     .messages-container {
         padding: 16px;
         padding-bottom: 100px;
@@ -1340,8 +1383,8 @@ body.sidebar-open {
     }
     
     .message-avatar {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
     }
     
     .message-content {
@@ -1360,6 +1403,7 @@ body.sidebar-open {
         font-size: 14px;
     }
     
+    /* ===== INPUT AREA ===== */
     .message-input-area {
         position: sticky;
         bottom: 0;
@@ -1375,8 +1419,10 @@ body.sidebar-open {
     }
     
     .toolbar-btn {
-        padding: 6px 12px;
-        font-size: 14px;
+        padding: 10px 16px;  /* เพิ่มพื้นที่กด */
+        font-size: 16px;
+        min-width: 44px;
+        min-height: 44px;
     }
     
     .input-wrapper {
@@ -1384,18 +1430,22 @@ body.sidebar-open {
     }
     
     .input-wrapper textarea {
-        padding: 10px 0;
+        padding: 12px 0;     /* เพิ่มพื้นที่พิมพ์ */
         font-size: 16px;
+        min-height: 44px;
     }
     
     .btn-send {
-        padding: 10px 20px;
+        padding: 12px 24px;  /* เพิ่มพื้นที่กด */
+        min-width: 44px;
+        min-height: 44px;
     }
     
     .input-footer {
         display: none;
     }
     
+    /* ===== MEMBERS PANEL ===== */
     .members-panel {
         position: fixed;
         right: -100%;
@@ -1406,52 +1456,208 @@ body.sidebar-open {
         transition: right 0.3s;
         background: var(--bg-white);
         box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        pointer-events: none;
     }
     
     .members-panel.active {
         right: 0;
+        pointer-events: auto !important;
     }
     
+    .members-panel.active * {
+        pointer-events: auto !important;
+    }
+    
+    .members-list {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .member-item {
+        padding: 16px;       /* เพิ่มพื้นที่กด */
+    }
+    
+    .kick-btn {
+        padding: 10px 16px;  /* เพิ่มพื้นที่กด */
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    /* ===== DELETE SELECTED BUTTON ===== */
     .delete-selected-btn {
         position: fixed;
         bottom: 100px;
-        padding: 10px 20px;
-        font-size: 14px;
+        padding: 14px 28px;  /* เพิ่มพื้นที่กด */
+        font-size: 15px;
         z-index: 2001;
+        min-width: 44px;
+        min-height: 44px;
     }
     
+    /* ===== READ RECEIPTS ===== */
     .read-by-avatar {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
     }
     
     .read-by-more {
-        width: 18px;
-        height: 18px;
-        font-size: 9px;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
     }
     
+    /* ===== MUSIC BAR ===== */
     .music-bar {
-        padding: 8px 16px;
+        padding: 12px 16px;
         z-index: 2002;
     }
     
     .music-btn {
-        width: 32px;
-        height: 32px;
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+    
+    /* ===== MODAL ===== */
+    .modal-content {
+        padding: 24px;
+        width: 95%;
+        max-height: 80vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .modal .btn {
+        padding: 14px 20px;
+        min-height: 48px;
+    }
+    
+    /* ===== EMOJI GRID ===== */
+    .emoji-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .emoji-item {
+        font-size: 28px;
+        padding: 12px;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* ===== FORM ELEMENTS ===== */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px;
+        padding: 14px;
+        min-height: 48px;
+    }
+    
+    .form-group label {
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+    
+    /* ===== ROOM TABS ===== */
+    .room-tabs {
+        padding: 16px;
+    }
+    
+    .tab-btn {
+        padding: 12px;
+        font-size: 15px;
+        min-height: 48px;
+    }
+    
+    /* ===== CREATE ROOM BUTTON ===== */
+    .create-room-btn {
+        padding: 14px;
+        font-size: 16px;
+        min-height: 52px;
+    }
+    
+    /* ===== SCROLLBAR ซ่อนบนมือถือ ===== */
+    .rooms-panel::-webkit-scrollbar,
+    .members-list::-webkit-scrollbar,
+    .messages-container::-webkit-scrollbar {
+        width: 0;
+        background: transparent;
+    }
+}
+
+/* ========== SMALL PHONES ========== */
+@media (max-width: 375px) {
+    .current-room-info h2 {
+        max-width: 130px;
+        font-size: 15px;
+    }
+    
+    .btn-outline,
+    .btn-admin {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .toolbar-btn {
+        padding: 8px 12px;
         font-size: 14px;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    .avatar {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .emoji-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
     
     .modal-content {
         padding: 20px;
-        width: 95%;
-    }
-    
-    .emoji-grid {
-        grid-template-columns: repeat(6, 1fr);
     }
 }
 
+/* ========== ป้องกันการซูมเมื่อกด input ========== */
+@media (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* ========== เพิ่มพื้นที่กดสำหรับปุ่มต่างๆ ========== */
+@media (max-width: 768px) {
+    button, 
+    .btn, 
+    .room-item,
+    .tab-btn,
+    .toolbar-btn,
+    .kick-btn,
+    .delete-room-btn,
+    .admin-delete-room-btn,
+    .create-room-btn,
+    .mobile-menu-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* ปรับ touch feedback */
+    .room-item:active,
+    .tab-btn:active,
+    .btn:active,
+    button:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+}
 /* ========== SMALL PHONES ========== */
 @media (max-width: 375px) {
     .current-room-info h2 {
@@ -3481,6 +3687,7 @@ body.sidebar-open {
 </script>
 </body>
 </html>
+
 
 
 
