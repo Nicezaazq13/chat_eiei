@@ -3529,7 +3529,40 @@
         await supabaseClient.auth.signOut(); 
         window.location.href = 'index.html'; 
     };
-
+// เพิ่มฟังก์ชันนี้ใน JavaScript
+window.resizeYoutubePlayer = function() {
+    const container = document.getElementById('youtubePlayerContainer');
+    const modal = document.getElementById('youtubePlayerModal');
+    
+    if (!container || !modal) return;
+    
+    if (window.innerWidth <= 768) {
+        // มือถือ - เต็มจอ
+        modal.querySelector('.modal-content').style.width = '100%';
+        modal.querySelector('.modal-content').style.height = '100%';
+        modal.querySelector('.modal-content').style.borderRadius = '0';
+    } else {
+        // คอม - 16:9
+        modal.querySelector('.modal-content').style.width = 'min(90%, 1200px)';
+        modal.querySelector('.modal-content').style.height = 'auto';
+        modal.querySelector('.modal-content').style.borderRadius = '8px';
+        container.style.paddingBottom = '56.25%';
+    }
+};       
+        // เรียกเมื่อเปิด YouTube
+        window.openYoutubePlayer = function(activityId, videoId) {
+            // ... existing code ...
+            setTimeout(() => {
+                window.resizeYoutubePlayer();
+            }, 200);
+        };
+        
+        // เรียกเมื่อ resize หน้าจอ
+        window.addEventListener('resize', function() {
+            if (window.youtubePlayer) {
+                window.resizeYoutubePlayer();
+            }
+        });
     // ========== CLEANUP ==========
     window.addEventListener('beforeunload', () => {
         if (window.messageSubscription) window.messageSubscription.unsubscribe();
@@ -3550,6 +3583,7 @@
 </script>
 </body>
 </html>
+
 
 
 
