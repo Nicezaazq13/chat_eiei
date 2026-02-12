@@ -172,6 +172,7 @@
             display: flex;
             flex: 1;
             overflow: hidden;
+            position: relative;
         }
 
         /* ========== ROOMS PANEL (ซ้าย) ========== */
@@ -242,7 +243,6 @@
             padding: 20px;
         }
 
-        /* ===== ROOM ITEMS - คลิกได้ 100% ===== */
         .room-item {
             background: var(--bg-white);
             border-radius: var(--radius-lg);
@@ -250,11 +250,9 @@
             margin-bottom: 12px;
             border: 1px solid transparent;
             box-shadow: var(--shadow-sm);
-            position: relative;
             transition: all 0.2s;
             cursor: pointer !important;
             pointer-events: auto !important;
-            z-index: 1;
         }
 
         .room-item:hover {
@@ -269,14 +267,11 @@
         }
 
         .room-item * {
-            pointer-events: none !important;
+            pointer-events: none;
         }
 
-        .room-item button,
-        .room-item a {
-            pointer-events: auto !important;
-            position: relative;
-            z-index: 10;
+        .room-item button {
+            pointer-events: auto;
         }
 
         .room-header {
@@ -327,7 +322,6 @@
             background: var(--bg-white);
         }
 
-        /* ========== MESSAGES CONTAINER ========== */
         .messages-container {
             flex: 1;
             padding: 24px;
@@ -413,7 +407,6 @@
             text-decoration: underline;
         }
 
-        /* ========== DELETED MESSAGE ========== */
         .message.deleted-message {
             background: var(--bg-light);
             border-radius: var(--radius-md);
@@ -431,20 +424,6 @@
             font-style: italic;
         }
 
-        .deleted-icon {
-            font-size: 14px;
-        }
-
-        .deleted-text {
-            font-size: 13px;
-        }
-
-        .deleted-time {
-            font-size: 11px;
-            margin-left: auto;
-        }
-
-        /* ========== DELETE MESSAGE BUTTON ========== */
         .delete-message-btn {
             background: none;
             border: none;
@@ -456,7 +435,6 @@
             opacity: 0;
             margin-left: 8px;
             font-size: 14px;
-            pointer-events: auto;
         }
 
         .message:hover .delete-message-btn {
@@ -468,12 +446,10 @@
             color: var(--danger-dark);
         }
 
-        /* ========== MESSAGE CHECKBOX ========== */
         .message-checkbox {
             display: flex;
             align-items: center;
             margin-right: 8px;
-            pointer-events: auto;
         }
 
         .message-checkbox input[type="checkbox"] {
@@ -481,7 +457,6 @@
             height: 18px;
             cursor: pointer;
             accent-color: var(--primary-color);
-            pointer-events: auto;
         }
 
         .message.selected {
@@ -490,7 +465,6 @@
             padding-left: 8px;
         }
 
-        /* ========== MESSAGE IMAGES ========== */
         .message-image {
             max-width: 300px;
             max-height: 300px;
@@ -518,6 +492,7 @@
             gap: 8px;
             margin-bottom: 8px;
             padding: 0 4px;
+            flex-wrap: wrap;
         }
 
         .toolbar-btn {
@@ -532,7 +507,6 @@
             align-items: center;
             gap: 4px;
             color: var(--text-light);
-            pointer-events: auto;
         }
 
         .toolbar-btn:hover {
@@ -582,7 +556,6 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .btn-send:hover {
@@ -598,7 +571,6 @@
             font-size: 13px;
         }
 
-        /* ========== IMAGE PREVIEW ========== */
         .image-preview {
             position: relative;
             margin-top: 12px;
@@ -631,7 +603,6 @@
             justify-content: center;
             font-size: 14px;
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .remove-preview:hover {
@@ -639,7 +610,7 @@
             transform: scale(1.1);
         }
 
-        /* ========== MEMBERS PANEL (ขวา) ========== */
+        /* ========== MEMBERS PANEL ========== */
         .members-panel {
             width: 280px;
             background: var(--bg-white);
@@ -660,6 +631,9 @@
         .members-header h3 {
             font-size: 16px;
             color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .members-list {
@@ -687,6 +661,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
+            object-fit: cover;
         }
 
         .member-info {
@@ -713,7 +688,6 @@
             font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .kick-btn:hover {
@@ -721,78 +695,200 @@
             transform: translateY(-2px);
         }
 
-        /* ========== ONLINE USERS ========== */
-        .online-users {
-            padding: 20px;
-            flex: 1;
-        }
-
-        .online-users h3 {
-            margin-bottom: 16px;
-            font-size: 14px;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .users-list {
+        /* ========== ACTIVITIES PANEL ========== */
+        .activities-panel {
+            width: 320px;
+            background: var(--bg-white);
+            border-left: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+
+        .activities-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activities-header h3 {
+            font-size: 16px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
 
-        .online-user {
+        .create-activity-btn-container {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .activities-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .activity-item {
+            background: var(--bg-light);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .activity-item:hover {
+            border-color: var(--primary-color);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .activity-title {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .activity-type-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: var(--radius-xl);
+            background: var(--bg-white);
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        .activity-creator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .activity-creator-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .activity-description {
+            font-size: 14px;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .activity-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .activity-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .join-activity-btn {
+            flex: 1;
+            padding: 8px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
             border-radius: var(--radius-md);
-            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
             transition: all 0.2s;
         }
 
-        .online-user:hover {
-            background: #e2e8f0;
+        .join-activity-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
         }
 
-        .online-user:last-child {
-            border-bottom: none;
+        .join-activity-btn.joined {
+            background: var(--danger-color);
         }
 
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
+        .join-activity-btn.joined:hover {
+            background: var(--danger-dark);
         }
 
-        .user-name {
-            flex: 1;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .online-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--secondary-color);
-            border-radius: 50%;
-            margin-left: auto;
-        }
-
-        /* ========== ROOM INFO ========== */
-        .room-info {
-            padding: 16px 20px;
-            border-top: 1px solid var(--border-color);
-            color: var(--text-light);
-            font-size: 13px;
-        }
-
-        /* ========== TYPING INDICATOR ========== */
-        .typing-indicator {
+        .view-activity-btn {
             padding: 8px 16px;
+            background: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
             font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-activity-btn:hover {
+            background: var(--bg-light);
+            border-color: var(--primary-color);
+        }
+
+        .activity-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: var(--radius-xl);
+            background: #48bb78;
+            color: white;
+        }
+
+        .activity-status.ended {
+            background: #a0aec0;
+        }
+
+        /* ========== PARTICIPANTS LIST ========== */
+        .participants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .participant-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 70px;
+        }
+
+        .participant-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid var(--primary-color);
+            object-fit: cover;
+        }
+
+        .participant-name {
+            font-size: 12px;
             color: var(--text-light);
-            font-style: italic;
+            text-align: center;
+            word-break: break-word;
         }
 
         /* ========== READ RECEIPTS ========== */
@@ -898,7 +994,6 @@
             padding: 4px 8px;
             border-radius: var(--radius-sm);
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .playlist-btn:hover {
@@ -955,7 +1050,6 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .music-btn:hover {
@@ -984,7 +1078,6 @@
             width: fit-content;
             margin: 0 auto 20px;
             border: none;
-            pointer-events: auto;
         }
 
         .delete-selected-btn:hover {
@@ -1003,7 +1096,6 @@
             font-weight: 600;
             transition: all 0.3s;
             margin-right: 8px;
-            pointer-events: auto;
         }
 
         .btn-admin.active {
@@ -1064,7 +1156,6 @@
             cursor: pointer;
             border-radius: var(--radius-md);
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .emoji-item:hover {
@@ -1080,6 +1171,11 @@
 
         .password-field.show {
             display: block;
+        }
+
+        /* ========== ACTIVITY FIELDS ========== */
+        .activity-field {
+            margin-bottom: 16px;
         }
 
         /* ========== LIGHTBOX ========== */
@@ -1119,7 +1215,6 @@
             background: rgba(255,255,255,0.2);
             border-radius: 50%;
             transition: all 0.2s;
-            pointer-events: auto;
         }
 
         .lightbox-close:hover {
@@ -1136,7 +1231,6 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.3s;
-            pointer-events: auto;
         }
 
         .btn-primary {
@@ -1163,12 +1257,25 @@
             background: transparent;
             border: 1px solid var(--primary-color);
             color: var(--primary-color);
-            pointer-events: auto;
         }
 
         .btn-outline:hover {
             background: var(--primary-color);
             color: white;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-light);
         }
 
         /* ========== FORM STYLES ========== */
@@ -1202,6 +1309,13 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
         /* ========== USER PROFILE ========== */
         .user-profile {
             display: flex;
@@ -1229,6 +1343,23 @@
         .text-muted {
             color: var(--text-light);
         }
+
+        /* ========== SIDEBAR OVERLAY ========== */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+        }
+
+        .sidebar-overlay.active {
+            display: block !important;
+        }
+
         body.sidebar-open {
             overflow: hidden;
             position: fixed;
@@ -1240,7 +1371,6 @@
         @media (max-width: 768px) {
             .chat-main {
                 flex-direction: column;
-                position: relative;
             }
 
             .rooms-panel {
@@ -1249,62 +1379,43 @@
                 top: 0;
                 width: 85% !important;
                 height: 100vh !important;
-                z-index: 2000 !important;  /* สูงกว่า overlay */
+                z-index: 2000;
                 transition: left 0.3s ease;
                 background: var(--bg-white);
                 box-shadow: 2px 0 10px rgba(0,0,0,0.1);
                 overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
             }
 
             .rooms-panel.mobile-active {
                 left: 0 !important;
-                z-index: 2000 !important;
             }
 
             .rooms-panel .room-item {
                 pointer-events: auto !important;
                 cursor: pointer !important;
-                position: relative;
-                z-index: 2001 !important;  /* สูงสุด */
             }
 
-            .rooms-panel .room-item:active {
-                background: var(--primary-color) !important;
-                color: white !important;
-                transform: scale(0.98);
+            .members-panel,
+            .activities-panel {
+                position: fixed !important;
+                right: -100%;
+                top: 0;
+                width: 85% !important;
+                height: 100vh !important;
+                z-index: 2000;
+                transition: right 0.3s ease;
+                background: var(--bg-white);
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                overflow-y: auto;
             }
 
-            .rooms-panel .room-item * {
-                pointer-events: none !important;
-            }
-
-            .rooms-panel .room-item button,
-            .rooms-panel .room-item a {
-                pointer-events: auto !important;
-                z-index: 2002 !important;
-            }
-
-            .sidebar-overlay {
-                z-index: 1999 !important;
-            }
-
-            .sidebar-overlay.active {
-                display: block !important;
-            }
-
-            .chat-header {
-                padding: 12px 16px;
-            }
-
-            .chat-header-left {
-                gap: 8px;
+            .members-panel.active,
+            .activities-panel.active {
+                right: 0 !important;
             }
 
             .mobile-menu-btn {
                 display: inline-block !important;
-                pointer-events: auto !important;
-                z-index: 2001 !important;
             }
 
             .current-room-info h2 {
@@ -1320,30 +1431,12 @@
                 display: none;
             }
 
-            .chat-header-right {
-                gap: 8px;
-            }
-
             .user-profile .username {
                 display: none;
             }
 
             .avatar {
                 margin-right: 0;
-                width: 40px;
-                height: 40px;
-            }
-
-            .btn-outline,
-            .btn-admin {
-                padding: 8px 12px;
-                font-size: 13px;
-                pointer-events: auto !important;
-            }
-
-            .messages-container {
-                padding: 16px;
-                padding-bottom: 100px;
             }
 
             .message {
@@ -1351,227 +1444,12 @@
             }
 
             .message-avatar {
-                width: 36px;
-                height: 36px;
-            }
-
-            .message-content {
-                padding: 10px 14px;
-            }
-
-            .message-author {
-                font-size: 13px;
-            }
-
-            .message-time {
-                font-size: 10px;
-            }
-
-            .message-body {
-                font-size: 14px;
+                width: 32px;
+                height: 32px;
             }
 
             .message-input-area {
-                position: sticky;
-                bottom: 0;
                 padding: 12px 16px;
-                background: var(--bg-white);
-                border-top: 1px solid var(--border-color);
-                box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
-                z-index: 1500;
-            }
-
-            .input-toolbar {
-                margin-bottom: 8px;
-            }
-
-            .toolbar-btn {
-                padding: 10px 16px;
-                font-size: 16px;
-                pointer-events: auto !important;
-            }
-
-            .input-wrapper {
-                padding: 4px 4px 4px 16px;
-            }
-
-            .input-wrapper textarea {
-                padding: 12px 0;
-                font-size: 16px;
-            }
-
-            .btn-send {
-                padding: 12px 24px;
-                pointer-events: auto !important;
-            }
-
-            .input-footer {
-                display: none;
-            }
-
-            .members-panel {
-                position: fixed;
-                right: -100%;
-                top: 0;
-                width: 85%;
-                height: 100vh;
-                z-index: 2000;
-                transition: right 0.3s;
-                background: var(--bg-white);
-                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-                pointer-events: none;
-            }
-
-            .members-panel.active {
-                right: 0 !important;
-                pointer-events: auto !important;
-                z-index: 2000 !important;
-            }
-
-            .members-panel.active .member-item {
-                pointer-events: auto !important;
-                z-index: 2001 !important;
-            }
-
-            .member-item {
-                padding: 16px;
-            }
-
-            .kick-btn {
-                padding: 10px 16px;
-                pointer-events: auto !important;
-            }
-
-            .delete-selected-btn {
-                position: fixed;
-                bottom: 100px;
-                padding: 14px 28px;
-                font-size: 15px;
-                z-index: 2001;
-                pointer-events: auto !important;
-            }
-
-            .read-by-avatar {
-                width: 20px;
-                height: 20px;
-            }
-
-            .read-by-more {
-                width: 20px;
-                height: 20px;
-                font-size: 10px;
-            }
-
-            .music-bar {
-                padding: 12px 16px;
-                z-index: 2002;
-            }
-
-            .music-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 18px;
-                pointer-events: auto !important;
-            }
-
-            .modal-content {
-                padding: 24px;
-                width: 95%;
-                max-height: 80vh;
-            }
-
-            .emoji-grid {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 12px;
-                padding: 12px;
-            }
-
-            .emoji-item {
-                font-size: 28px;
-                padding: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                pointer-events: auto !important;
-            }
-
-            .form-group input,
-            .form-group textarea,
-            .form-group select {
-                font-size: 16px;
-                padding: 14px;
-            }
-
-            .form-group label {
-                font-size: 15px;
-                margin-bottom: 8px;
-            }
-
-            .room-tabs {
-                padding: 16px;
-            }
-
-            .tab-btn {
-                padding: 12px;
-                font-size: 15px;
-                pointer-events: auto !important;
-                z-index: 2001 !important;
-            }
-
-            .create-room-btn {
-                padding: 14px;
-                font-size: 16px;
-                pointer-events: auto !important;
-                z-index: 2001 !important;
-            }
-
-            button, 
-            .btn, 
-            .room-item,
-            .tab-btn,
-            .toolbar-btn,
-            .kick-btn,
-            .delete-room-btn,
-            .admin-delete-room-btn,
-            .create-room-btn,
-            .mobile-menu-btn {
-                min-height: 44px;
-                min-width: 44px;
-            }
-
-            .room-item:active,
-            .tab-btn:active,
-            .btn:active,
-            button:active {
-                opacity: 0.7;
-                transform: scale(0.98);
-            }
-
-            .rooms-panel::-webkit-scrollbar,
-            .members-list::-webkit-scrollbar,
-            .messages-container::-webkit-scrollbar {
-                width: 0;
-                background: transparent;
-            }
-
-            input, select, textarea {
-                font-size: 16px !important;
-            }
-        }
-
-        /* ========== SMALL PHONES ========== */
-        @media (max-width: 375px) {
-            .current-room-info h2 {
-                max-width: 130px;
-                font-size: 15px;
-            }
-
-            .btn-outline,
-            .btn-admin {
-                padding: 6px 10px;
-                font-size: 12px;
             }
 
             .toolbar-btn {
@@ -1579,21 +1457,45 @@
                 font-size: 14px;
             }
 
+            .input-wrapper textarea {
+                font-size: 16px;
+            }
+
+            .input-footer {
+                display: none;
+            }
+
+            .participant-item {
+                width: 60px;
+            }
+
+            .participant-avatar {
+                width: 40px;
+                height: 40px;
+            }
+
+            .emoji-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        @media (max-width: 375px) {
+            .current-room-info h2 {
+                max-width: 150px;
+                font-size: 16px;
+            }
+
+            .toolbar-btn {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+
             .message {
                 max-width: 90%;
             }
 
-            .avatar {
-                width: 36px;
-                height: 36px;
-            }
-
             .emoji-grid {
                 grid-template-columns: repeat(4, 1fr);
-            }
-
-            .modal-content {
-                padding: 20px;
             }
         }
 
@@ -1675,23 +1577,6 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-light);
         }
-
-        /* ========== FIX Z-INDEX ========== */
-        .rooms-panel.mobile-active {
-            z-index: 2000 !important;
-        }
-
-        .sidebar-overlay.active {
-            z-index: 1999 !important;
-        }
-
-        .rooms-panel.mobile-active .room-item,
-        .rooms-panel.mobile-active button,
-        .rooms-panel.mobile-active .tab-btn,
-        .rooms-panel.mobile-active .create-room-btn {
-            position: relative;
-            z-index: 2001 !important;
-        }
     </style>
 </head>
 <body>
@@ -1716,7 +1601,7 @@
 
         <!-- ========== MAIN CHAT AREA ========== -->
         <div class="chat-main">
-            <!-- ROOMS PANEL -->
+            <!-- ROOMS PANEL (ซ้าย) -->
             <div class="rooms-panel">
                 <div class="rooms-header">
                     <button class="create-room-btn" onclick="window.showCreateRoomModal()">+ สร้างห้องใหม่</button>
@@ -1726,41 +1611,71 @@
                     <button class="tab-btn" onclick="window.filterRooms('public', this)">สาธารณะ</button>
                     <button class="tab-btn" onclick="window.filterRooms('private', this)">ส่วนตัว</button>
                 </div>
-                <div class="room-list" id="roomList"></div>
+                <div class="room-list" id="roomList">
+                    <div style="text-align: center; padding: 40px 20px; color: #a0aec0;">⏳ กำลังโหลดห้อง...</div>
+                </div>
             </div>
 
-            <!-- MESSAGES AREA -->
+            <!-- MESSAGES AREA (กลาง) -->
             <div class="chat-content">
                 <div class="messages-container" id="messagesContainer"></div>
                 <div id="typingIndicator" class="typing-indicator"></div>
                 <div id="deleteSelectedBtn" class="delete-selected-btn" style="display: none;" onclick="window.deleteSelectedMessages()">🗑️ ลบ 0 ข้อความ</div>
+                
+                <!-- Input Area -->
                 <div class="message-input-area" id="messageInputArea">
                     <div class="input-toolbar">
-                        <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()">😊</button>
-                        <button type="button" class="toolbar-btn" onclick="window.uploadImage()">📷</button>
-                        <button type="button" class="toolbar-btn" onclick="window.openMusicPlayer()">🎵</button>
+                        <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()" title="อิโมจิ">😊</button>
+                        <button type="button" class="toolbar-btn" onclick="window.uploadImage()" title="รูปภาพ">📷</button>
+                        <button type="button" class="toolbar-btn" onclick="window.openMusicPlayer()" title="เพลง">🎵</button>
+                        <button type="button" class="toolbar-btn" onclick="window.toggleActivitiesPanel()" title="กิจกรรม">🎮</button>
+                        <button type="button" class="toolbar-btn" onclick="window.toggleMembersPanel()" title="สมาชิก">👥</button>
                     </div>
+                    
                     <div class="input-wrapper">
                         <textarea id="messageInput" placeholder="พิมพ์ข้อความ..." rows="1"></textarea>
                         <button id="sendButton" class="btn-send">📤 ส่ง</button>
                     </div>
+                    
                     <div id="imagePreview" class="image-preview" style="display: none;">
                         <img id="previewImg" src="" alt="Preview">
                         <button type="button" class="remove-preview" onclick="window.clearImagePreview()">✕</button>
                     </div>
+                    
                     <div class="input-footer">
                         <span class="character-count" id="charCount">0/500</span>
                     </div>
                 </div>
             </div>
 
-            <!-- MEMBERS PANEL -->
+            <!-- MEMBERS PANEL (ขวา) -->
             <div class="members-panel" id="membersPanel">
                 <div class="members-header">
                     <h3>👥 สมาชิกในห้อง</h3>
-                    <button onclick="window.toggleMembersPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+                    <button onclick="window.toggleMembersPanel()" class="btn-icon">✕</button>
                 </div>
                 <div class="members-list" id="membersList"></div>
+            </div>
+
+            <!-- ACTIVITIES PANEL (กิจกรรม) -->
+            <div class="activities-panel" id="activitiesPanel">
+                <div class="activities-header">
+                    <h3>🎮 กิจกรรมในห้อง</h3>
+                    <button onclick="window.toggleActivitiesPanel()" class="btn-icon">✕</button>
+                </div>
+                
+                <div class="create-activity-btn-container">
+                    <button onclick="window.showCreateActivityModal()" class="btn btn-primary" style="width: 100%;">
+                        ➕ สร้างกิจกรรม
+                    </button>
+                </div>
+                
+                <div class="activities-list" id="activitiesList">
+                    <div style="text-align: center; padding: 40px 20px; color: #718096;">
+                        🎮 ยังไม่มีกิจกรรม<br>
+                        <small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1768,10 +1683,12 @@
     <!-- SIDEBAR OVERLAY -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-    <!-- MODALS -->
+    <!-- ========== MODAL: อิโมจิ ========== -->
     <div id="emojiPickerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><span>😊</span> เลือกอิโมจิ</h3>
+            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>😊</span> เลือกอิโมจิ
+            </h3>
             <div class="emoji-grid" id="emojiGrid"></div>
             <div style="display: flex; gap: 12px; margin-top: 20px;">
                 <button onclick="window.closeEmojiPicker()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
@@ -1779,6 +1696,7 @@
         </div>
     </div>
 
+    <!-- ========== MODAL: สร้างห้อง ========== -->
     <div id="createRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">📝 สร้างห้องใหม่</h2>
@@ -1816,6 +1734,7 @@
         </div>
     </div>
 
+    <!-- ========== MODAL: เข้าร่วมห้องส่วนตัว ========== -->
     <div id="joinPrivateRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">🔐 เข้าร่วมห้องส่วนตัว</h2>
@@ -1831,6 +1750,7 @@
         </div>
     </div>
 
+    <!-- ========== MODAL: เตะสมาชิก ========== -->
     <div id="kickMemberModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">⚠️ เตะสมาชิก</h2>
@@ -1843,6 +1763,7 @@
         </div>
     </div>
 
+    <!-- ========== MODAL: ลบห้อง ========== -->
     <div id="deleteRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px; color: #f56565;">⚠️ ลบห้อง</h2>
@@ -1855,24 +1776,137 @@
         </div>
     </div>
 
+    <!-- ========== MODAL: สร้างกิจกรรม ========== -->
+    <div id="createActivityModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span>🎮</span> สร้างกิจกรรมใหม่
+            </h3>
+            
+            <form id="createActivityForm">
+                <div class="form-group">
+                    <label>ชื่อกิจกรรม <span style="color: #e53e3e;">*</span></label>
+                    <input type="text" id="activityTitle" placeholder="เช่น ดูหนังด้วยกัน, เล่นเกม" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>ประเภทกิจกรรม</label>
+                    <select id="activityType" onchange="window.toggleActivityTypeFields()">
+                        <option value="youtube">📺 ดู YouTube ด้วยกัน</option>
+                        <option value="game">🎮 เล่นเกม</option>
+                        <option value="poll">📊 โหวต</option>
+                        <option value="custom">✨ กิจกรรมทั่วไป</option>
+                    </select>
+                </div>
+                
+                <div id="youtubeField" class="activity-field">
+                    <div class="form-group">
+                        <label>URL YouTube</label>
+                        <input type="text" id="youtubeUrl" placeholder="https://youtube.com/watch?v=...">
+                        <small>📌 รองรับ youtube.com และ youtu.be</small>
+                    </div>
+                </div>
+                
+                <div id="gameField" class="activity-field" style="display: none;">
+                    <div class="form-group">
+                        <label>ชื่อเกม</label>
+                        <input type="text" id="gameName" placeholder="เช่น Among Us, Valorant">
+                    </div>
+                </div>
+                
+                <div id="pollField" class="activity-field" style="display: none;">
+                    <div class="form-group">
+                        <label>ตัวเลือก (คั่นด้วย ,)</label>
+                        <input type="text" id="pollOptions" placeholder="ตัวเลือก1, ตัวเลือก2, ตัวเลือก3">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>คำอธิบาย</label>
+                    <textarea id="activityDescription" placeholder="รายละเอียดกิจกรรม..." rows="2"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>จำนวนผู้เข้าร่วมสูงสุด (0 = ไม่จำกัด)</label>
+                    <input type="number" id="maxParticipants" value="0" min="0" max="50">
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">สร้างกิจกรรม</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.closeCreateActivityModal()">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: ดู YouTube ========== -->
+    <div id="youtubePlayerModal" class="modal" style="z-index: 2100;">
+        <div class="modal-content" style="max-width: 900px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <span>📺</span> <span id="youtubeActivityTitle">YouTube</span>
+                </h3>
+                <button onclick="window.closeYoutubePlayer()" class="btn-icon" style="font-size: 24px;">✕</button>
+            </div>
+            
+            <div id="youtubePlayerContainer" style="position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 20px; background: #000; border-radius: 8px; overflow: hidden;">
+                <iframe id="youtubeIframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+                <button onclick="window.syncPlayPause()" id="syncPlayPauseBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px;">
+                    ⏸️ หยุดชั่วคราว
+                </button>
+                <button onclick="window.syncSeek(-10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">
+                    ⏪ -10 วินาที
+                </button>
+                <button onclick="window.syncSeek(10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">
+                    ⏩ +10 วินาที
+                </button>
+            </div>
+            
+            <div class="activity-participants">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="display: flex; align-items: center; gap: 8px;">👥 ผู้เข้าร่วม <span id="youtubeParticipantsCount">(0)</span></h4>
+                </div>
+                <div id="youtubeParticipants" class="participants-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: เครื่องเล่นเพลง ========== -->
     <div id="musicPlayerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"><span>🎵</span> เครื่องเล่นเพลง</h3>
+            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>🎵</span> เครื่องเล่นเพลง
+            </h3>
             <div class="form-group">
-                <label>URL เพลง (YouTube, SoundCloud, MP3)</label>
-                <input type="text" id="musicUrlInput" placeholder="วางลิงก์เพลงที่นี่...">
+                <label>URL เพลง (MP3 เท่านั้น)</label>
+                <input type="text" id="musicUrlInput" placeholder="https://example.com/song.mp3">
+                <small style="color: #e53e3e;">⚠️ รองรับเฉพาะไฟล์ .mp3 เท่านั้น</small>
             </div>
-            <button onclick="window.addMusicToRoom()" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">➕ เพิ่มเพลง</button>
+            <button onclick="window.addMusicToRoom()" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                ➕ เพิ่มเพลง
+            </button>
+            
             <div class="music-playlist">
-                <h4 style="margin-bottom: 12px;">📋 เพลย์ลิสต์</h4>
+                <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    📋 เพลย์ลิสต์
+                </h4>
                 <div id="playlistItems" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
+            
             <div style="display: flex; gap: 12px; margin-top: 20px;">
                 <button onclick="window.closeMusicPlayer()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
             </div>
         </div>
     </div>
 
+    <!-- ========== CURRENT MUSIC BAR ========== -->
     <div id="currentMusicBar" class="music-bar" style="display: none;">
         <div class="music-info">
             <span class="music-icon">🎵</span>
@@ -1905,6 +1939,7 @@
         window.audioPlayer = null;
         window.readReceiptObserver = null;
         window.readReceiptsSubscription = null;
+        window.currentYoutubeActivityId = null;
 
         const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
         const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
@@ -1930,14 +1965,9 @@
                 setupEventListeners();
                 initMobileHandler();
 
-                // ✅ เพิ่ม event listener สำหรับ overlay
                 const overlay = document.getElementById('sidebarOverlay');
                 if (overlay) {
-                    overlay.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        closeMobileSidebar();
-                    });
+                    overlay.addEventListener('click', window.closeMobileSidebar);
                 }
 
                 console.log('✅ Chat initialized');
@@ -1950,82 +1980,25 @@
         window.toggleMobileSidebar = function() {
             const sidebar = document.querySelector('.rooms-panel');
             const overlay = document.getElementById('sidebarOverlay');
-            
             if (!sidebar) return;
-            
             sidebar.classList.toggle('mobile-active');
-            
             if (overlay) {
-                if (sidebar.classList.contains('mobile-active')) {
-                    overlay.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    
-                    // ✅ จัดการ z-index
-                    sidebar.style.zIndex = '2000';
-                    overlay.style.zIndex = '1999';
-                } else {
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                    document.body.style.position = '';
-                }
+                overlay.classList.toggle('active', sidebar.classList.contains('mobile-active'));
             }
+            document.body.style.overflow = sidebar.classList.contains('mobile-active') ? 'hidden' : '';
         };
 
         window.closeMobileSidebar = function() {
             const sidebar = document.querySelector('.rooms-panel');
             const overlay = document.getElementById('sidebarOverlay');
-            
-            if (sidebar) {
-                sidebar.classList.remove('mobile-active');
-                sidebar.style.zIndex = '';
-            }
-            if (overlay) {
-                overlay.classList.remove('active');
-                overlay.style.zIndex = '';
-            }
+            if (sidebar) sidebar.classList.remove('mobile-active');
+            if (overlay) overlay.classList.remove('active');
             document.body.style.overflow = '';
-            document.body.style.position = '';
-        };
-
-        // ========== SELECT ROOM ==========
-        window.selectRoom = async function(roomId) {
-            // ✅ ปิด sidebar อัตโนมัติเมื่อเลือกห้อง
-            closeMobileSidebar();
-            
-            try {
-                const { data: room, error } = await supabaseClient
-                    .from('rooms')
-                    .select('*')
-                    .eq('id', roomId)
-                    .single();
-                    
-                if (error) throw error;
-                
-                if (room.room_type === 'private') {
-                    const { data: member } = await supabaseClient
-                        .from('room_members')
-                        .select('*')
-                        .eq('room_id', roomId)
-                        .eq('user_id', window.currentUser.id)
-                        .maybeSingle();
-                        
-                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
-                        showJoinPrivateModal(room);
-                        return;
-                    }
-                }
-                
-                await joinRoom(room);
-            } catch (error) {
-                console.error('❌ Error selecting room:', error);
-            }
         };
 
         // ========== INIT MOBILE HANDLER ==========
         window.initMobileHandler = function() {
             if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) return;
-            
             let originalHeight = window.innerHeight;
             window.addEventListener('resize', () => {
                 const newHeight = window.innerHeight;
@@ -2041,11 +2014,26 @@
             });
         };
 
+        // ========== PANEL CONTROLS ==========
+        window.toggleMembersPanel = function() {
+            const panel = document.getElementById('membersPanel');
+            if (panel) panel.classList.toggle('active');
+        };
+
+        window.toggleActivitiesPanel = function() {
+            const panel = document.getElementById('activitiesPanel');
+            if (panel) {
+                panel.classList.toggle('active');
+                if (panel.classList.contains('active')) {
+                    window.loadActivities();
+                }
+            }
+        };
+
         // ========== LOAD ROOMS ==========
         window.loadRooms = async function(filter = 'all') {
             try {
-                let query = supabaseClient
-                    .from('rooms')
+                let query = supabaseClient.from('rooms')
                     .select('*, owner:owner_id(username, display_name), room_members(user_id, role)')
                     .order('created_at', { ascending: false });
                 
@@ -2054,7 +2042,6 @@
                 
                 const { data: rooms, error } = await query;
                 if (error) throw error;
-                
                 displayRooms(rooms);
             } catch (error) {
                 console.error('❌ Error loading rooms:', error);
@@ -2064,17 +2051,14 @@
         window.displayRooms = function(rooms) {
             const roomList = document.getElementById('roomList');
             if (!roomList) return;
-            
             if (rooms.length === 0) {
                 roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #a0aec0;">📭 ยังไม่มีห้องแชท<br><small>คลิก "สร้างห้องใหม่" เพื่อเริ่มต้น</small></div>';
                 return;
             }
-            
             roomList.innerHTML = rooms.map(room => {
                 const isOwner = room.owner_id === window.currentUser?.id;
                 const memberCount = room.room_members?.length || 0;
                 const isActive = window.currentRoomId === room.id;
-                
                 return `<div class="room-item ${isActive ? 'active' : ''}" onclick="window.selectRoom('${room.id}')">
                     <div class="room-header">
                         <span class="room-name">${room.room_type === 'private' ? '🔒' : '🌍'} ${room.name}</span>
@@ -2090,31 +2074,28 @@
             }).join('');
         };
 
-        // ========== OTHER FUNCTIONS (ย่อให้สั้น) ==========
-        window.checkAdminStatus = async function() {
+        // ========== SELECT ROOM ==========
+        window.selectRoom = async function(roomId) {
+            window.closeMobileSidebar();
             try {
-                if (!window.currentUser) return false;
-                const { data, error } = await supabaseClient.from('profiles').select('is_admin').eq('id', window.currentUser.id).single();
+                const { data: room, error } = await supabaseClient.from('rooms').select('*').eq('id', roomId).single();
                 if (error) throw error;
-                window.isAdmin = data?.is_admin || false;
-                const adminBtn = document.getElementById('adminModeBtn');
-                if (adminBtn) adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
-                return window.isAdmin;
-            } catch (error) { return false; }
-        };
-
-        window.toggleAdminMode = async function() {
-            if (!window.isAdmin) { alert('คุณไม่ใช่แอดมิน'); return; }
-            window.isAdminMode = !window.isAdminMode;
-            const adminBtn = document.getElementById('adminModeBtn');
-            if (adminBtn) {
-                adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
-                adminBtn.classList.toggle('active', window.isAdminMode);
+                
+                if (room.room_type === 'private') {
+                    const { data: member } = await supabaseClient.from('room_members').select('*').eq('room_id', roomId).eq('user_id', window.currentUser.id).maybeSingle();
+                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                        showJoinPrivateModal(room);
+                        return;
+                    }
+                }
+                
+                await joinRoom(room);
+            } catch (error) {
+                console.error('❌ Error selecting room:', error);
             }
-            await window.loadMessages(window.currentRoomId);
-            alert(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน');
         };
 
+        // ========== JOIN ROOM ==========
         window.joinRoom = async function(room) {
             try {
                 const { data: existingMember } = await supabaseClient.from('room_members').select('*').eq('room_id', room.id).eq('user_id', window.currentUser.id).maybeSingle();
@@ -2126,8 +2107,10 @@
                         joined_at: new Date().toISOString()
                     }]);
                 }
+                
                 window.currentRoom = room;
                 window.currentRoomId = room.id;
+                
                 document.getElementById('currentRoomTitle').innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}`;
                 document.getElementById('currentRoomTypeBadge').textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
                 
@@ -2141,35 +2124,50 @@
                 }
                 
                 document.getElementById('messageInputArea').style.display = 'block';
+                
                 await loadMessages(room.id);
                 await loadRoomMembers(room.id);
+                await loadActivities();
                 setupMessageSubscription(room.id);
+                setupActivitiesSubscription(room.id);
                 
                 if (window.readReceiptsSubscription) window.readReceiptsSubscription.unsubscribe();
                 window.readReceiptsSubscription = window.subscribeToReadReceipts(room.id);
+                
                 loadRooms();
-            } catch (error) { console.error('❌ Error joining room:', error); }
+            } catch (error) {
+                console.error('❌ Error joining room:', error);
+            }
         };
 
+        // ========== MESSAGES ==========
         window.loadMessages = async function(roomId) {
             try {
                 if (!window.messagesContainer) window.messagesContainer = document.getElementById('messagesContainer');
                 if (!window.messagesContainer) return;
+                
                 const { data: messages, error } = await supabaseClient.from('messages')
                     .select('*, profiles:user_id(username, display_name, avatar_url), deleter:deleted_by(username, display_name)')
                     .eq('room_id', roomId).order('created_at', { ascending: true }).limit(50);
+                
                 if (error) throw error;
+                
                 window.messagesContainer.innerHTML = '';
                 window.clearSelectedMessages();
+                
                 if (window.readReceiptObserver) window.readReceiptObserver.disconnect();
                 window.setupReadReceiptObserver();
+                
                 if (messages.length === 0) {
                     window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
                 } else {
                     messages.forEach(msg => displayMessage(msg));
                 }
+                
                 scrollToBottom();
-            } catch (error) { console.error('❌ Error loading messages:', error); }
+            } catch (error) {
+                console.error('❌ Error loading messages:', error);
+            }
         };
 
         // ========== DISPLAY MESSAGE ==========
@@ -2232,7 +2230,10 @@
             const message = messageInput.value.trim();
             const hasImage = window.selectedImageFile !== null;
             if (!message && !hasImage) return;
-            if (!window.currentRoomId) { alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ'); return; }
+            if (!window.currentRoomId) { 
+                alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ'); 
+                return; 
+            }
             
             try {
                 let imageUrl = null;
@@ -2260,61 +2261,6 @@
                 console.error('❌ Error sending message:', error);
                 alert('ไม่สามารถส่งข้อความได้: ' + error.message);
             }
-        };
-
-        // ========== EMOJI ==========
-        window.openEmojiPicker = function() {
-            const modal = document.getElementById('emojiPickerModal');
-            const grid = document.getElementById('emojiGrid');
-            if (!modal || !grid) return;
-            grid.innerHTML = emojiList.map(emoji => `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`).join('');
-            modal.classList.add('active');
-        };
-        window.closeEmojiPicker = function() { const modal = document.getElementById('emojiPickerModal'); if (modal) modal.classList.remove('active'); };
-        window.insertEmoji = function(emoji) { const input = document.getElementById('messageInput'); if (input) { input.value += emoji; input.focus(); window.closeEmojiPicker(); } };
-
-        // ========== IMAGE ==========
-        window.uploadImage = function() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    window.selectedImageFile = file;
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const preview = document.getElementById('imagePreview');
-                        const img = document.getElementById('previewImg');
-                        if (preview && img) { img.src = e.target.result; preview.style.display = 'inline-block'; }
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            input.click();
-        };
-        window.clearImagePreview = function() {
-            window.selectedImageFile = null;
-            const preview = document.getElementById('imagePreview');
-            const previewImg = document.getElementById('previewImg');
-            if (preview) preview.style.display = 'none';
-            if (previewImg) previewImg.src = '';
-        };
-
-        // ========== LIGHTBOX ==========
-        window.openLightbox = function(imageUrl) {
-            const lightbox = document.createElement('div');
-            lightbox.className = 'lightbox';
-            lightbox.onclick = function() { document.body.removeChild(lightbox); };
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            const closeBtn = document.createElement('span');
-            closeBtn.className = 'lightbox-close';
-            closeBtn.innerHTML = '✕';
-            closeBtn.onclick = function(e) { e.stopPropagation(); document.body.removeChild(lightbox); };
-            lightbox.appendChild(img);
-            lightbox.appendChild(closeBtn);
-            document.body.appendChild(lightbox);
         };
 
         // ========== DELETE MESSAGES ==========
@@ -2372,11 +2318,67 @@
                 deleteSelectedBtn.innerHTML = `🗑️ ลบ ${window.selectedMessages.size} ข้อความ`;
             }
         };
+
         window.clearSelectedMessages = function() {
             window.selectedMessages.clear();
             document.querySelectorAll('.message.selected').forEach(el => el.classList.remove('selected'));
             const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
             if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
+        };
+
+        // ========== EMOJI ==========
+        window.openEmojiPicker = function() {
+            const modal = document.getElementById('emojiPickerModal');
+            const grid = document.getElementById('emojiGrid');
+            if (!modal || !grid) return;
+            grid.innerHTML = emojiList.map(emoji => `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`).join('');
+            modal.classList.add('active');
+        };
+        window.closeEmojiPicker = function() { const modal = document.getElementById('emojiPickerModal'); if (modal) modal.classList.remove('active'); };
+        window.insertEmoji = function(emoji) { const input = document.getElementById('messageInput'); if (input) { input.value += emoji; input.focus(); window.closeEmojiPicker(); } };
+
+        // ========== IMAGE ==========
+        window.uploadImage = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    window.selectedImageFile = file;
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const preview = document.getElementById('imagePreview');
+                        const img = document.getElementById('previewImg');
+                        if (preview && img) { img.src = e.target.result; preview.style.display = 'inline-block'; }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        };
+        window.clearImagePreview = function() {
+            window.selectedImageFile = null;
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            if (preview) preview.style.display = 'none';
+            if (previewImg) previewImg.src = '';
+        };
+
+        // ========== LIGHTBOX ==========
+        window.openLightbox = function(imageUrl) {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.onclick = function() { document.body.removeChild(lightbox); };
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'lightbox-close';
+            closeBtn.innerHTML = '✕';
+            closeBtn.onclick = function(e) { e.stopPropagation(); document.body.removeChild(lightbox); };
+            lightbox.appendChild(img);
+            lightbox.appendChild(closeBtn);
+            document.body.appendChild(lightbox);
         };
 
         // ========== READ RECEIPTS ==========
@@ -2411,13 +2413,10 @@
             if (receipts.length === 0) return;
             const otherReaders = receipts.filter(r => r.user_id !== window.currentUser.id);
             if (otherReaders.length === 0) return;
-            
             let readByContainer = messageDiv.querySelector('.read-by-container');
             if (readByContainer) readByContainer.remove();
-            
             readByContainer = document.createElement('div');
             readByContainer.className = 'read-by-container';
-            
             otherReaders.slice(0, 5).forEach(reader => {
                 const avatar = document.createElement('img');
                 avatar.src = reader.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(reader.profiles?.display_name || reader.profiles?.username)}&background=667eea&color=fff`;
@@ -2426,7 +2425,6 @@
                 avatar.title = `${reader.profiles?.display_name || reader.profiles?.username} อ่านเมื่อ ${window.formatTime(reader.read_at)}`;
                 readByContainer.appendChild(avatar);
             });
-            
             if (otherReaders.length > 5) {
                 const more = document.createElement('span');
                 more.className = 'read-by-more';
@@ -2434,13 +2432,11 @@
                 more.title = `${otherReaders.length} คนอ่านแล้ว`;
                 readByContainer.appendChild(more);
             }
-            
             const readIcon = document.createElement('span');
             readIcon.className = 'read-icon';
             readIcon.innerHTML = '✓✓';
             readIcon.title = `อ่านแล้ว ${otherReaders.length} คน`;
             readByContainer.prepend(readIcon);
-            
             const messageContent = messageDiv.querySelector('.message-content');
             if (messageContent) messageContent.appendChild(readByContainer);
         };
@@ -2470,99 +2466,6 @@
                         await window.displayReadReceipts(messageDiv, payload.new.message_id, true);
                     }
                 }).subscribe();
-        };
-
-        // ========== MUSIC PLAYER ==========
-        window.openMusicPlayer = function() { const modal = document.getElementById('musicPlayerModal'); if (modal) { modal.classList.add('active'); window.loadPlaylist(); } };
-        window.closeMusicPlayer = function() { const modal = document.getElementById('musicPlayerModal'); if (modal) modal.classList.remove('active'); };
-        
-        window.addMusicToRoom = async function() {
-            const urlInput = document.getElementById('musicUrlInput');
-            if (!urlInput) return;
-            const url = urlInput.value.trim();
-            if (!url) { alert('❌ กรุณาใส่ URL เพลง'); return; }
-            try {
-                const musicInfo = { title: url.split('/').pop() || 'เพลงไม่มีชื่อ', artist: window.currentUser.user_metadata?.username || 'ผู้ใช้' };
-                const { error } = await supabaseClient.from('room_music').insert([{
-                    room_id: window.currentRoomId,
-                    user_id: window.currentUser.id,
-                    music_url: url,
-                    music_title: musicInfo.title,
-                    music_artist: musicInfo.artist,
-                    is_playing: false
-                }]);
-                if (error) throw error;
-                urlInput.value = '';
-                alert('✅ เพิ่มเพลงสำเร็จ');
-                window.loadPlaylist();
-            } catch (error) { console.error('❌ Error adding music:', error); alert('ไม่สามารถเพิ่มเพลงได้'); }
-        };
-
-        window.loadPlaylist = async function() {
-            if (!window.currentRoomId) return;
-            try {
-                const { data: playlist, error } = await supabaseClient.from('room_music')
-                    .select('*, profiles:user_id(username, display_name)')
-                    .eq('room_id', window.currentRoomId).order('created_at', { ascending: false });
-                if (error) throw error;
-                const container = document.getElementById('playlistItems');
-                if (!container) return;
-                if (playlist.length === 0) { container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">🎵 ยังไม่มีเพลงในเพลย์ลิสต์</div>'; return; }
-                container.innerHTML = playlist.map(song => `
-                    <div class="playlist-item">
-                        <div class="playlist-info">
-                            <div class="playlist-title">${song.music_title}</div>
-                            <div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div>
-                        </div>
-                        <div class="playlist-controls">
-                            <button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>
-                            ${song.user_id === window.currentUser.id || window.isAdmin ? `<button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) { console.error('❌ Error loading playlist:', error); }
-        };
-
-        window.playMusic = async function(musicId, url) {
-            try {
-                if (window.audioPlayer) { window.audioPlayer.pause(); window.audioPlayer = null; }
-                window.audioPlayer = new Audio(url);
-                await window.audioPlayer.play();
-                window.currentMusic = { id: musicId, url };
-                const musicBar = document.getElementById('currentMusicBar');
-                const musicTitle = document.getElementById('currentMusicTitle');
-                const playPauseBtn = document.getElementById('playPauseBtn');
-                if (musicBar) musicBar.style.display = 'flex';
-                if (musicTitle) musicTitle.textContent = 'กำลังเล่นเพลง...';
-                if (playPauseBtn) playPauseBtn.innerHTML = '⏸️';
-                await supabaseClient.from('room_music').update({ is_playing: true }).eq('id', musicId);
-            } catch (error) { console.error('❌ Error playing music:', error); alert('ไม่สามารถเล่นเพลงได้'); }
-        };
-
-        window.togglePlayPause = function() {
-            if (!window.audioPlayer) return;
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            if (!playPauseBtn) return;
-            if (window.audioPlayer.paused) { window.audioPlayer.play(); playPauseBtn.innerHTML = '⏸️'; }
-            else { window.audioPlayer.pause(); playPauseBtn.innerHTML = '▶️'; }
-        };
-
-        window.stopMusic = function() {
-            if (window.audioPlayer) { window.audioPlayer.pause(); window.audioPlayer.currentTime = 0; window.audioPlayer = null; }
-            window.currentMusic = null;
-            const musicBar = document.getElementById('currentMusicBar');
-            if (musicBar) musicBar.style.display = 'none';
-        };
-        window.hideMusicBar = function() { const musicBar = document.getElementById('currentMusicBar'); if (musicBar) musicBar.style.display = 'none'; };
-        
-        window.removeMusic = async function(musicId) {
-            if (!confirm('🗑️ ลบเพลงนี้ออกจากเพลย์ลิสต์?')) return;
-            try {
-                const { error } = await supabaseClient.from('room_music').delete().eq('id', musicId);
-                if (error) throw error;
-                alert('✅ ลบเพลงสำเร็จ');
-                window.loadPlaylist();
-            } catch (error) { console.error('❌ Error removing music:', error); alert('ไม่สามารถลบเพลงได้'); }
         };
 
         // ========== ROOM MEMBERS ==========
@@ -2620,6 +2523,62 @@
             } catch (error) { console.error('❌ Error kicking member:', error); alert('ไม่สามารถเตะสมาชิกได้'); }
         };
 
+        // ========== ADMIN FUNCTIONS ==========
+        window.checkAdminStatus = async function() {
+            try {
+                if (!window.currentUser) return false;
+                const { data, error } = await supabaseClient.from('profiles').select('is_admin').eq('id', window.currentUser.id).single();
+                if (error) throw error;
+                window.isAdmin = data?.is_admin || false;
+                const adminBtn = document.getElementById('adminModeBtn');
+                if (adminBtn) adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
+                return window.isAdmin;
+            } catch (error) { return false; }
+        };
+
+        window.toggleAdminMode = async function() {
+            if (!window.isAdmin) { alert('คุณไม่ใช่แอดมิน'); return; }
+            window.isAdminMode = !window.isAdminMode;
+            const adminBtn = document.getElementById('adminModeBtn');
+            if (adminBtn) {
+                adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
+                adminBtn.classList.toggle('active', window.isAdminMode);
+            }
+            await window.loadMessages(window.currentRoomId);
+            alert(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน');
+        };
+
+        window.adminDeleteRoom = async function(roomId, roomName) {
+            if (!window.isAdmin) { alert('เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้'); return; }
+            if (!confirm(`⚠️ คุณกำลังจะลบห้อง "${roomName}" ในฐานะแอดมิน\n\nข้อความและสมาชิกทั้งหมดจะถูกลบ!\n\nดำเนินการต่อ?`)) return;
+            try {
+                const { error } = await supabaseClient.from('rooms').delete().eq('id', roomId);
+                if (error) throw error;
+                alert('✅ ลบห้องสำเร็จ');
+                await window.selectRoom(PUBLIC_ROOM_ID);
+                await window.loadRooms();
+            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); }
+        };
+
+        // ========== DELETE ROOM (OWNER) ==========
+        window.showDeleteRoomModal = function() {
+            if (!window.currentRoom) return;
+            document.getElementById('deleteRoomName').innerHTML = `ต้องการลบห้อง: <strong>${window.currentRoom.name}</strong>?`;
+            document.getElementById('deleteRoomModal').classList.add('active');
+        };
+        window.closeDeleteRoomModal = function() { document.getElementById('deleteRoomModal').classList.remove('active'); };
+        window.confirmDeleteRoom = async function() {
+            if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) { alert('ไม่สามารถลบห้องสาธารณะได้'); window.closeDeleteRoomModal(); return; }
+            try {
+                const { error } = await supabaseClient.from('rooms').delete().eq('id', window.currentRoomId).eq('owner_id', window.currentUser.id);
+                if (error) throw error;
+                alert('✅ ลบห้องสำเร็จ');
+                window.closeDeleteRoomModal();
+                await selectRoom(PUBLIC_ROOM_ID);
+                await loadRooms();
+            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); window.closeDeleteRoomModal(); }
+        };
+
         // ========== CREATE ROOM ==========
         window.createRoom = async function(event) {
             event.preventDefault();
@@ -2657,36 +2616,6 @@
             } catch (error) { console.error('❌ Error creating room:', error); alert('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message); }
         };
 
-        // ========== DELETE ROOM ==========
-        window.showDeleteRoomModal = function() {
-            if (!window.currentRoom) return;
-            document.getElementById('deleteRoomName').innerHTML = `ต้องการลบห้อง: <strong>${window.currentRoom.name}</strong>?`;
-            document.getElementById('deleteRoomModal').classList.add('active');
-        };
-        window.closeDeleteRoomModal = function() { document.getElementById('deleteRoomModal').classList.remove('active'); };
-        window.confirmDeleteRoom = async function() {
-            if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) { alert('ไม่สามารถลบห้องสาธารณะได้'); window.closeDeleteRoomModal(); return; }
-            try {
-                const { error } = await supabaseClient.from('rooms').delete().eq('id', window.currentRoomId).eq('owner_id', window.currentUser.id);
-                if (error) throw error;
-                alert('✅ ลบห้องสำเร็จ');
-                window.closeDeleteRoomModal();
-                await selectRoom(PUBLIC_ROOM_ID);
-                await loadRooms();
-            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); window.closeDeleteRoomModal(); }
-        };
-        window.adminDeleteRoom = async function(roomId, roomName) {
-            if (!window.isAdmin) { alert('เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้'); return; }
-            if (!confirm(`⚠️ คุณกำลังจะลบห้อง "${roomName}" ในฐานะแอดมิน\n\nข้อความและสมาชิกทั้งหมดจะถูกลบ!\n\nดำเนินการต่อ?`)) return;
-            try {
-                const { error } = await supabaseClient.from('rooms').delete().eq('id', roomId);
-                if (error) throw error;
-                alert('✅ ลบห้องสำเร็จ');
-                await window.selectRoom(PUBLIC_ROOM_ID);
-                await window.loadRooms();
-            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); }
-        };
-
         // ========== ONLINE USERS ==========
         window.loadOnlineUsers = async function() {
             try {
@@ -2707,7 +2636,423 @@
             } catch (error) { console.error('❌ Error loading online users:', error); }
         };
 
+        // ========== ACTIVITIES ==========
+        window.loadActivities = async function() {
+            if (!window.currentRoomId) return;
+            try {
+                const { data: activities, error } = await supabaseClient
+                    .from('activities')
+                    .select(`
+                        *,
+                        creator:user_id (
+                            username,
+                            display_name,
+                            avatar_url
+                        ),
+                        participants:activity_participants (
+                            user_id,
+                            joined_at,
+                            profiles:user_id (
+                                username,
+                                display_name,
+                                avatar_url
+                            )
+                        )
+                    `)
+                    .eq('room_id', window.currentRoomId)
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                displayActivities(activities || []);
+            } catch (error) { console.error('❌ Error loading activities:', error); }
+        };
+
+        window.displayActivities = function(activities) {
+            const container = document.getElementById('activitiesList');
+            if (!container) return;
+            if (activities.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #718096;">🎮 ยังไม่มีกิจกรรม<br><small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small></div>';
+                return;
+            }
+            container.innerHTML = activities.map(activity => {
+                const isCreator = activity.user_id === window.currentUser.id;
+                const isJoined = activity.participants?.some(p => p.user_id === window.currentUser.id);
+                const participantsCount = activity.participants?.length || 1;
+                let activityIcon = '✨';
+                if (activity.activity_type === 'youtube') activityIcon = '📺';
+                else if (activity.activity_type === 'game') activityIcon = '🎮';
+                else if (activity.activity_type === 'poll') activityIcon = '📊';
+                return `<div class="activity-item" id="activity-${activity.id}">
+                    <div class="activity-header">
+                        <div class="activity-title"><span>${activityIcon}</span> ${activity.title}</div>
+                        <span class="activity-type-badge">${activity.activity_type}</span>
+                    </div>
+                    <div class="activity-creator">
+                        <img src="${activity.creator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.creator?.display_name || activity.creator?.username)}&background=667eea&color=fff`}" alt="creator" class="activity-creator-avatar">
+                        <span>${activity.creator?.display_name || activity.creator?.username}</span>
+                        ${isCreator ? '<span style="color: #48bb78;">👑</span>' : ''}
+                    </div>
+                    ${activity.description ? `<div class="activity-description">${activity.description}</div>` : ''}
+                    <div class="activity-meta">
+                        <span>👥 ${participantsCount}/${activity.max_participants || '∞'}</span>
+                        <span>🕐 ${formatTime(activity.created_at)}</span>
+                    </div>
+                    <div class="activity-actions">
+                        ${activity.activity_type === 'youtube' && activity.content ? `
+                            <button onclick="window.openYoutubePlayer('${activity.id}', '${activity.content}')" class="view-activity-btn">
+                                📺 ดู
+                            </button>
+                        ` : ''}
+                        <button onclick="window.toggleJoinActivity('${activity.id}')" 
+                                class="join-activity-btn ${isJoined ? 'joined' : ''}">
+                            ${isJoined ? '❌ ออก' : '✅ เข้าร่วม'}
+                        </button>
+                        ${isCreator || window.isAdmin ? `
+                            <button onclick="window.endActivity('${activity.id}')" class="btn" style="background: #f56565; color: white; padding: 8px; border-radius: 6px;">
+                                ✕ จบ
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.createActivity = async function(event) {
+            event.preventDefault();
+            try {
+                const title = document.getElementById('activityTitle').value;
+                const description = document.getElementById('activityDescription').value;
+                const activityType = document.getElementById('activityType').value;
+                const maxParticipants = parseInt(document.getElementById('maxParticipants').value) || 0;
+                let content = '';
+                
+                if (activityType === 'youtube') {
+                    let url = document.getElementById('youtubeUrl').value;
+                    if (url.includes('youtube.com/watch?v=')) {
+                        const videoId = url.split('v=')[1]?.split('&')[0];
+                        content = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+                    } else if (url.includes('youtu.be/')) {
+                        const videoId = url.split('youtu.be/')[1];
+                        content = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+                    } else {
+                        content = url;
+                    }
+                } else if (activityType === 'game') {
+                    content = document.getElementById('gameName').value;
+                } else if (activityType === 'poll') {
+                    content = document.getElementById('pollOptions').value;
+                }
+                
+                const { data, error } = await supabaseClient.from('activities').insert([{
+                    room_id: window.currentRoomId,
+                    user_id: window.currentUser.id,
+                    title,
+                    description,
+                    activity_type: activityType,
+                    content,
+                    max_participants: maxParticipants,
+                    participants_count: 1,
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                }]).select().single();
+                
+                if (error) throw error;
+                await supabaseClient.from('activity_participants').insert([{
+                    activity_id: data.id,
+                    user_id: window.currentUser.id
+                }]);
+                alert('✅ สร้างกิจกรรมสำเร็จ!');
+                window.closeCreateActivityModal();
+                window.loadActivities();
+            } catch (error) { console.error('❌ Error creating activity:', error); alert('ไม่สามารถสร้างกิจกรรมได้: ' + error.message); }
+        };
+
+        window.toggleJoinActivity = async function(activityId) {
+            try {
+                const { data: existing } = await supabaseClient.from('activity_participants')
+                    .select('*').eq('activity_id', activityId).eq('user_id', window.currentUser.id).maybeSingle();
+                if (existing) {
+                    await supabaseClient.from('activity_participants').delete()
+                        .eq('activity_id', activityId).eq('user_id', window.currentUser.id);
+                } else {
+                    await supabaseClient.from('activity_participants').insert([{
+                        activity_id: activityId,
+                        user_id: window.currentUser.id
+                    }]);
+                }
+                const { data: participants } = await supabaseClient.from('activity_participants')
+                    .select('*').eq('activity_id', activityId);
+                await supabaseClient.from('activities').update({ participants_count: participants.length }).eq('id', activityId);
+                window.loadActivities();
+                if (window.currentYoutubeActivityId === activityId) {
+                    window.loadActivityParticipants(activityId);
+                }
+            } catch (error) { console.error('❌ Error joining activity:', error); alert('ไม่สามารถเข้าร่วมกิจกรรมได้'); }
+        };
+
+        window.openYoutubePlayer = function(activityId, url) {
+            const modal = document.getElementById('youtubePlayerModal');
+            const iframe = document.getElementById('youtubeIframe');
+            const title = document.getElementById('youtubeActivityTitle');
+            iframe.src = url;
+            title.textContent = document.querySelector(`#activity-${activityId} .activity-title`)?.textContent?.trim() || 'YouTube';
+            modal.classList.add('active');
+            window.currentYoutubeActivityId = activityId;
+            window.loadActivityParticipants(activityId);
+        };
+
+        window.closeYoutubePlayer = function() {
+            const modal = document.getElementById('youtubePlayerModal');
+            const iframe = document.getElementById('youtubeIframe');
+            iframe.src = '';
+            modal.classList.remove('active');
+            window.currentYoutubeActivityId = null;
+        };
+
+        window.loadActivityParticipants = async function(activityId) {
+            try {
+                const { data: participants, error } = await supabaseClient
+                    .from('activity_participants')
+                    .select('user_id, profiles:user_id(username, display_name, avatar_url)')
+                    .eq('activity_id', activityId);
+                if (error) throw error;
+                const container = document.getElementById('youtubeParticipants');
+                const count = document.getElementById('youtubeParticipantsCount');
+                if (count) count.textContent = `(${participants.length})`;
+                container.innerHTML = participants.map(p => `
+                    <div class="participant-item">
+                        <img src="${p.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.profiles?.display_name || p.profiles?.username)}&background=667eea&color=fff`}" 
+                             alt="${p.profiles?.display_name}" class="participant-avatar">
+                        <span class="participant-name">${p.profiles?.display_name || p.profiles?.username}</span>
+                    </div>
+                `).join('');
+            } catch (error) { console.error('❌ Error loading participants:', error); }
+        };
+
+        window.endActivity = async function(activityId) {
+            if (!confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการจบกิจกรรมนี้?')) return;
+            try {
+                const { error } = await supabaseClient.from('activities').update({
+                    status: 'ended',
+                    ended_at: new Date().toISOString()
+                }).eq('id', activityId);
+                if (error) throw error;
+                alert('✅ จบกิจกรรมแล้ว');
+                window.loadActivities();
+                if (window.currentYoutubeActivityId === activityId) {
+                    window.closeYoutubePlayer();
+                }
+            } catch (error) { console.error('❌ Error ending activity:', error); alert('ไม่สามารถจบกิจกรรมได้'); }
+        };
+
+        window.syncPlayPause = function() {
+            const iframe = document.getElementById('youtubeIframe');
+            const btn = document.getElementById('syncPlayPauseBtn');
+            const isPlaying = btn.innerHTML.includes('⏸️');
+            iframe.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func: isPlaying ? 'pauseVideo' : 'playVideo',
+                args: ''
+            }), '*');
+            btn.innerHTML = isPlaying ? '▶️ เล่น' : '⏸️ หยุดชั่วคราว';
+        };
+
+        window.syncSeek = function(seconds) {
+            const iframe = document.getElementById('youtubeIframe');
+            iframe.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func: 'seekTo',
+                args: [seconds, true]
+            }), '*');
+        };
+
         // ========== MODAL CONTROLS ==========
+        window.showCreateActivityModal = function() {
+            const modal = document.getElementById('createActivityModal');
+            if (modal) modal.classList.add('active');
+            window.toggleActivityTypeFields();
+        };
+
+        window.closeCreateActivityModal = function() {
+            const modal = document.getElementById('createActivityModal');
+            const form = document.getElementById('createActivityForm');
+            if (modal) modal.classList.remove('active');
+            if (form) form.reset();
+        };
+
+        window.toggleActivityTypeFields = function() {
+            const type = document.getElementById('activityType').value;
+            document.getElementById('youtubeField').style.display = type === 'youtube' ? 'block' : 'none';
+            document.getElementById('gameField').style.display = type === 'game' ? 'block' : 'none';
+            document.getElementById('pollField').style.display = type === 'poll' ? 'block' : 'none';
+        };
+
+        // ========== MUSIC PLAYER ==========
+        window.openMusicPlayer = function() { 
+            const modal = document.getElementById('musicPlayerModal'); 
+            if (modal) { 
+                modal.classList.add('active'); 
+                window.loadPlaylist(); 
+            } 
+        };
+
+        window.closeMusicPlayer = function() { 
+            const modal = document.getElementById('musicPlayerModal'); 
+            if (modal) modal.classList.remove('active'); 
+        };
+
+        window.addMusicToRoom = async function() {
+            const urlInput = document.getElementById('musicUrlInput');
+            if (!urlInput) return;
+            const url = urlInput.value.trim();
+            if (!url) { alert('❌ กรุณาใส่ URL เพลง'); return; }
+            if (!url.toLowerCase().endsWith('.mp3')) {
+                alert('❌ รองรับเฉพาะไฟล์ .mp3 เท่านั้น');
+                return;
+            }
+            try {
+                const musicInfo = { 
+                    title: url.split('/').pop() || 'เพลงไม่มีชื่อ', 
+                    artist: window.currentUser.user_metadata?.username || 'ผู้ใช้' 
+                };
+                const { error } = await supabaseClient.from('room_music').insert([{
+                    room_id: window.currentRoomId,
+                    user_id: window.currentUser.id,
+                    music_url: url,
+                    music_title: musicInfo.title,
+                    music_artist: musicInfo.artist,
+                    is_playing: false
+                }]);
+                if (error) throw error;
+                urlInput.value = '';
+                alert('✅ เพิ่มเพลงสำเร็จ');
+                window.loadPlaylist();
+            } catch (error) { 
+                console.error('❌ Error adding music:', error); 
+                alert('ไม่สามารถเพิ่มเพลงได้'); 
+            }
+        };
+
+        window.loadPlaylist = async function() {
+            if (!window.currentRoomId) return;
+            try {
+                const { data: playlist, error } = await supabaseClient.from('room_music')
+                    .select('*, profiles:user_id(username, display_name)')
+                    .eq('room_id', window.currentRoomId)
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                const container = document.getElementById('playlistItems');
+                if (!container) return;
+                if (playlist.length === 0) { 
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">🎵 ยังไม่มีเพลงในเพลย์ลิสต์</div>'; 
+                    return; 
+                }
+                container.innerHTML = playlist.map(song => `
+                    <div class="playlist-item">
+                        <div class="playlist-info">
+                            <div class="playlist-title">${song.music_title}</div>
+                            <div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div>
+                        </div>
+                        <div class="playlist-controls">
+                            <button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>
+                            ${song.user_id === window.currentUser.id || window.isAdmin ? 
+                                `<button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) { console.error('❌ Error loading playlist:', error); }
+        };
+
+        window.playMusic = async function(musicId, url) {
+            try {
+                if (window.audioPlayer) { 
+                    window.audioPlayer.pause(); 
+                    window.audioPlayer = null; 
+                }
+                if (!url.toLowerCase().endsWith('.mp3')) {
+                    alert('❌ รองรับเฉพาะไฟล์ .mp3 เท่านั้น');
+                    return;
+                }
+                window.audioPlayer = new Audio(url);
+                await window.audioPlayer.play();
+                window.currentMusic = { id: musicId, url };
+                const musicBar = document.getElementById('currentMusicBar');
+                const musicTitle = document.getElementById('currentMusicTitle');
+                const playPauseBtn = document.getElementById('playPauseBtn');
+                if (musicBar) musicBar.style.display = 'flex';
+                if (musicTitle) musicTitle.textContent = document.querySelector(`[onclick*="${musicId}"]`)?.closest('.playlist-item')?.querySelector('.playlist-title')?.textContent || 'กำลังเล่นเพลง...';
+                if (playPauseBtn) playPauseBtn.innerHTML = '⏸️';
+                await supabaseClient.from('room_music').update({ is_playing: true }).eq('id', musicId);
+            } catch (error) { 
+                console.error('❌ Error playing music:', error); 
+                alert('ไม่สามารถเล่นเพลงได้'); 
+            }
+        };
+
+        window.togglePlayPause = function() {
+            if (!window.audioPlayer) return;
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if (!playPauseBtn) return;
+            if (window.audioPlayer.paused) { 
+                window.audioPlayer.play(); 
+                playPauseBtn.innerHTML = '⏸️'; 
+            } else { 
+                window.audioPlayer.pause(); 
+                playPauseBtn.innerHTML = '▶️'; 
+            }
+        };
+
+        window.stopMusic = function() {
+            if (window.audioPlayer) { 
+                window.audioPlayer.pause(); 
+                window.audioPlayer.currentTime = 0; 
+                window.audioPlayer = null; 
+            }
+            window.currentMusic = null;
+            const musicBar = document.getElementById('currentMusicBar');
+            if (musicBar) musicBar.style.display = 'none';
+        };
+
+        window.hideMusicBar = function() { 
+            const musicBar = document.getElementById('currentMusicBar'); 
+            if (musicBar) musicBar.style.display = 'none'; 
+            if (window.audioPlayer) window.audioPlayer.pause();
+        };
+
+        window.removeMusic = async function(musicId) {
+            if (!confirm('🗑️ ลบเพลงนี้ออกจากเพลย์ลิสต์?')) return;
+            try {
+                const { error } = await supabaseClient.from('room_music').delete().eq('id', musicId);
+                if (error) throw error;
+                if (window.currentMusic?.id === musicId) window.stopMusic();
+                alert('✅ ลบเพลงสำเร็จ');
+                window.loadPlaylist();
+            } catch (error) { console.error('❌ Error removing music:', error); alert('ไม่สามารถลบเพลงได้'); }
+        };
+
+        // ========== REALTIME ==========
+        window.setupMessageSubscription = function(roomId) {
+            if (window.messageSubscription) window.messageSubscription.unsubscribe();
+            window.messageSubscription = supabaseClient.channel(`room-${roomId}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, async (payload) => {
+                    const { data: profile } = await supabaseClient.from('profiles').select('username, display_name, avatar_url').eq('id', payload.new.user_id).single();
+                    displayMessage({ ...payload.new, profiles: profile });
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, async () => { await window.loadMessages(roomId); })
+                .subscribe();
+        };
+
+        window.setupActivitiesSubscription = function(roomId) {
+            return supabaseClient.channel(`activities-${roomId}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'activities', filter: `room_id=eq.${roomId}` }, () => { window.loadActivities(); })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_participants', filter: `activity_id=in.(select id from activities where room_id = '${roomId}')` }, () => { 
+                    window.loadActivities();
+                    if (window.currentYoutubeActivityId) window.loadActivityParticipants(window.currentYoutubeActivityId);
+                })
+                .subscribe();
+        };
+
+        // ========== ROOM MODAL CONTROLS ==========
         window.showCreateRoomModal = function() { const modal = document.getElementById('createRoomModal'); if (modal) modal.classList.add('active'); };
         window.closeCreateRoomModal = function() {
             const modal = document.getElementById('createRoomModal');
@@ -2760,7 +3105,6 @@
             btn.classList.add('active');
             window.loadRooms(filter);
         };
-        window.toggleMembersPanel = function() { const panel = document.getElementById('membersPanel'); if (panel) panel.classList.toggle('active'); };
         window.displayUserInfo = function() {
             const userProfile = document.getElementById('userProfile');
             const username = window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้';
@@ -2769,7 +3113,10 @@
 
         // ========== EVENT LISTENERS ==========
         window.setupEventListeners = function() {
-            if (window.sendButton) { window.sendButton.removeEventListener('click', window.sendMessage); window.sendButton.addEventListener('click', window.sendMessage); }
+            if (window.sendButton) { 
+                window.sendButton.removeEventListener('click', window.sendMessage); 
+                window.sendButton.addEventListener('click', window.sendMessage); 
+            }
             if (window.messageInput) {
                 window.messageInput.removeEventListener('keydown', handleKeyDown);
                 window.messageInput.addEventListener('keydown', handleKeyDown);
@@ -2777,9 +3124,24 @@
                 window.messageInput.addEventListener('input', handleInput);
             }
             const createRoomForm = document.getElementById('createRoomForm');
-            if (createRoomForm) { createRoomForm.removeEventListener('submit', window.createRoom); createRoomForm.addEventListener('submit', window.createRoom); }
+            if (createRoomForm) { 
+                createRoomForm.removeEventListener('submit', window.createRoom); 
+                createRoomForm.addEventListener('submit', window.createRoom); 
+            }
+            const createActivityForm = document.getElementById('createActivityForm');
+            if (createActivityForm) {
+                createActivityForm.removeEventListener('submit', window.createActivity);
+                createActivityForm.addEventListener('submit', window.createActivity);
+            }
         };
-        function handleKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); } }
+
+        function handleKeyDown(e) { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                window.sendMessage(); 
+            } 
+        }
+
         function handleInput() {
             if (!window.messageInput) return;
             const count = window.messageInput.value.length;
@@ -2787,18 +3149,6 @@
             if (charCount) charCount.textContent = `${count}/500`;
             if (count > 500) window.messageInput.value = window.messageInput.value.slice(0, 500);
         }
-
-        // ========== REALTIME ==========
-        window.setupMessageSubscription = function(roomId) {
-            if (window.messageSubscription) window.messageSubscription.unsubscribe();
-            window.messageSubscription = supabaseClient.channel(`room-${roomId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, async (payload) => {
-                    const { data: profile } = await supabaseClient.from('profiles').select('username, display_name, avatar_url').eq('id', payload.new.user_id).single();
-                    displayMessage({ ...payload.new, profiles: profile });
-                })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, async () => { await window.loadMessages(roomId); })
-                .subscribe();
-        };
 
         // ========== UTILITIES ==========
         window.formatTime = function(timestamp) {
@@ -2810,15 +3160,21 @@
             if (diff < 86400000 * 2) return 'เมื่อวาน';
             return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         };
+
         window.linkify = function(text) {
             if (!text) return '';
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
         };
-        window.scrollToBottom = function() { if (window.messagesContainer) window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; };
 
-        // ========== LOGOUT ==========
-        window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'index.html'; };
+        window.scrollToBottom = function() { 
+            if (window.messagesContainer) window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; 
+        };
+
+        window.logout = async function() { 
+            await supabaseClient.auth.signOut(); 
+            window.location.href = 'index.html'; 
+        };
 
         // ========== CLEANUP ==========
         window.addEventListener('beforeunload', () => {
@@ -2830,4 +3186,3 @@
     </script>
 </body>
 </html>
-
