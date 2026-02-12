@@ -242,16 +242,18 @@
             padding: 20px;
         }
 
+        /* ===== ROOM ITEMS - แก้ไขให้คลิกได้ ===== */
         .room-item {
             background: var(--bg-white);
             border-radius: var(--radius-lg);
             padding: 16px;
             margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
             border: 1px solid transparent;
             box-shadow: var(--shadow-sm);
             position: relative;
+            transition: all 0.2s;
+            cursor: pointer;
+            pointer-events: auto;
         }
 
         .room-item:hover {
@@ -263,6 +265,17 @@
         .room-item.active {
             background: var(--primary-color);
             color: white;
+        }
+
+        .room-item * {
+            pointer-events: none;
+        }
+
+        .room-item button,
+        .room-item a {
+            pointer-events: auto;
+            position: relative;
+            z-index: 10;
         }
 
         .room-header {
@@ -442,6 +455,7 @@
             opacity: 0;
             margin-left: 8px;
             font-size: 14px;
+            pointer-events: auto;
         }
 
         .message:hover .delete-message-btn {
@@ -458,6 +472,7 @@
             display: flex;
             align-items: center;
             margin-right: 8px;
+            pointer-events: auto;
         }
 
         .message-checkbox input[type="checkbox"] {
@@ -465,6 +480,7 @@
             height: 18px;
             cursor: pointer;
             accent-color: var(--primary-color);
+            pointer-events: auto;
         }
 
         .message.selected {
@@ -515,6 +531,7 @@
             align-items: center;
             gap: 4px;
             color: var(--text-light);
+            pointer-events: auto;
         }
 
         .toolbar-btn:hover {
@@ -564,6 +581,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .btn-send:hover {
@@ -612,6 +630,7 @@
             justify-content: center;
             font-size: 14px;
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .remove-preview:hover {
@@ -693,6 +712,7 @@
             font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .kick-btn:hover {
@@ -877,6 +897,7 @@
             padding: 4px 8px;
             border-radius: var(--radius-sm);
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .playlist-btn:hover {
@@ -933,6 +954,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .music-btn:hover {
@@ -961,6 +983,7 @@
             width: fit-content;
             margin: 0 auto 20px;
             border: none;
+            pointer-events: auto;
         }
 
         .delete-selected-btn:hover {
@@ -979,6 +1002,7 @@
             font-weight: 600;
             transition: all 0.3s;
             margin-right: 8px;
+            pointer-events: auto;
         }
 
         .btn-admin.active {
@@ -1039,6 +1063,7 @@
             cursor: pointer;
             border-radius: var(--radius-md);
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .emoji-item:hover {
@@ -1093,6 +1118,7 @@
             background: rgba(255,255,255,0.2);
             border-radius: 50%;
             transition: all 0.2s;
+            pointer-events: auto;
         }
 
         .lightbox-close:hover {
@@ -1109,6 +1135,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.3s;
+            pointer-events: auto;
         }
 
         .btn-primary {
@@ -1135,6 +1162,7 @@
             background: transparent;
             border: 1px solid var(--primary-color);
             color: var(--primary-color);
+            pointer-events: auto;
         }
 
         .btn-outline:hover {
@@ -1211,10 +1239,11 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             z-index: 1999;
+            pointer-events: auto;
         }
 
         .sidebar-overlay.active {
-            display: block;
+            display: block !important;
         }
 
         body.sidebar-open {
@@ -1224,408 +1253,318 @@
             height: 100%;
         }
 
-      /* ========== MOBILE RESPONSIVE ========== */
-@media (max-width: 768px) {
-    .chat-main {
-        flex-direction: column;
-        position: relative;
-    }
+        /* ========== MOBILE RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .chat-main {
+                flex-direction: column;
+                position: relative;
+            }
 
-    /* ===== ROOMS PANEL ===== */
-    .rooms-panel {
-        position: fixed !important;
-        left: -100%;
-        top: 0;
-        width: 85% !important;
-        height: 100vh !important;
-        z-index: 2000 !important;
-        transition: left 0.3s ease;
-        background: var(--bg-white);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        pointer-events: none !important;  /* ปิดการคลิกเมื่อซ่อน */
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
+            .rooms-panel {
+                position: fixed !important;
+                left: -100%;
+                top: 0;
+                width: 85% !important;
+                height: 100vh !important;
+                z-index: 2000;
+                transition: left 0.3s ease;
+                background: var(--bg-white);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
 
-    .rooms-panel.mobile-active {
-        left: 0 !important;
-        pointer-events: auto !important;  /* เปิดการคลิกเมื่อแสดง */
-    }
+            .rooms-panel.mobile-active {
+                left: 0 !important;
+            }
 
-    /* ให้ทุกอย่างใน sidebar คลิกได้ */
-    .rooms-panel.mobile-active,
-    .rooms-panel.mobile-active * {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .rooms-panel .room-item {
+                pointer-events: auto !important;
+                cursor: pointer !important;
+            }
 
-    /* ===== ROOM ITEMS ===== */
-    .rooms-panel.mobile-active .room-item {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        position: relative;
-        z-index: 2001 !important;
-    }
+            .rooms-panel .room-item:active {
+                background: var(--primary-color) !important;
+                color: white !important;
+                transform: scale(0.98);
+            }
 
-    .rooms-panel.mobile-active .room-item:active {
-        background: var(--primary-color) !important;
-        color: white !important;
-        transform: scale(0.98);
-    }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1999;
+            }
 
-    .rooms-panel.mobile-active .room-item.active {
-        background: var(--primary-color) !important;
-        color: white !important;
-    }
+            .sidebar-overlay.active {
+                display: block !important;
+            }
 
-    /* ===== BUTTONS IN SIDEBAR ===== */
-    .rooms-panel.mobile-active button,
-    .rooms-panel.mobile-active .tab-btn,
-    .rooms-panel.mobile-active .create-room-btn,
-    .rooms-panel.mobile-active .delete-room-btn,
-    .rooms-panel.mobile-active .admin-delete-room-btn {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        position: relative;
-        z-index: 2002 !important;
-    }
+            .chat-header {
+                padding: 12px 16px;
+            }
 
-    /* ===== SIDEBAR OVERLAY ===== */
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1999;
-        pointer-events: auto;
-    }
+            .chat-header-left {
+                gap: 8px;
+            }
 
-    .sidebar-overlay.active {
-        display: block !important;
-    }
+            .mobile-menu-btn {
+                display: inline-block !important;
+                pointer-events: auto !important;
+            }
 
-    /* ===== CHAT HEADER ===== */
-    .chat-header {
-        padding: 12px 16px;
-    }
+            .current-room-info h2 {
+                font-size: 18px;
+                max-width: 200px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-    .chat-header-left {
-        gap: 8px;
-    }
+            .room-badge,
+            .online-status {
+                display: none;
+            }
 
-    .mobile-menu-btn {
-        display: inline-block !important;
-        cursor: pointer !important;
-        pointer-events: auto !important;
-        z-index: 2001 !important;
-    }
+            .chat-header-right {
+                gap: 8px;
+            }
 
-    .current-room-info h2 {
-        font-size: 18px;
-        max-width: 200px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+            .user-profile .username {
+                display: none;
+            }
 
-    .room-badge,
-    .online-status {
-        display: none;
-    }
+            .avatar {
+                margin-right: 0;
+                width: 40px;
+                height: 40px;
+            }
 
-    .chat-header-right {
-        gap: 8px;
-    }
+            .btn-outline,
+            .btn-admin {
+                padding: 8px 12px;
+                font-size: 13px;
+                pointer-events: auto !important;
+            }
 
-    .user-profile .username {
-        display: none;
-    }
+            .messages-container {
+                padding: 16px;
+                padding-bottom: 100px;
+            }
 
-    .avatar {
-        margin-right: 0;
-        width: 40px;
-        height: 40px;
-    }
+            .message {
+                max-width: 85%;
+            }
 
-    .btn-outline,
-    .btn-admin {
-        padding: 8px 12px;
-        font-size: 13px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .message-avatar {
+                width: 36px;
+                height: 36px;
+            }
 
-    /* ===== MESSAGES ===== */
-    .messages-container {
-        padding: 16px;
-        padding-bottom: 100px;
-    }
+            .message-content {
+                padding: 10px 14px;
+            }
 
-    .message {
-        max-width: 85%;
-    }
+            .message-author {
+                font-size: 13px;
+            }
 
-    .message-avatar {
-        width: 36px;
-        height: 36px;
-    }
+            .message-time {
+                font-size: 10px;
+            }
 
-    .message-content {
-        padding: 10px 14px;
-    }
+            .message-body {
+                font-size: 14px;
+            }
 
-    .message-author {
-        font-size: 13px;
-    }
+            .message-input-area {
+                position: sticky;
+                bottom: 0;
+                padding: 12px 16px;
+                background: var(--bg-white);
+                border-top: 1px solid var(--border-color);
+                box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+                z-index: 1500;
+            }
 
-    .message-time {
-        font-size: 10px;
-    }
+            .input-toolbar {
+                margin-bottom: 8px;
+            }
 
-    .message-body {
-        font-size: 14px;
-    }
+            .toolbar-btn {
+                padding: 10px 16px;
+                font-size: 16px;
+                pointer-events: auto !important;
+            }
 
-    /* ===== INPUT AREA ===== */
-    .message-input-area {
-        position: sticky;
-        bottom: 0;
-        padding: 12px 16px;
-        background: var(--bg-white);
-        border-top: 1px solid var(--border-color);
-        box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
-        z-index: 1500;
-    }
+            .input-wrapper {
+                padding: 4px 4px 4px 16px;
+            }
 
-    .input-toolbar {
-        margin-bottom: 8px;
-    }
+            .input-wrapper textarea {
+                padding: 12px 0;
+                font-size: 16px;
+            }
 
-    .toolbar-btn {
-        padding: 10px 16px;
-        font-size: 16px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .btn-send {
+                padding: 12px 24px;
+                pointer-events: auto !important;
+            }
 
-    .input-wrapper {
-        padding: 4px 4px 4px 16px;
-    }
+            .input-footer {
+                display: none;
+            }
 
-    .input-wrapper textarea {
-        padding: 12px 0;
-        font-size: 16px;
-    }
+            .members-panel {
+                position: fixed;
+                right: -100%;
+                top: 0;
+                width: 85%;
+                height: 100vh;
+                z-index: 2000;
+                transition: right 0.3s;
+                background: var(--bg-white);
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
 
-    .btn-send {
-        padding: 12px 24px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .members-panel.active {
+                right: 0 !important;
+            }
 
-    .input-footer {
-        display: none;
-    }
+            .members-panel.active .member-item {
+                pointer-events: auto !important;
+            }
 
-    /* ===== MEMBERS PANEL ===== */
-    .members-panel {
-        position: fixed;
-        right: -100%;
-        top: 0;
-        width: 85%;
-        height: 100vh;
-        z-index: 2000;
-        transition: right 0.3s;
-        background: var(--bg-white);
-        box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        pointer-events: none !important;
-    }
+            .member-item {
+                padding: 16px;
+            }
 
-    .members-panel.active {
-        right: 0 !important;
-        pointer-events: auto !important;
-    }
+            .kick-btn {
+                padding: 10px 16px;
+                pointer-events: auto !important;
+            }
 
-    .members-panel.active,
-    .members-panel.active * {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .delete-selected-btn {
+                position: fixed;
+                bottom: 100px;
+                padding: 14px 28px;
+                font-size: 15px;
+                z-index: 2001;
+                pointer-events: auto !important;
+            }
 
-    .member-item {
-        padding: 16px;
-    }
+            .read-by-avatar {
+                width: 20px;
+                height: 20px;
+            }
 
-    .kick-btn {
-        padding: 10px 16px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .read-by-more {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+            }
 
-    /* ===== DELETE SELECTED BUTTON ===== */
-    .delete-selected-btn {
-        position: fixed;
-        bottom: 100px;
-        padding: 14px 28px;
-        font-size: 15px;
-        z-index: 2001;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .music-bar {
+                padding: 12px 16px;
+                z-index: 2002;
+            }
 
-    /* ===== READ RECEIPTS ===== */
-    .read-by-avatar {
-        width: 20px;
-        height: 20px;
-    }
+            .music-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+                pointer-events: auto !important;
+            }
 
-    .read-by-more {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
-    }
+            .modal-content {
+                padding: 24px;
+                width: 95%;
+                max-height: 80vh;
+            }
 
-    /* ===== MUSIC BAR ===== */
-    .music-bar {
-        padding: 12px 16px;
-        z-index: 2002;
-    }
+            .emoji-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 12px;
+                padding: 12px;
+            }
 
-    .music-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .emoji-item {
+                font-size: 28px;
+                padding: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                pointer-events: auto !important;
+            }
 
-    /* ===== MODAL ===== */
-    .modal-content {
-        padding: 24px;
-        width: 95%;
-        max-height: 80vh;
-    }
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                font-size: 16px;
+                padding: 14px;
+            }
 
-    /* ===== EMOJI GRID ===== */
-    .emoji-grid {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 12px;
-        padding: 12px;
-    }
+            .form-group label {
+                font-size: 15px;
+                margin-bottom: 8px;
+            }
 
-    .emoji-item {
-        font-size: 28px;
-        padding: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .room-tabs {
+                padding: 16px;
+            }
 
-    /* ===== FORM ELEMENTS ===== */
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-        font-size: 16px;
-        padding: 14px;
-    }
+            .tab-btn {
+                padding: 12px;
+                font-size: 15px;
+                pointer-events: auto !important;
+            }
 
-    .form-group label {
-        font-size: 15px;
-        margin-bottom: 8px;
-    }
+            .create-room-btn {
+                padding: 14px;
+                font-size: 16px;
+                pointer-events: auto !important;
+            }
 
-    /* ===== ROOM TABS ===== */
-    .room-tabs {
-        padding: 16px;
-    }
+            button, 
+            .btn, 
+            .room-item,
+            .tab-btn,
+            .toolbar-btn,
+            .kick-btn,
+            .delete-room-btn,
+            .admin-delete-room-btn,
+            .create-room-btn,
+            .mobile-menu-btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
 
-    .tab-btn {
-        padding: 12px;
-        font-size: 15px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .room-item:active,
+            .tab-btn:active,
+            .btn:active,
+            button:active {
+                opacity: 0.7;
+                transform: scale(0.98);
+            }
 
-    /* ===== CREATE ROOM BUTTON ===== */
-    .create-room-btn {
-        padding: 14px;
-        font-size: 16px;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
+            .rooms-panel::-webkit-scrollbar,
+            .members-list::-webkit-scrollbar,
+            .messages-container::-webkit-scrollbar {
+                width: 0;
+                background: transparent;
+            }
 
-    /* ===== MINIMUM TOUCH TARGETS ===== */
-    button, 
-    .btn, 
-    .room-item,
-    .tab-btn,
-    .toolbar-btn,
-    .kick-btn,
-    .delete-room-btn,
-    .admin-delete-room-btn,
-    .create-room-btn,
-    .mobile-menu-btn {
-        min-height: 44px;
-        min-width: 44px;
-    }
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
 
-    /* ===== TOUCH FEEDBACK ===== */
-    .room-item:active,
-    .tab-btn:active,
-    .btn:active,
-    button:active {
-        opacity: 0.7;
-        transform: scale(0.98);
-    }
-
-    /* ===== HIDE SCROLLBAR ===== */
-    .rooms-panel::-webkit-scrollbar,
-    .members-list::-webkit-scrollbar,
-    .messages-container::-webkit-scrollbar {
-        width: 0;
-        background: transparent;
-    }
-
-    /* ===== PREVENT ZOOM ===== */
-    input, select, textarea {
-        font-size: 16px !important;
-    }
-}
-
-/* ========== DEBUG FIX - บังคับให้คลิกได้ ========== */
-@media (max-width: 768px) {
-    .rooms-panel.mobile-active {
-        pointer-events: auto !important;
-        left: 0 !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
-    .rooms-panel.mobile-active .room-item,
-    .rooms-panel.mobile-active button,
-    .rooms-panel.mobile-active .tab-btn,
-    .rooms-panel.mobile-active .create-room-btn {
-        pointer-events: auto !important;
-        cursor: pointer !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-    }
-    
-    .sidebar-overlay.active {
-        display: block !important;
-        background: rgba(0, 0, 0, 0.5) !important;
-    }
-}
         /* ========== SMALL PHONES ========== */
         @media (max-width: 375px) {
             .current-room-info h2 {
@@ -1979,10 +1918,16 @@
                 await loadOnlineUsers();
                 setupEventListeners();
                 initMobileHandler();
-                initMobileLayout();
 
+                // เพิ่ม event listener สำหรับ overlay
                 const overlay = document.getElementById('sidebarOverlay');
-                if (overlay) overlay.addEventListener('click', closeMobileSidebar);
+                if (overlay) {
+                    overlay.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeMobileSidebar();
+                    });
+                }
 
                 console.log('✅ Chat initialized');
             } catch (error) {
@@ -1994,41 +1939,61 @@
         window.toggleMobileSidebar = function() {
             const sidebar = document.querySelector('.rooms-panel');
             const overlay = document.getElementById('sidebarOverlay');
-            if (!sidebar) return;
+            
+            if (!sidebar) {
+                console.error('❌ ไม่พบ sidebar');
+                return;
+            }
+            
             sidebar.classList.toggle('mobile-active');
-            if (overlay) overlay.classList.toggle('active', sidebar.classList.contains('mobile-active'));
-            document.body.style.overflow = sidebar.classList.contains('mobile-active') ? 'hidden' : '';
+            
+            if (overlay) {
+                if (sidebar.classList.contains('mobile-active')) {
+                    overlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    console.log('📱 เปิด sidebar');
+                } else {
+                    overlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    console.log('📱 ปิด sidebar');
+                }
+            }
         };
 
         window.closeMobileSidebar = function() {
             const sidebar = document.querySelector('.rooms-panel');
             const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar) sidebar.classList.remove('mobile-active');
-            if (overlay) overlay.classList.remove('active');
+            
+            if (sidebar) {
+                sidebar.classList.remove('mobile-active');
+            }
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
             document.body.style.overflow = '';
+            document.body.style.position = '';
+            console.log('📱 ปิด sidebar');
         };
 
-        // ========== INIT MOBILE LAYOUT ==========
-        window.initMobileLayout = function() {
-            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                const menuBtn = document.querySelector('.mobile-menu-btn');
-                if (menuBtn) menuBtn.style.display = 'inline-block';
-                const roomsPanel = document.querySelector('.rooms-panel');
-                if (roomsPanel) {
-                    roomsPanel.style.position = 'fixed';
-                    roomsPanel.style.left = '-100%';
-                    roomsPanel.style.top = '0';
-                    roomsPanel.style.width = '85%';
-                    roomsPanel.style.height = '100vh';
-                    roomsPanel.style.zIndex = '2000';
-                    roomsPanel.style.transition = 'left 0.3s ease';
-                    roomsPanel.style.background = 'white';
-                    roomsPanel.style.boxShadow = '2px 0 10px rgba(0,0,0,0.1)';
+        // ========== INIT MOBILE HANDLER ==========
+        window.initMobileHandler = function() {
+            if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) return;
+            
+            let originalHeight = window.innerHeight;
+            window.addEventListener('resize', () => {
+                const newHeight = window.innerHeight;
+                if (originalHeight - newHeight > 150) {
+                    document.body.classList.add('keyboard-open');
+                    setTimeout(() => { 
+                        if (window.messageInput) 
+                            window.messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                    }, 300);
+                } else {
+                    document.body.classList.remove('keyboard-open');
                 }
-                const messageInputArea = document.getElementById('messageInputArea');
-                if (messageInputArea) messageInputArea.style.display = 'block';
-                console.log('📱 Mobile layout initialized');
-            }
+            });
         };
 
         // ========== ADMIN FUNCTIONS ==========
@@ -2062,10 +2027,13 @@
 
         // ========== SELECT ROOM ==========
         window.selectRoom = async function(roomId) {
+            // ปิด sidebar ก่อน
             closeMobileSidebar();
+            
             try {
                 const { data: room, error } = await supabaseClient.from('rooms').select('*').eq('id', roomId).single();
                 if (error) throw error;
+                
                 if (room.room_type === 'private') {
                     const { data: member } = await supabaseClient.from('room_members').select('*').eq('room_id', roomId).eq('user_id', window.currentUser.id).maybeSingle();
                     if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
@@ -2073,6 +2041,7 @@
                         return;
                     }
                 }
+                
                 await joinRoom(room);
             } catch (error) {
                 console.error('❌ Error selecting room:', error);
@@ -2083,6 +2052,7 @@
         window.joinRoom = async function(room) {
             try {
                 const { data: existingMember } = await supabaseClient.from('room_members').select('*').eq('room_id', room.id).eq('user_id', window.currentUser.id).maybeSingle();
+                
                 if (!existingMember && !window.isAdmin) {
                     await supabaseClient.from('room_members').insert([{
                         room_id: room.id,
@@ -2091,24 +2061,33 @@
                         joined_at: new Date().toISOString()
                     }]);
                 }
+                
                 window.currentRoom = room;
                 window.currentRoomId = room.id;
+                
                 document.getElementById('currentRoomTitle').innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}`;
                 document.getElementById('currentRoomTypeBadge').textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+                
                 const roomActions = document.getElementById('roomActions');
                 roomActions.innerHTML = '';
+                
                 if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
                     roomActions.innerHTML += `<button onclick="window.showDeleteRoomModal()" class="delete-room-btn">🗑️ ลบห้อง</button>`;
                 }
+                
                 if (window.isAdmin && room.id !== PUBLIC_ROOM_ID) {
                     roomActions.innerHTML += `<button onclick="window.adminDeleteRoom('${room.id}', '${room.name}')" class="admin-delete-room-btn">👑 ลบห้อง (แอดมิน)</button>`;
                 }
+                
                 document.getElementById('messageInputArea').style.display = 'block';
+                
                 await loadMessages(room.id);
                 await loadRoomMembers(room.id);
                 setupMessageSubscription(room.id);
+                
                 if (window.readReceiptsSubscription) window.readReceiptsSubscription.unsubscribe();
                 window.readReceiptsSubscription = window.subscribeToReadReceipts(room.id);
+                
                 loadRooms();
             } catch (error) {
                 console.error('❌ Error joining room:', error);
@@ -2118,11 +2097,16 @@
         // ========== LOAD ROOMS ==========
         window.loadRooms = async function(filter = 'all') {
             try {
-                let query = supabaseClient.from('rooms').select('*, owner:owner_id(username, display_name), room_members(user_id, role)').order('created_at', { ascending: false });
+                let query = supabaseClient.from('rooms')
+                    .select('*, owner:owner_id(username, display_name), room_members(user_id, role)')
+                    .order('created_at', { ascending: false });
+                
                 if (filter === 'public') query = query.eq('room_type', 'public');
                 else if (filter === 'private') query = query.eq('room_type', 'private');
+                
                 const { data: rooms, error } = await query;
                 if (error) throw error;
+                
                 displayRooms(rooms);
             } catch (error) {
                 console.error('❌ Error loading rooms:', error);
@@ -2132,19 +2116,27 @@
         window.displayRooms = function(rooms) {
             const roomList = document.getElementById('roomList');
             if (!roomList) return;
+            
             if (rooms.length === 0) {
                 roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #a0aec0;">📭 ยังไม่มีห้องแชท<br><small>คลิก "สร้างห้องใหม่" เพื่อเริ่มต้น</small></div>';
                 return;
             }
+            
             roomList.innerHTML = rooms.map(room => {
                 const isOwner = room.owner_id === window.currentUser?.id;
                 const memberCount = room.room_members?.length || 0;
                 const isActive = window.currentRoomId === room.id;
+                
                 return `<div class="room-item ${isActive ? 'active' : ''}" onclick="window.selectRoom('${room.id}')">
-                    <div class="room-header"><span class="room-name">${room.room_type === 'private' ? '🔒' : '🌍'} ${room.name}</span>
-                    <span class="room-type-badge">${room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'}</span></div>
-                    <div class="room-meta"><span>👤 ${room.owner?.display_name || 'ไม่มีเจ้าของ'}</span>
-                    <span>👥 ${memberCount} คน</span>${isOwner ? '<span style="color: #48bb78;">👑 เจ้าของ</span>' : ''}</div>
+                    <div class="room-header">
+                        <span class="room-name">${room.room_type === 'private' ? '🔒' : '🌍'} ${room.name}</span>
+                        <span class="room-type-badge">${room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'}</span>
+                    </div>
+                    <div class="room-meta">
+                        <span>👤 ${room.owner?.display_name || 'ไม่มีเจ้าของ'}</span>
+                        <span>👥 ${memberCount} คน</span>
+                        ${isOwner ? '<span style="color: #48bb78;">👑 เจ้าของ</span>' : ''}
+                    </div>
                     ${room.description ? `<small style="color: #718096;">${room.description}</small>` : ''}
                 </div>`;
             }).join('');
@@ -2155,148 +2147,84 @@
             try {
                 if (!window.messagesContainer) window.messagesContainer = document.getElementById('messagesContainer');
                 if (!window.messagesContainer) return;
+                
                 const { data: messages, error } = await supabaseClient.from('messages')
                     .select('*, profiles:user_id(username, display_name, avatar_url), deleter:deleted_by(username, display_name)')
                     .eq('room_id', roomId).order('created_at', { ascending: true }).limit(50);
+                
                 if (error) throw error;
+                
                 window.messagesContainer.innerHTML = '';
                 window.clearSelectedMessages();
+                
                 if (window.readReceiptObserver) window.readReceiptObserver.disconnect();
                 window.setupReadReceiptObserver();
+                
                 if (messages.length === 0) {
                     window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
                 } else {
                     messages.forEach(msg => displayMessage(msg));
                 }
+                
                 scrollToBottom();
             } catch (error) {
                 console.error('❌ Error loading messages:', error);
             }
         };
 
-        // ========== DISPLAY MESSAGE ==========
-        window.displayMessage = function(message) {
-            if (!window.messagesContainer) return;
-            if (message.is_deleted) {
-                const deletedDiv = document.createElement('div');
-                deletedDiv.className = 'message deleted-message';
-                const deleterName = message.deleter?.display_name || message.deleter?.username || 'ระบบ';
-                deletedDiv.innerHTML = `<div class="deleted-content"><span class="deleted-icon">🗑️</span><span class="deleted-text">${message.message || `ข้อความถูกลบโดย ${deleterName}`}</span><span class="deleted-time">${formatTime(message.deleted_at || message.created_at)}</span></div>`;
-                window.messagesContainer.appendChild(deletedDiv);
-                return;
-            }
-            const isOwnMessage = message.user_id === window.currentUser?.id;
-            const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
-            const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
-            let messageText = message.message || '';
-            let imageHtml = '';
-            const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
-            if (imageMatch) {
-                const imageUrl = imageMatch[1];
-                imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
-                messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
-            }
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
-            messageDiv.dataset.messageId = message.id;
-            messageDiv.dataset.userId = message.user_id;
-            const canSelect = window.isAdminMode || isOwnMessage;
-            const canDelete = window.isAdminMode || isOwnMessage;
-            messageDiv.innerHTML = `${canSelect ? `<div class="message-checkbox" onclick="event.stopPropagation()"><input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))"></div>` : ''}
-                <img src="${avatarUrl}" alt="${author}" class="message-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
-                <div class="message-content"><div class="message-header"><span class="message-author">${author}</span><span class="message-time">${formatTime(message.created_at)}</span>${canDelete ? `<button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">🗑️</button>` : ''}</div>
-                ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}${imageHtml}</div>`;
-            window.messagesContainer.appendChild(messageDiv);
-            if (isOwnMessage) window.displayReadReceipts(messageDiv, message.id, true);
-            if (!isOwnMessage && window.readReceiptObserver) window.readReceiptObserver.observe(messageDiv);
-            scrollToBottom();
-        };
-
         // ========== SEND MESSAGE ==========
         window.sendMessage = async function() {
             const messageInput = document.getElementById('messageInput');
             if (!messageInput) return;
+            
             const message = messageInput.value.trim();
             const hasImage = window.selectedImageFile !== null;
+            
             if (!message && !hasImage) return;
-            if (!window.currentRoomId) { alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ'); return; }
+            if (!window.currentRoomId) { 
+                alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ'); 
+                return; 
+            }
+            
             try {
                 let imageUrl = null;
+                
                 if (hasImage) {
                     const fileExt = window.selectedImageFile.name.split('.').pop();
                     const fileName = `${window.currentUser.id}/${Date.now()}.${fileExt}`;
-                    const { error: uploadError } = await supabaseClient.storage.from('chat_files').upload(fileName, window.selectedImageFile);
+                    
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('chat_files')
+                        .upload(fileName, window.selectedImageFile);
+                    
                     if (uploadError) throw uploadError;
-                    const { data: { publicUrl } } = supabaseClient.storage.from('chat_files').getPublicUrl(fileName);
+                    
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('chat_files')
+                        .getPublicUrl(fileName);
+                    
                     imageUrl = publicUrl;
                 }
+                
                 const messageText = imageUrl ? `${message} [IMAGE]${imageUrl}[/IMAGE]` : message;
+                
                 const { error } = await supabaseClient.from('messages').insert([{
                     user_id: window.currentUser.id,
                     room_id: window.currentRoomId,
                     message: messageText,
                     created_at: new Date().toISOString()
                 }]);
+                
                 if (error) throw error;
+                
                 messageInput.value = '';
                 window.clearImagePreview();
+                
                 const charCount = document.getElementById('charCount');
                 if (charCount) charCount.textContent = '0/500';
             } catch (error) {
                 console.error('❌ Error sending message:', error);
                 alert('ไม่สามารถส่งข้อความได้: ' + error.message);
-            }
-        };
-
-        // ========== DELETE FUNCTIONS ==========
-        window.deleteSingleMessage = async function(messageId, userId) {
-            const canDelete = window.isAdminMode || userId === window.currentUser.id;
-            if (!canDelete) { alert('❌ คุณไม่มีสิทธิ์ลบข้อความนี้'); return; }
-            if (!confirm('⚠️ ลบข้อความนี้?')) return;
-            try {
-                const { data: userData } = await supabaseClient.from('profiles').select('username, display_name').eq('id', window.currentUser.id).single();
-                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
-                const { error } = await supabaseClient.from('messages').update({
-                    is_deleted: true,
-                    deleted_by: window.currentUser.id,
-                    deleted_at: new Date().toISOString(),
-                    message: `[ข้อความถูกลบโดย ${deletedByName}]`
-                }).eq('id', messageId);
-                if (error) throw error;
-                await window.loadMessages(window.currentRoomId);
-            } catch (error) {
-                console.error('❌ Error deleting message:', error);
-                alert('ไม่สามารถลบข้อความได้');
-            }
-        };
-
-        window.deleteSelectedMessages = async function() {
-            if (window.selectedMessages.size === 0) return;
-            if (!window.isAdminMode) {
-                const messageIds = Array.from(window.selectedMessages);
-                const { data: messages } = await supabaseClient.from('messages').select('user_id').in('id', messageIds);
-                const hasOtherMessages = messages.some(msg => msg.user_id !== window.currentUser.id);
-                if (hasOtherMessages) { alert('❌ คุณสามารถลบได้เฉพาะข้อความของตัวเองเท่านั้น'); return; }
-            }
-            const confirmMsg = window.isAdminMode ? `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความ (ในฐานะแอดมิน)` : `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความของตัวเอง`;
-            if (!confirm(confirmMsg + '\n\nดำเนินการต่อ?')) return;
-            try {
-                const messageIds = Array.from(window.selectedMessages);
-                const { data: userData } = await supabaseClient.from('profiles').select('username, display_name').eq('id', window.currentUser.id).single();
-                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
-                const { error } = await supabaseClient.from('messages').update({
-                    is_deleted: true,
-                    deleted_by: window.currentUser.id,
-                    deleted_at: new Date().toISOString(),
-                    message: `[ข้อความถูกลบโดย ${deletedByName}]`
-                }).in('id', messageIds);
-                if (error) throw error;
-                alert(`✅ ลบ ${messageIds.length} ข้อความสำเร็จ`);
-                window.clearSelectedMessages();
-                await window.loadMessages(window.currentRoomId);
-            } catch (error) {
-                console.error('❌ Error deleting messages:', error);
-                alert('ไม่สามารถลบข้อความได้: ' + error.message);
             }
         };
 
@@ -2308,8 +2236,20 @@
             grid.innerHTML = emojiList.map(emoji => `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`).join('');
             modal.classList.add('active');
         };
-        window.closeEmojiPicker = function() { const modal = document.getElementById('emojiPickerModal'); if (modal) modal.classList.remove('active'); };
-        window.insertEmoji = function(emoji) { const input = document.getElementById('messageInput'); if (input) { input.value += emoji; input.focus(); window.closeEmojiPicker(); } };
+
+        window.closeEmojiPicker = function() { 
+            const modal = document.getElementById('emojiPickerModal'); 
+            if (modal) modal.classList.remove('active'); 
+        };
+
+        window.insertEmoji = function(emoji) { 
+            const input = document.getElementById('messageInput'); 
+            if (input) { 
+                input.value += emoji; 
+                input.focus(); 
+                window.closeEmojiPicker(); 
+            } 
+        };
 
         // ========== IMAGE ==========
         window.uploadImage = function() {
@@ -2324,13 +2264,17 @@
                     reader.onload = function(e) {
                         const preview = document.getElementById('imagePreview');
                         const img = document.getElementById('previewImg');
-                        if (preview && img) { img.src = e.target.result; preview.style.display = 'inline-block'; }
+                        if (preview && img) { 
+                            img.src = e.target.result; 
+                            preview.style.display = 'inline-block'; 
+                        }
                     };
                     reader.readAsDataURL(file);
                 }
             };
             input.click();
         };
+
         window.clearImagePreview = function() {
             window.selectedImageFile = null;
             const preview = document.getElementById('imagePreview');
@@ -2349,48 +2293,165 @@
             const closeBtn = document.createElement('span');
             closeBtn.className = 'lightbox-close';
             closeBtn.innerHTML = '✕';
-            closeBtn.onclick = function(e) { e.stopPropagation(); document.body.removeChild(lightbox); };
+            closeBtn.onclick = function(e) { 
+                e.stopPropagation(); 
+                document.body.removeChild(lightbox); 
+            };
             lightbox.appendChild(img);
             lightbox.appendChild(closeBtn);
             document.body.appendChild(lightbox);
+        };
+
+        // ========== DELETE MESSAGES ==========
+        window.deleteSingleMessage = async function(messageId, userId) {
+            const canDelete = window.isAdminMode || userId === window.currentUser.id;
+            if (!canDelete) { alert('❌ คุณไม่มีสิทธิ์ลบข้อความนี้'); return; }
+            if (!confirm('⚠️ ลบข้อความนี้?')) return;
+            
+            try {
+                const { data: userData } = await supabaseClient.from('profiles')
+                    .select('username, display_name').eq('id', window.currentUser.id).single();
+                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
+                
+                const { error } = await supabaseClient.from('messages').update({
+                    is_deleted: true,
+                    deleted_by: window.currentUser.id,
+                    deleted_at: new Date().toISOString(),
+                    message: `[ข้อความถูกลบโดย ${deletedByName}]`
+                }).eq('id', messageId);
+                
+                if (error) throw error;
+                await window.loadMessages(window.currentRoomId);
+            } catch (error) {
+                console.error('❌ Error deleting message:', error);
+                alert('ไม่สามารถลบข้อความได้');
+            }
+        };
+
+        window.deleteSelectedMessages = async function() {
+            if (window.selectedMessages.size === 0) return;
+            
+            if (!window.isAdminMode) {
+                const messageIds = Array.from(window.selectedMessages);
+                const { data: messages } = await supabaseClient.from('messages').select('user_id').in('id', messageIds);
+                const hasOtherMessages = messages.some(msg => msg.user_id !== window.currentUser.id);
+                if (hasOtherMessages) { 
+                    alert('❌ คุณสามารถลบได้เฉพาะข้อความของตัวเองเท่านั้น'); 
+                    return; 
+                }
+            }
+            
+            const confirmMsg = window.isAdminMode 
+                ? `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความ (ในฐานะแอดมิน)` 
+                : `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความของตัวเอง`;
+            
+            if (!confirm(confirmMsg + '\n\nดำเนินการต่อ?')) return;
+            
+            try {
+                const messageIds = Array.from(window.selectedMessages);
+                const { data: userData } = await supabaseClient.from('profiles')
+                    .select('username, display_name').eq('id', window.currentUser.id).single();
+                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
+                
+                const { error } = await supabaseClient.from('messages').update({
+                    is_deleted: true,
+                    deleted_by: window.currentUser.id,
+                    deleted_at: new Date().toISOString(),
+                    message: `[ข้อความถูกลบโดย ${deletedByName}]`
+                }).in('id', messageIds);
+                
+                if (error) throw error;
+                
+                alert(`✅ ลบ ${messageIds.length} ข้อความสำเร็จ`);
+                window.clearSelectedMessages();
+                await window.loadMessages(window.currentRoomId);
+            } catch (error) {
+                console.error('❌ Error deleting messages:', error);
+                alert('ไม่สามารถลบข้อความได้: ' + error.message);
+            }
+        };
+
+        window.toggleSelectMessage = function(messageId, element) {
+            if (window.selectedMessages.has(messageId)) { 
+                window.selectedMessages.delete(messageId); 
+                element.classList.remove('selected'); 
+            } else { 
+                window.selectedMessages.add(messageId); 
+                element.classList.add('selected'); 
+            }
+            
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.style.display = window.selectedMessages.size > 0 ? 'flex' : 'none';
+                deleteSelectedBtn.innerHTML = `🗑️ ลบ ${window.selectedMessages.size} ข้อความ`;
+            }
+        };
+
+        window.clearSelectedMessages = function() {
+            window.selectedMessages.clear();
+            document.querySelectorAll('.message.selected').forEach(el => el.classList.remove('selected'));
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
         };
 
         // ========== READ RECEIPTS ==========
         window.markAsRead = async function(messageId, roomId) {
             if (!window.currentUser || !messageId || !roomId || messageId === 'undefined') return;
             try {
-                const { data: existing } = await supabaseClient.from('read_receipts').select('id').eq('message_id', messageId).eq('user_id', window.currentUser.id).maybeSingle();
+                const { data: existing } = await supabaseClient.from('read_receipts')
+                    .select('id').eq('message_id', messageId).eq('user_id', window.currentUser.id).maybeSingle();
                 if (!existing) {
-                    await supabaseClient.from('read_receipts').insert([{ message_id: messageId, user_id: window.currentUser.id, room_id: roomId, read_at: new Date().toISOString() }]);
+                    await supabaseClient.from('read_receipts').insert([{
+                        message_id: messageId,
+                        user_id: window.currentUser.id,
+                        room_id: roomId,
+                        read_at: new Date().toISOString()
+                    }]);
                     console.log('✅ Marked as read:', messageId);
                 }
-            } catch (error) { console.error('❌ Error marking as read:', error); }
+            } catch (error) { 
+                console.error('❌ Error marking as read:', error); 
+            }
         };
+
         window.getReadReceipts = async function(messageId) {
             try {
-                const { data, error } = await supabaseClient.from('read_receipts').select('user_id, read_at, profiles:user_id(username, display_name, avatar_url)').eq('message_id', messageId).order('read_at', { ascending: true });
+                const { data, error } = await supabaseClient.from('read_receipts')
+                    .select('user_id, read_at, profiles:user_id(username, display_name, avatar_url)')
+                    .eq('message_id', messageId).order('read_at', { ascending: true });
                 if (error) throw error;
                 return data || [];
-            } catch (error) { console.error('❌ Error getting read receipts:', error); return []; }
+            } catch (error) { 
+                console.error('❌ Error getting read receipts:', error); 
+                return []; 
+            }
         };
+
         window.displayReadReceipts = async function(messageDiv, messageId, isOwnMessage) {
             if (!isOwnMessage || !messageDiv || !messageId) return;
+            
             const receipts = await window.getReadReceipts(messageId);
             if (receipts.length === 0) return;
+            
             const otherReaders = receipts.filter(r => r.user_id !== window.currentUser.id);
             if (otherReaders.length === 0) return;
+            
             let readByContainer = messageDiv.querySelector('.read-by-container');
             if (readByContainer) readByContainer.remove();
+            
             readByContainer = document.createElement('div');
             readByContainer.className = 'read-by-container';
+            
             otherReaders.slice(0, 5).forEach(reader => {
                 const avatar = document.createElement('img');
-                avatar.src = reader.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(reader.profiles?.display_name || reader.profiles?.username)}&background=667eea&color=fff`;
+                avatar.src = reader.profiles?.avatar_url || 
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(reader.profiles?.display_name || reader.profiles?.username)}&background=667eea&color=fff`;
                 avatar.alt = reader.profiles?.display_name || reader.profiles?.username || 'ผู้ใช้';
                 avatar.className = 'read-by-avatar';
                 avatar.title = `${reader.profiles?.display_name || reader.profiles?.username} อ่านเมื่อ ${window.formatTime(reader.read_at)}`;
                 readByContainer.appendChild(avatar);
             });
+            
             if (otherReaders.length > 5) {
                 const more = document.createElement('span');
                 more.className = 'read-by-more';
@@ -2398,14 +2459,17 @@
                 more.title = `${otherReaders.length} คนอ่านแล้ว`;
                 readByContainer.appendChild(more);
             }
+            
             const readIcon = document.createElement('span');
             readIcon.className = 'read-icon';
             readIcon.innerHTML = '✓✓';
             readIcon.title = `อ่านแล้ว ${otherReaders.length} คน`;
             readByContainer.prepend(readIcon);
+            
             const messageContent = messageDiv.querySelector('.message-content');
             if (messageContent) messageContent.appendChild(readByContainer);
         };
+
         window.setupReadReceiptObserver = function() {
             window.readReceiptObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -2413,35 +2477,56 @@
                         const messageDiv = entry.target;
                         const messageId = messageDiv.dataset.messageId;
                         const roomId = window.currentRoomId;
-                        if (messageId && roomId && messageId !== 'undefined' && messageDiv.dataset.userId !== window.currentUser.id) {
+                        if (messageId && roomId && messageId !== 'undefined' && 
+                            messageDiv.dataset.userId !== window.currentUser.id) {
                             window.markAsRead(messageId, roomId);
                         }
                     }
                 });
             }, { threshold: 0.5, rootMargin: '0px' });
         };
+
         window.subscribeToReadReceipts = function(roomId) {
             return supabaseClient.channel(`read-receipts-${roomId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'read_receipts', filter: `room_id=eq.${roomId}` }, async (payload) => {
-                    const messageDiv = document.querySelector(`[data-message-id="${payload.new.message_id}"]`);
-                    if (messageDiv && messageDiv.dataset.userId === window.currentUser.id) {
-                        const oldContainer = messageDiv.querySelector('.read-by-container');
-                        if (oldContainer) oldContainer.remove();
-                        await window.displayReadReceipts(messageDiv, payload.new.message_id, true);
-                    }
-                }).subscribe();
+                .on('postgres_changes', 
+                    { event: 'INSERT', schema: 'public', table: 'read_receipts', filter: `room_id=eq.${roomId}` }, 
+                    async (payload) => {
+                        const messageDiv = document.querySelector(`[data-message-id="${payload.new.message_id}"]`);
+                        if (messageDiv && messageDiv.dataset.userId === window.currentUser.id) {
+                            const oldContainer = messageDiv.querySelector('.read-by-container');
+                            if (oldContainer) oldContainer.remove();
+                            await window.displayReadReceipts(messageDiv, payload.new.message_id, true);
+                        }
+                    })
+                .subscribe();
         };
 
         // ========== MUSIC PLAYER ==========
-        window.openMusicPlayer = function() { const modal = document.getElementById('musicPlayerModal'); if (modal) { modal.classList.add('active'); window.loadPlaylist(); } };
-        window.closeMusicPlayer = function() { const modal = document.getElementById('musicPlayerModal'); if (modal) modal.classList.remove('active'); };
+        window.openMusicPlayer = function() { 
+            const modal = document.getElementById('musicPlayerModal'); 
+            if (modal) { 
+                modal.classList.add('active'); 
+                window.loadPlaylist(); 
+            } 
+        };
+
+        window.closeMusicPlayer = function() { 
+            const modal = document.getElementById('musicPlayerModal'); 
+            if (modal) modal.classList.remove('active'); 
+        };
+
         window.addMusicToRoom = async function() {
             const urlInput = document.getElementById('musicUrlInput');
             if (!urlInput) return;
             const url = urlInput.value.trim();
             if (!url) { alert('❌ กรุณาใส่ URL เพลง'); return; }
+            
             try {
-                const musicInfo = { title: url.split('/').pop() || 'เพลงไม่มีชื่อ', artist: window.currentUser.user_metadata?.username || 'ผู้ใช้' };
+                const musicInfo = { 
+                    title: url.split('/').pop() || 'เพลงไม่มีชื่อ', 
+                    artist: window.currentUser.user_metadata?.username || 'ผู้ใช้' 
+                };
+                
                 const { error } = await supabaseClient.from('room_music').insert([{
                     room_id: window.currentRoomId,
                     user_id: window.currentUser.id,
@@ -2450,52 +2535,110 @@
                     music_artist: musicInfo.artist,
                     is_playing: false
                 }]);
+                
                 if (error) throw error;
                 urlInput.value = '';
                 alert('✅ เพิ่มเพลงสำเร็จ');
                 window.loadPlaylist();
-            } catch (error) { console.error('❌ Error adding music:', error); alert('ไม่สามารถเพิ่มเพลงได้'); }
+            } catch (error) { 
+                console.error('❌ Error adding music:', error); 
+                alert('ไม่สามารถเพิ่มเพลงได้'); 
+            }
         };
+
         window.loadPlaylist = async function() {
             if (!window.currentRoomId) return;
+            
             try {
-                const { data: playlist, error } = await supabaseClient.from('room_music').select('*, profiles:user_id(username, display_name)').eq('room_id', window.currentRoomId).order('created_at', { ascending: false });
+                const { data: playlist, error } = await supabaseClient.from('room_music')
+                    .select('*, profiles:user_id(username, display_name)')
+                    .eq('room_id', window.currentRoomId)
+                    .order('created_at', { ascending: false });
+                
                 if (error) throw error;
+                
                 const container = document.getElementById('playlistItems');
                 if (!container) return;
-                if (playlist.length === 0) { container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">🎵 ยังไม่มีเพลงในเพลย์ลิสต์</div>'; return; }
-                container.innerHTML = playlist.map(song => `<div class="playlist-item"><div class="playlist-info"><div class="playlist-title">${song.music_title}</div><div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div></div><div class="playlist-controls"><button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>${song.user_id === window.currentUser.id || window.isAdmin ? `<button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>` : ''}</div></div>`).join('');
-            } catch (error) { console.error('❌ Error loading playlist:', error); }
+                
+                if (playlist.length === 0) { 
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">🎵 ยังไม่มีเพลงในเพลย์ลิสต์</div>'; 
+                    return; 
+                }
+                
+                container.innerHTML = playlist.map(song => `
+                    <div class="playlist-item">
+                        <div class="playlist-info">
+                            <div class="playlist-title">${song.music_title}</div>
+                            <div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div>
+                        </div>
+                        <div class="playlist-controls">
+                            <button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>
+                            ${song.user_id === window.currentUser.id || window.isAdmin ? 
+                                `<button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) { 
+                console.error('❌ Error loading playlist:', error); 
+            }
         };
+
         window.playMusic = async function(musicId, url) {
             try {
-                if (window.audioPlayer) { window.audioPlayer.pause(); window.audioPlayer = null; }
+                if (window.audioPlayer) { 
+                    window.audioPlayer.pause(); 
+                    window.audioPlayer = null; 
+                }
+                
                 window.audioPlayer = new Audio(url);
-                window.audioPlayer.play();
+                await window.audioPlayer.play();
+                
                 window.currentMusic = { id: musicId, url };
+                
                 const musicBar = document.getElementById('currentMusicBar');
                 const musicTitle = document.getElementById('currentMusicTitle');
                 const playPauseBtn = document.getElementById('playPauseBtn');
+                
                 if (musicBar) musicBar.style.display = 'flex';
                 if (musicTitle) musicTitle.textContent = 'กำลังเล่นเพลง...';
                 if (playPauseBtn) playPauseBtn.innerHTML = '⏸️';
+                
                 await supabaseClient.from('room_music').update({ is_playing: true }).eq('id', musicId);
-            } catch (error) { console.error('❌ Error playing music:', error); alert('ไม่สามารถเล่นเพลงได้'); }
+            } catch (error) { 
+                console.error('❌ Error playing music:', error); 
+                alert('ไม่สามารถเล่นเพลงได้'); 
+            }
         };
+
         window.togglePlayPause = function() {
             if (!window.audioPlayer) return;
             const playPauseBtn = document.getElementById('playPauseBtn');
             if (!playPauseBtn) return;
-            if (window.audioPlayer.paused) { window.audioPlayer.play(); playPauseBtn.innerHTML = '⏸️'; }
-            else { window.audioPlayer.pause(); playPauseBtn.innerHTML = '▶️'; }
+            if (window.audioPlayer.paused) { 
+                window.audioPlayer.play(); 
+                playPauseBtn.innerHTML = '⏸️'; 
+            } else { 
+                window.audioPlayer.pause(); 
+                playPauseBtn.innerHTML = '▶️'; 
+            }
         };
+
         window.stopMusic = function() {
-            if (window.audioPlayer) { window.audioPlayer.pause(); window.audioPlayer.currentTime = 0; window.audioPlayer = null; }
+            if (window.audioPlayer) { 
+                window.audioPlayer.pause(); 
+                window.audioPlayer.currentTime = 0; 
+                window.audioPlayer = null; 
+            }
             window.currentMusic = null;
             const musicBar = document.getElementById('currentMusicBar');
             if (musicBar) musicBar.style.display = 'none';
         };
-        window.hideMusicBar = function() { const musicBar = document.getElementById('currentMusicBar'); if (musicBar) musicBar.style.display = 'none'; };
+
+        window.hideMusicBar = function() { 
+            const musicBar = document.getElementById('currentMusicBar'); 
+            if (musicBar) musicBar.style.display = 'none'; 
+        };
+
         window.removeMusic = async function(musicId) {
             if (!confirm('🗑️ ลบเพลงนี้ออกจากเพลย์ลิสต์?')) return;
             try {
@@ -2503,31 +2646,57 @@
                 if (error) throw error;
                 alert('✅ ลบเพลงสำเร็จ');
                 window.loadPlaylist();
-            } catch (error) { console.error('❌ Error removing music:', error); alert('ไม่สามารถลบเพลงได้'); }
+            } catch (error) { 
+                console.error('❌ Error removing music:', error); 
+                alert('ไม่สามารถลบเพลงได้'); 
+            }
         };
 
         // ========== ROOM MEMBERS ==========
         window.loadRoomMembers = async function(roomId) {
             try {
-                const { data: members, error } = await supabaseClient.from('room_members').select('user_id, role, joined_at, profiles:user_id(username, display_name, avatar_url, is_admin)').eq('room_id', roomId);
+                const { data: members, error } = await supabaseClient.from('room_members')
+                    .select('user_id, role, joined_at, profiles:user_id(username, display_name, avatar_url, is_admin)')
+                    .eq('room_id', roomId);
                 if (error) throw error;
                 displayRoomMembers(members);
-            } catch (error) { console.error('❌ Error loading members:', error); }
+            } catch (error) { 
+                console.error('❌ Error loading members:', error); 
+            }
         };
+
         window.displayRoomMembers = function(members) {
             const container = document.getElementById('membersList');
             if (!container) return;
+            
             const isOwner = window.currentRoom?.owner_id === window.currentUser.id;
+            
             container.innerHTML = members.map(member => {
                 const profile = member.profiles;
                 const isCurrentUser = member.user_id === window.currentUser.id;
                 const canKick = (isOwner || window.isAdmin) && !isCurrentUser && member.role !== 'owner';
-                return `<div class="member-item"><img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=667eea&color=fff`}" alt="${profile?.display_name}" class="member-avatar"><div class="member-info"><div class="member-name">${profile?.display_name || profile?.username}${isCurrentUser ? ' (คุณ)' : ''}${profile?.is_admin ? ' 👑' : ''}</div><div class="member-role">${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}</div></div>${canKick ? `<button class="kick-btn" onclick="window.showKickModal('${member.user_id}', '${profile?.display_name || profile?.username}')">เตะออก</button>` : ''}</div>`;
+                
+                return `<div class="member-item">
+                    <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=667eea&color=fff`}" 
+                         alt="${profile?.display_name}" class="member-avatar">
+                    <div class="member-info">
+                        <div class="member-name">
+                            ${profile?.display_name || profile?.username}
+                            ${isCurrentUser ? ' (คุณ)' : ''}
+                            ${profile?.is_admin ? ' 👑' : ''}
+                        </div>
+                        <div class="member-role">
+                            ${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}
+                        </div>
+                    </div>
+                    ${canKick ? `<button class="kick-btn" onclick="window.showKickModal('${member.user_id}', '${profile?.display_name || profile?.username}')">เตะออก</button>` : ''}
+                </div>`;
             }).join('');
         };
 
         // ========== KICK MEMBER ==========
         window.kickMemberId = null;
+
         window.showKickModal = function(userId, username) {
             window.kickMemberId = userId;
             const modal = document.getElementById('kickMemberModal');
@@ -2535,54 +2704,74 @@
             if (nameEl) nameEl.textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
             if (modal) modal.classList.add('active');
         };
+
         window.closeKickModal = function() {
             window.kickMemberId = null;
             const modal = document.getElementById('kickMemberModal');
             if (modal) modal.classList.remove('active');
         };
+
         window.confirmKickMember = async function() {
             if (!window.kickMemberId || !window.currentRoomId) return;
+            
             try {
-                const { error } = await supabaseClient.from('room_members').delete().eq('room_id', window.currentRoomId).eq('user_id', window.kickMemberId);
+                const { error } = await supabaseClient.from('room_members')
+                    .delete()
+                    .eq('room_id', window.currentRoomId)
+                    .eq('user_id', window.kickMemberId);
+                
                 if (error) throw error;
+                
                 alert('✅ เตะสมาชิกออกจากห้องแล้ว');
                 window.closeKickModal();
                 await window.loadRoomMembers(window.currentRoomId);
-            } catch (error) { console.error('❌ Error kicking member:', error); alert('ไม่สามารถเตะสมาชิกได้'); }
+            } catch (error) { 
+                console.error('❌ Error kicking member:', error); 
+                alert('ไม่สามารถเตะสมาชิกได้'); 
+            }
         };
 
         // ========== CREATE ROOM ==========
         window.createRoom = async function(event) {
             event.preventDefault();
+            
             try {
                 const name = document.getElementById('roomName').value;
                 const description = document.getElementById('roomDescription').value;
                 const roomType = document.getElementById('roomType').value;
                 const password = document.getElementById('roomPassword').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
+                
                 if (roomType === 'private') {
                     if (!password) { alert('กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว'); return; }
                     if (password !== confirmPassword) { alert('รหัสผ่านไม่ตรงกัน'); return; }
                     if (password.length < 4) { alert('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'); return; }
                 }
+                
                 const { data: room, error } = await supabaseClient.from('rooms').insert([{
                     name, description, room_type: roomType,
                     password: roomType === 'private' ? password : null,
                     owner_id: window.currentUser.id,
                     created_at: new Date().toISOString()
                 }]).select().single();
+                
                 if (error) throw error;
+                
                 await supabaseClient.from('room_members').insert([{
                     room_id: room.id,
                     user_id: window.currentUser.id,
                     role: 'owner',
                     joined_at: new Date().toISOString()
                 }]);
+                
                 alert('✅ สร้างห้องสำเร็จ!');
                 window.closeCreateRoomModal();
                 await window.loadRooms();
                 await window.selectRoom(room.id);
-            } catch (error) { console.error('❌ Error creating room:', error); alert('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message); }
+            } catch (error) { 
+                console.error('❌ Error creating room:', error); 
+                alert('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message); 
+            }
         };
 
         // ========== DELETE ROOM ==========
@@ -2591,50 +2780,99 @@
             document.getElementById('deleteRoomName').innerHTML = `ต้องการลบห้อง: <strong>${window.currentRoom.name}</strong>?`;
             document.getElementById('deleteRoomModal').classList.add('active');
         };
-        window.closeDeleteRoomModal = function() { document.getElementById('deleteRoomModal').classList.remove('active'); };
+
+        window.closeDeleteRoomModal = function() { 
+            document.getElementById('deleteRoomModal').classList.remove('active'); 
+        };
+
         window.confirmDeleteRoom = async function() {
-            if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) { alert('ไม่สามารถลบห้องสาธารณะได้'); window.closeDeleteRoomModal(); return; }
+            if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) { 
+                alert('ไม่สามารถลบห้องสาธารณะได้'); 
+                window.closeDeleteRoomModal(); 
+                return; 
+            }
+            
             try {
-                const { error } = await supabaseClient.from('rooms').delete().eq('id', window.currentRoomId).eq('owner_id', window.currentUser.id);
+                const { error } = await supabaseClient.from('rooms')
+                    .delete()
+                    .eq('id', window.currentRoomId)
+                    .eq('owner_id', window.currentUser.id);
+                
                 if (error) throw error;
+                
                 alert('✅ ลบห้องสำเร็จ');
                 window.closeDeleteRoomModal();
                 await selectRoom(PUBLIC_ROOM_ID);
                 await loadRooms();
-            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); window.closeDeleteRoomModal(); }
+            } catch (error) { 
+                console.error('❌ Error deleting room:', error); 
+                alert('ไม่สามารถลบห้องได้: ' + error.message); 
+                window.closeDeleteRoomModal(); 
+            }
         };
+
         window.adminDeleteRoom = async function(roomId, roomName) {
             if (!window.isAdmin) { alert('เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้'); return; }
             if (!confirm(`⚠️ คุณกำลังจะลบห้อง "${roomName}" ในฐานะแอดมิน\n\nข้อความและสมาชิกทั้งหมดจะถูกลบ!\n\nดำเนินการต่อ?`)) return;
+            
             try {
                 const { error } = await supabaseClient.from('rooms').delete().eq('id', roomId);
                 if (error) throw error;
                 alert('✅ ลบห้องสำเร็จ');
                 await window.selectRoom(PUBLIC_ROOM_ID);
                 await window.loadRooms();
-            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); }
+            } catch (error) { 
+                console.error('❌ Error deleting room:', error); 
+                alert('ไม่สามารถลบห้องได้: ' + error.message); 
+            }
         };
 
         // ========== ONLINE USERS ==========
         window.loadOnlineUsers = async function() {
             try {
-                const { data, error } = await supabaseClient.from('profiles').select('username, display_name, avatar_url, is_admin').eq('is_online', true).limit(30);
+                const { data, error } = await supabaseClient.from('profiles')
+                    .select('username, display_name, avatar_url, is_admin')
+                    .eq('is_online', true).limit(30);
+                
                 if (error) throw error;
+                
                 const userMap = new Map();
-                data.forEach(user => { if (!userMap.has(user.username)) userMap.set(user.username, user); });
+                data.forEach(user => { 
+                    if (!userMap.has(user.username)) userMap.set(user.username, user); 
+                });
+                
                 const uniqueUsers = Array.from(userMap.values());
+                
                 const usersList = document.getElementById('onlineUsersList');
                 const totalUsers = document.getElementById('totalUsers');
+                
                 if (usersList) {
-                    if (uniqueUsers.length === 0) usersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #a0aec0;">🟡 ไม่มีสมาชิกออนไลน์</div>';
-                    else usersList.innerHTML = uniqueUsers.map(user => `<div class="online-user"><img src="${user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.username)}&background=667eea&color=fff`}" alt="${user.display_name || user.username}" class="user-avatar"><span class="user-name">${user.display_name || user.username} ${user.is_admin ? '👑' : ''}</span><span class="online-dot"></span></div>`).join('');
+                    if (uniqueUsers.length === 0) {
+                        usersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #a0aec0;">🟡 ไม่มีสมาชิกออนไลน์</div>';
+                    } else {
+                        usersList.innerHTML = uniqueUsers.map(user => `
+                            <div class="online-user">
+                                <img src="${user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.username)}&background=667eea&color=fff`}" 
+                                     alt="${user.display_name || user.username}" class="user-avatar">
+                                <span class="user-name">${user.display_name || user.username} ${user.is_admin ? '👑' : ''}</span>
+                                <span class="online-dot"></span>
+                            </div>
+                        `).join('');
+                    }
                 }
+                
                 if (totalUsers) totalUsers.textContent = uniqueUsers.length;
-            } catch (error) { console.error('❌ Error loading online users:', error); }
+            } catch (error) { 
+                console.error('❌ Error loading online users:', error); 
+            }
         };
 
         // ========== MODAL CONTROLS ==========
-        window.showCreateRoomModal = function() { const modal = document.getElementById('createRoomModal'); if (modal) modal.classList.add('active'); };
+        window.showCreateRoomModal = function() { 
+            const modal = document.getElementById('createRoomModal'); 
+            if (modal) modal.classList.add('active'); 
+        };
+
         window.closeCreateRoomModal = function() {
             const modal = document.getElementById('createRoomModal');
             const form = document.getElementById('createRoomForm');
@@ -2643,41 +2881,68 @@
             if (form) form.reset();
             if (passwordField) passwordField.classList.remove('show');
         };
+
         window.togglePasswordField = function() {
             const roomType = document.getElementById('roomType');
             const passwordField = document.getElementById('passwordField');
-            if (roomType && passwordField) passwordField.classList.toggle('show', roomType.value === 'private');
+            if (roomType && passwordField) {
+                passwordField.classList.toggle('show', roomType.value === 'private');
+            }
         };
+
         window.showJoinPrivateModal = function(room) {
             const nameEl = document.getElementById('joinRoomName');
             const modal = document.getElementById('joinPrivateRoomModal');
             if (nameEl) nameEl.textContent = `ห้อง: ${room.name}`;
-            if (modal) { modal.dataset.roomId = room.id; modal.classList.add('active'); }
+            if (modal) { 
+                modal.dataset.roomId = room.id; 
+                modal.classList.add('active'); 
+            }
         };
+
         window.closeJoinPrivateModal = function() {
             const modal = document.getElementById('joinPrivateRoomModal');
             const passwordInput = document.getElementById('joinRoomPassword');
             if (modal) modal.classList.remove('active');
             if (passwordInput) passwordInput.value = '';
         };
+
         window.confirmJoinPrivateRoom = async function() {
             const modal = document.getElementById('joinPrivateRoomModal');
             const passwordInput = document.getElementById('joinRoomPassword');
             if (!modal || !passwordInput) return;
+            
             const roomId = modal.dataset.roomId;
             const password = passwordInput.value;
+            
             if (!password) { alert('❌ กรุณากรอกรหัสผ่าน'); return; }
+            
             try {
-                const { data: room, error } = await supabaseClient.from('rooms').select('*').eq('id', roomId).single();
+                const { data: room, error } = await supabaseClient.from('rooms')
+                    .select('*').eq('id', roomId).single();
+                
                 if (error) throw error;
                 if (room.password !== password) { alert('❌ รหัสผ่านไม่ถูกต้อง'); return; }
+                
                 window.closeJoinPrivateModal();
-                const { data: existingMember } = await supabaseClient.from('room_members').select('*').eq('room_id', roomId).eq('user_id', window.currentUser.id).maybeSingle();
+                
+                const { data: existingMember } = await supabaseClient.from('room_members')
+                    .select('*').eq('room_id', roomId).eq('user_id', window.currentUser.id).maybeSingle();
+                
                 if (!existingMember) {
-                    await supabaseClient.from('room_members').insert([{ room_id: roomId, user_id: window.currentUser.id, role: 'member', joined_at: new Date().toISOString() }]);
+                    await supabaseClient.from('room_members').insert([{
+                        room_id: roomId,
+                        user_id: window.currentUser.id,
+                        role: 'member',
+                        joined_at: new Date().toISOString()
+                    }]);
                 }
+                
                 await window.selectRoom(roomId);
-            } catch (error) { console.error('❌ Error joining private room:', error); alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message); }
+            } catch (error) { 
+                console.error('❌ Error joining private room:', error); 
+                alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message); 
+            }
         };
 
         // ========== UI CONTROLS ==========
@@ -2686,41 +2951,48 @@
             btn.classList.add('active');
             window.loadRooms(filter);
         };
-        window.toggleMembersPanel = function() { const panel = document.getElementById('membersPanel'); if (panel) panel.classList.toggle('active'); };
+
+        window.toggleMembersPanel = function() { 
+            const panel = document.getElementById('membersPanel'); 
+            if (panel) panel.classList.toggle('active'); 
+        };
+
         window.displayUserInfo = function() {
             const userProfile = document.getElementById('userProfile');
-            const username = window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้';
-            userProfile.innerHTML = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" alt="${username}" class="avatar"><span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>`;
-        };
-        window.toggleSelectMessage = function(messageId, element) {
-            if (window.selectedMessages.has(messageId)) { window.selectedMessages.delete(messageId); element.classList.remove('selected'); }
-            else { window.selectedMessages.add(messageId); element.classList.add('selected'); }
-            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-            if (deleteSelectedBtn) {
-                deleteSelectedBtn.style.display = window.selectedMessages.size > 0 ? 'flex' : 'none';
-                deleteSelectedBtn.innerHTML = `🗑️ ลบ ${window.selectedMessages.size} ข้อความ`;
-            }
-        };
-        window.clearSelectedMessages = function() {
-            window.selectedMessages.clear();
-            document.querySelectorAll('.message.selected').forEach(el => el.classList.remove('selected'));
-            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-            if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
+            const username = window.currentUser.user_metadata?.display_name || 
+                            window.currentUser.user_metadata?.username || 'ผู้ใช้';
+            userProfile.innerHTML = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" 
+                                      alt="${username}" class="avatar"><span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>`;
         };
 
         // ========== EVENT LISTENERS ==========
         window.setupEventListeners = function() {
-            if (window.sendButton) { window.sendButton.removeEventListener('click', window.sendMessage); window.sendButton.addEventListener('click', window.sendMessage); }
+            if (window.sendButton) { 
+                window.sendButton.removeEventListener('click', window.sendMessage); 
+                window.sendButton.addEventListener('click', window.sendMessage); 
+            }
+            
             if (window.messageInput) {
                 window.messageInput.removeEventListener('keydown', handleKeyDown);
                 window.messageInput.addEventListener('keydown', handleKeyDown);
                 window.messageInput.removeEventListener('input', handleInput);
                 window.messageInput.addEventListener('input', handleInput);
             }
+            
             const createRoomForm = document.getElementById('createRoomForm');
-            if (createRoomForm) { createRoomForm.removeEventListener('submit', window.createRoom); createRoomForm.addEventListener('submit', window.createRoom); }
+            if (createRoomForm) { 
+                createRoomForm.removeEventListener('submit', window.createRoom); 
+                createRoomForm.addEventListener('submit', window.createRoom); 
+            }
         };
-        function handleKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); } }
+
+        function handleKeyDown(e) { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                window.sendMessage(); 
+            } 
+        }
+
         function handleInput() {
             if (!window.messageInput) return;
             const count = window.messageInput.value.length;
@@ -2729,28 +3001,21 @@
             if (count > 500) window.messageInput.value = window.messageInput.value.slice(0, 500);
         }
 
-        // ========== MOBILE HANDLER ==========
-        window.initMobileHandler = function() {
-            if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) return;
-            let originalHeight = window.innerHeight;
-            window.addEventListener('resize', () => {
-                const newHeight = window.innerHeight;
-                if (originalHeight - newHeight > 150) {
-                    document.body.classList.add('keyboard-open');
-                    setTimeout(() => { if (window.messageInput) window.messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
-                } else document.body.classList.remove('keyboard-open');
-            });
-        };
-
         // ========== REALTIME ==========
         window.setupMessageSubscription = function(roomId) {
             if (window.messageSubscription) window.messageSubscription.unsubscribe();
+            
             window.messageSubscription = supabaseClient.channel(`room-${roomId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, async (payload) => {
-                    const { data: profile } = await supabaseClient.from('profiles').select('username, display_name, avatar_url').eq('id', payload.new.user_id).single();
-                    displayMessage({ ...payload.new, profiles: profile });
-                })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, async () => { await window.loadMessages(roomId); })
+                .on('postgres_changes', 
+                    { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, 
+                    async (payload) => {
+                        const { data: profile } = await supabaseClient.from('profiles')
+                            .select('username, display_name, avatar_url').eq('id', payload.new.user_id).single();
+                        displayMessage({ ...payload.new, profiles: profile });
+                    })
+                .on('postgres_changes', 
+                    { event: 'UPDATE', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, 
+                    async () => { await window.loadMessages(roomId); })
                 .subscribe();
         };
 
@@ -2760,28 +3025,111 @@
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
-            if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            }
             if (diff < 86400000 * 2) return 'เมื่อวาน';
             return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         };
+
         window.linkify = function(text) {
             if (!text) return '';
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
         };
-        window.scrollToBottom = function() { if (window.messagesContainer) window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; };
+
+        window.scrollToBottom = function() { 
+            if (window.messagesContainer) {
+                window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight;
+            }
+        };
+
+        window.displayMessage = function(message) {
+            if (!window.messagesContainer) return;
+            
+            if (message.is_deleted) {
+                const deletedDiv = document.createElement('div');
+                deletedDiv.className = 'message deleted-message';
+                const deleterName = message.deleter?.display_name || message.deleter?.username || 'ระบบ';
+                deletedDiv.innerHTML = `<div class="deleted-content">
+                    <span class="deleted-icon">🗑️</span>
+                    <span class="deleted-text">${message.message || `ข้อความถูกลบโดย ${deleterName}`}</span>
+                    <span class="deleted-time">${formatTime(message.deleted_at || message.created_at)}</span>
+                </div>`;
+                window.messagesContainer.appendChild(deletedDiv);
+                return;
+            }
+            
+            const isOwnMessage = message.user_id === window.currentUser?.id;
+            const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
+            const avatarUrl = message.profiles?.avatar_url || 
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
+            
+            let messageText = message.message || '';
+            let imageHtml = '';
+            
+            const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+            if (imageMatch) {
+                const imageUrl = imageMatch[1];
+                imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
+                messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
+            messageDiv.dataset.messageId = message.id;
+            messageDiv.dataset.userId = message.user_id;
+            
+            const canSelect = window.isAdminMode || isOwnMessage;
+            const canDelete = window.isAdminMode || isOwnMessage;
+            
+            messageDiv.innerHTML = `
+                ${canSelect ? `<div class="message-checkbox" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))">
+                </div>` : ''}
+                <img src="${avatarUrl}" alt="${author}" class="message-avatar"
+                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-author">${author}</span>
+                        <span class="message-time">${formatTime(message.created_at)}</span>
+                        ${canDelete ? `<button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">🗑️</button>` : ''}
+                    </div>
+                    ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
+                    ${imageHtml}
+                </div>
+            `;
+            
+            window.messagesContainer.appendChild(messageDiv);
+            
+            if (isOwnMessage) {
+                window.displayReadReceipts(messageDiv, message.id, true);
+            }
+            
+            if (!isOwnMessage && window.readReceiptObserver) {
+                window.readReceiptObserver.observe(messageDiv);
+            }
+            
+            scrollToBottom();
+        };
 
         // ========== LOGOUT ==========
-        window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'index.html'; };
+        window.logout = async function() { 
+            await supabaseClient.auth.signOut(); 
+            window.location.href = 'index.html'; 
+        };
 
         // ========== CLEANUP ==========
         window.addEventListener('beforeunload', () => {
             if (window.messageSubscription) window.messageSubscription.unsubscribe();
             if (window.readReceiptsSubscription) window.readReceiptsSubscription.unsubscribe();
             if (window.readReceiptObserver) window.readReceiptObserver.disconnect();
-            if (window.audioPlayer) { window.audioPlayer.pause(); window.audioPlayer = null; }
+            if (window.audioPlayer) { 
+                window.audioPlayer.pause(); 
+                window.audioPlayer = null; 
+            }
         });
     </script>
 </body>
 </html>
-
