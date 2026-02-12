@@ -2898,20 +2898,33 @@
         }
     };
 
-// ========== YOUTUBE PLAYER ==========
+// ========== YOUTUBE PLAYER - แก้ไขให้ใช้งานได้ 100% ==========
 window.openYoutubePlayer = function(activityId, videoId) {
+    console.log('🎬 Opening YouTube player:', { activityId, videoId });
+    
     const modal = document.getElementById('youtubePlayerModal');
     const container = document.getElementById('youtube-player');
     const title = document.getElementById('youtubeActivityTitle');
     
-    if (!modal || !container) {
+    if (!modal) {
+        console.error('❌ ไม่พบ modal YouTube Player');
         alert('ไม่พบ YouTube Player');
+        return;
+    }
+    
+    if (!container) {
+        console.error('❌ ไม่พบ container YouTube Player');
+        alert('ไม่พบ container YouTube Player');
         return;
     }
     
     // ปิด player เก่าถ้ามี
     if (window.youtubePlayer) {
-        window.youtubePlayer.destroy();
+        try {
+            window.youtubePlayer.destroy();
+        } catch (e) {
+            console.error('Error destroying player:', e);
+        }
         window.youtubePlayer = null;
     }
     
@@ -2923,7 +2936,7 @@ window.openYoutubePlayer = function(activityId, videoId) {
     if (playerContainer) {
         playerContainer.style.position = 'relative';
         playerContainer.style.width = '100%';
-        playerContainer.style.paddingBottom = '56.25%'; // 16:9 Aspect Ratio
+        playerContainer.style.paddingBottom = '56.25%';
         playerContainer.style.height = '0';
         playerContainer.style.overflow = 'hidden';
         playerContainer.style.backgroundColor = '#000';
@@ -2931,7 +2944,14 @@ window.openYoutubePlayer = function(activityId, videoId) {
     }
     
     // ตั้งค่า title
-    const activityTitle = document.querySelector(`#activity-${activityId} .activity-title`)?.textContent?.trim() || 'YouTube';
+    const activityElement = document.querySelector(`#activity-${activityId}`);
+    let activityTitle = 'YouTube';
+    if (activityElement) {
+        const titleElement = activityElement.querySelector('.activity-title');
+        if (titleElement) {
+            activityTitle = titleElement.textContent?.trim() || 'YouTube';
+        }
+    }
     title.textContent = activityTitle;
     
     // แสดง modal
@@ -2939,15 +2959,29 @@ window.openYoutubePlayer = function(activityId, videoId) {
     window.youtubeActivityId = activityId;
     
     // ปรับขนาดตามหน้าจอ
-    window.resizeYoutubePlayer();
+    setTimeout(() => {
+        window.resizeYoutubePlayer();
+    }, 50);
     
     // โหลด YouTube API ถ้ายังไม่โหลด
-    loadYouTubeAPI();
+    if (!window.YT) {
+        loadYouTubeAPI();
+    }
     
     // รอให้ YouTube API พร้อม
     const initPlayer = () => {
         if (window.YT && window.YT.Player) {
             try {
+                console.log('🎬 Creating YouTube player with videoId:', videoId);
+                
+                // ตรวจสอบว่า container พร้อม
+                const playerContainerEl = document.getElementById('youtube-player-container');
+                if (!playerContainerEl) {
+                    console.error('❌ ไม่พบ player container');
+                    setTimeout(initPlayer, 200);
+                    return;
+                }
+                
                 window.youtubePlayer = new YT.Player('youtube-player-container', {
                     height: '100%',
                     width: '100%',
@@ -2959,7 +2993,8 @@ window.openYoutubePlayer = function(activityId, videoId) {
                         'showinfo': 0,
                         'modestbranding': 1,
                         'enablejsapi': 1,
-                        'origin': window.location.origin
+                        'origin': window.location.origin,
+                        'playsinline': 1
                     },
                     events: {
                         'onReady': onPlayerReady,
@@ -2967,17 +3002,21 @@ window.openYoutubePlayer = function(activityId, videoId) {
                         'onError': onPlayerError
                     }
                 });
-                console.log('🎬 Creating YouTube player for:', videoId);
+                
+                console.log('✅ YouTube player created successfully');
+                
             } catch (e) {
                 console.error('❌ Error creating YouTube player:', e);
-                setTimeout(initPlayer, 200);
+                setTimeout(initPlayer, 500);
             }
         } else {
-            setTimeout(initPlayer, 200);
+            console.log('⏳ Waiting for YouTube API...');
+            setTimeout(initPlayer, 300);
         }
     };
     
-    setTimeout(initPlayer, 300);
+    // เริ่มสร้าง player
+    setTimeout(initPlayer, 500);
     
     // โหลดข้อมูลอื่นๆ
     window.loadActivityParticipants(activityId);
@@ -2985,114 +3024,40 @@ window.openYoutubePlayer = function(activityId, videoId) {
     
     // ตั้งค่า sync interval
     if (window.youtubeSyncInterval) clearInterval(window.youtubeSyncInterval);
-    window.youtubeSyncInterval = setInterval(syncTimeToServer, 2000);
+    window.youtubeSyncInterval = setInterval(syncTimeToServer, 3000);
 };
 
-// ========== RESIZE YOUTUBE PLAYER ==========
-window.resizeYoutubePlayer = function() {
-    const modal = document.getElementById('youtubePlayerModal');
-    const container = document.getElementById('youtubePlayerContainer');
-    const modalContent = modal?.querySelector('.modal-content');
-    
-    if (!modal || !container || !modalContent) return;
-    
-    if (window.innerWidth <= 768) {
-        // มือถือ - เต็มจอ
-        modalContent.style.width = '100%';
-        modalContent.style.height = '100%';
-        modalContent.style.maxWidth = '100%';
-        modalContent.style.maxHeight = '100%';
-        modalContent.style.borderRadius = '0';
-        modalContent.style.padding = '16px';
-        modalContent.style.display = 'flex';
-        modalContent.style.flexDirection = 'column';
-        
-        container.style.position = 'relative';
-        container.style.width = '100%';
-        container.style.paddingBottom = '56.25%';
-        container.style.height = '0';
-        container.style.flex = 'none';
-    } else {
-        // คอมพิวเตอร์ - ขนาดปกติ
-        modalContent.style.width = 'min(90%, 1200px)';
-        modalContent.style.height = 'auto';
-        modalContent.style.maxWidth = '1200px';
-        modalContent.style.maxHeight = '90vh';
-        modalContent.style.borderRadius = '12px';
-        modalContent.style.padding = '24px';
-        modalContent.style.display = 'block';
-        
-        container.style.position = 'relative';
-        container.style.width = '100%';
-        container.style.paddingBottom = '56.25%';
-        container.style.height = '0';
+// ========== YOUTUBE API ==========
+function loadYouTubeAPI() {
+    if (window.YT) {
+        console.log('✅ YouTube API already loaded');
+        return;
     }
     
-    // ปรับขนาด iframe
-    const playerContainer = document.getElementById('youtube-player-container');
-    if (playerContainer) {
-        playerContainer.style.position = 'absolute';
-        playerContainer.style.top = '0';
-        playerContainer.style.left = '0';
-        playerContainer.style.width = '100%';
-        playerContainer.style.height = '100%';
-    }
-};
+    console.log('📦 Loading YouTube API...');
+    
+    // โหลด API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.onload = () => console.log('✅ YouTube script loaded');
+    tag.onerror = (e) => console.error('❌ Failed to load YouTube API:', e);
+    
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
 
-// ========== CLOSE YOUTUBE PLAYER ==========
-window.closeYoutubePlayer = function() {
-    const modal = document.getElementById('youtubePlayerModal');
-    if (modal) {
-        modal.classList.remove('active');
-        
-        // รีเซ็ต style
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.style.width = '';
-            modalContent.style.height = '';
-            modalContent.style.maxWidth = '';
-            modalContent.style.maxHeight = '';
-            modalContent.style.borderRadius = '';
-            modalContent.style.padding = '';
-            modalContent.style.display = '';
-        }
-    }
-    
-    // ทำลาย player
-    if (window.youtubePlayer) {
-        try {
-            window.youtubePlayer.destroy();
-        } catch (e) {
-            console.error('Error destroying player:', e);
-        }
-        window.youtubePlayer = null;
-    }
-    
-    // ล้าง interval
-    if (window.youtubeSyncInterval) {
-        clearInterval(window.youtubeSyncInterval);
-        window.youtubeSyncInterval = null;
-    }
-    
-    // ยกเลิก subscription
-    if (window.activitySyncSubscription) {
-        window.activitySyncSubscription.unsubscribe();
-        window.activitySyncSubscription = null;
-    }
-    
-    // ล้าง container
-    const container = document.getElementById('youtube-player');
-    if (container) {
-        container.innerHTML = '';
-    }
-    
-    window.youtubeActivityId = null;
+window.onYouTubeIframeAPIReady = function() {
+    console.log('✅ YouTube API พร้อมใช้งาน');
 };
 
 // ========== YOUTUBE EVENT HANDLERS ==========
 function onPlayerReady(event) {
     console.log('✅ YouTube Player ready');
-    loadSyncTime();
+    
+    // โหลดเวลา
+    setTimeout(() => {
+        loadSyncTime();
+    }, 500);
 }
 
 function onPlayerStateChange(event) {
@@ -3103,32 +3068,32 @@ function onPlayerStateChange(event) {
     const syncBtn = document.getElementById('syncPlayPauseBtn');
     const stateEl = document.getElementById('youtubePlayerState');
     
-    if (!syncBtn || !stateEl) return;
-    
-    switch(state) {
-        case YT.PlayerState.PLAYING:
-            stateText = '▶️ กำลังเล่น';
-            syncBtn.innerHTML = '⏸️ หยุดชั่วคราว';
-            syncBtn.classList.add('playing');
-            break;
-        case YT.PlayerState.PAUSED:
-            stateText = '⏸️ หยุดชั่วคราว';
-            syncBtn.innerHTML = '▶️ เล่น';
-            syncBtn.classList.remove('playing');
-            break;
-        case YT.PlayerState.ENDED:
-            stateText = '⏹️ จบแล้ว';
-            syncBtn.innerHTML = '▶️ เล่นใหม่';
-            break;
-        case YT.PlayerState.BUFFERING:
-            stateText = '⏳ กำลังโหลด';
-            break;
-        case YT.PlayerState.CUED:
-            stateText = '🎬 พร้อมเล่น';
-            break;
+    if (syncBtn) {
+        switch(state) {
+            case YT.PlayerState.PLAYING:
+                stateText = '▶️ กำลังเล่น';
+                syncBtn.innerHTML = '⏸️ หยุดชั่วคราว';
+                syncBtn.classList.add('playing');
+                break;
+            case YT.PlayerState.PAUSED:
+                stateText = '⏸️ หยุดชั่วคราว';
+                syncBtn.innerHTML = '▶️ เล่น';
+                syncBtn.classList.remove('playing');
+                break;
+            case YT.PlayerState.ENDED:
+                stateText = '⏹️ จบแล้ว';
+                syncBtn.innerHTML = '▶️ เล่นใหม่';
+                break;
+            case YT.PlayerState.BUFFERING:
+                stateText = '⏳ กำลังโหลด';
+                break;
+            case YT.PlayerState.CUED:
+                stateText = '🎬 พร้อมเล่น';
+                break;
+        }
     }
     
-    stateEl.textContent = stateText;
+    if (stateEl) stateEl.textContent = stateText || '⏸️ หยุด';
     
     if (!window.youtubeIsSeeking && state !== YT.PlayerState.BUFFERING) {
         syncStateToServer(state);
@@ -3137,6 +3102,7 @@ function onPlayerStateChange(event) {
 
 function onPlayerError(event) {
     console.error('❌ YouTube Player error:', event.data);
+    
     let errorMessage = 'ไม่สามารถเล่นวิดีโอนี้ได้';
     
     switch(event.data) {
@@ -3158,9 +3124,86 @@ function onPlayerError(event) {
     alert(errorMessage + ' (รหัส: ' + event.data + ')');
 }
 
+// ========== RESIZE YOUTUBE PLAYER ==========
+window.resizeYoutubePlayer = function() {
+    const modal = document.getElementById('youtubePlayerModal');
+    const container = document.getElementById('youtubePlayerContainer');
+    
+    if (!modal || !container) return;
+    
+    const modalContent = modal.querySelector('.modal-content');
+    if (!modalContent) return;
+    
+    if (window.innerWidth <= 768) {
+        // มือถือ - เต็มจอ
+        modalContent.style.width = '100%';
+        modalContent.style.height = '100%';
+        modalContent.style.maxWidth = '100%';
+        modalContent.style.maxHeight = '100%';
+        modalContent.style.borderRadius = '0';
+        modalContent.style.padding = '16px';
+        modalContent.style.display = 'flex';
+        modalContent.style.flexDirection = 'column';
+        
+        container.style.position = 'relative';
+        container.style.width = '100%';
+        container.style.paddingBottom = '56.25%';
+        container.style.height = '0';
+        container.style.flex = 'none';
+    } else {
+        // คอมพิวเตอร์
+        modalContent.style.width = 'min(90%, 1000px)';
+        modalContent.style.height = 'auto';
+        modalContent.style.maxWidth = '1000px';
+        modalContent.style.maxHeight = '90vh';
+        modalContent.style.borderRadius = '12px';
+        modalContent.style.padding = '20px';
+        modalContent.style.display = 'block';
+        
+        container.style.position = 'relative';
+        container.style.width = '100%';
+        container.style.paddingBottom = '56.25%';
+        container.style.height = '0';
+    }
+};
+
+// ========== CLOSE YOUTUBE PLAYER ==========
+window.closeYoutubePlayer = function() {
+    const modal = document.getElementById('youtubePlayerModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    
+    if (window.youtubePlayer) {
+        try {
+            window.youtubePlayer.destroy();
+        } catch (e) {
+            console.error('Error destroying player:', e);
+        }
+        window.youtubePlayer = null;
+    }
+    
+    if (window.youtubeSyncInterval) {
+        clearInterval(window.youtubeSyncInterval);
+        window.youtubeSyncInterval = null;
+    }
+    
+    if (window.activitySyncSubscription) {
+        window.activitySyncSubscription.unsubscribe();
+        window.activitySyncSubscription = null;
+    }
+    
+    const container = document.getElementById('youtube-player');
+    if (container) {
+        container.innerHTML = '';
+    }
+    
+    window.youtubeActivityId = null;
+};
+
 // ========== SYNC FUNCTIONS ==========
 async function syncStateToServer(state) {
-    if (!window.youtubeActivityId || !window.youtubePlayer) return;
+    if (!window.youtubeActivityId || !window.youtubePlayer || !window.currentUser) return;
     
     try {
         const currentTime = window.youtubePlayer.getCurrentTime();
@@ -3170,7 +3213,7 @@ async function syncStateToServer(state) {
                 activity_id: window.youtubeActivityId,
                 user_id: window.currentUser.id,
                 player_state: state,
-                playback_time: currentTime,
+                playback_time: currentTime || 0,
                 updated_at: new Date().toISOString()
             }, {
                 onConflict: 'activity_id,user_id'
@@ -3181,14 +3224,14 @@ async function syncStateToServer(state) {
 }
 
 async function syncTimeToServer() {
-    if (!window.youtubeActivityId || !window.youtubePlayer || window.youtubeIsSeeking) return;
+    if (!window.youtubeActivityId || !window.youtubePlayer || window.youtubeIsSeeking || !window.currentUser) return;
     
     try {
         const currentTime = window.youtubePlayer.getCurrentTime();
         await supabaseClient
             .from('activity_sync')
             .update({
-                playback_time: currentTime,
+                playback_time: currentTime || 0,
                 updated_at: new Date().toISOString()
             })
             .eq('activity_id', window.youtubeActivityId)
@@ -3213,11 +3256,11 @@ async function loadSyncTime() {
         
         if (syncs && syncs.length > 0) {
             const host = syncs[0];
-            if (host.user_id !== window.currentUser.id) {
-                // ปรับเวลา
-                window.youtubePlayer.seekTo(host.playback_time || 0, true);
+            if (host.user_id !== window.currentUser?.id) {
+                if (host.playback_time !== undefined) {
+                    window.youtubePlayer.seekTo(host.playback_time, true);
+                }
                 
-                // ปรับสถานะการเล่น
                 if (host.player_state === YT.PlayerState.PLAYING) {
                     window.youtubePlayer.playVideo();
                 } else if (host.player_state === YT.PlayerState.PAUSED) {
@@ -3268,10 +3311,6 @@ window.syncRestart = function() {
     window.youtubePlayer.playVideo();
 };
 
-window.syncToHost = function() {
-    loadSyncTime();
-};
-
 // ========== SUBSCRIBE TO SYNC ==========
 window.subscribeToActivitySync = function(activityId) {
     if (window.activitySyncSubscription) {
@@ -3288,9 +3327,8 @@ window.subscribeToActivitySync = function(activityId) {
                 filter: `activity_id=eq.${activityId}` 
             },
             (payload) => {
-                if (!window.youtubePlayer || payload.new.user_id === window.currentUser.id) return;
+                if (!window.youtubePlayer || payload.new.user_id === window.currentUser?.id) return;
                 
-                // Sync player state
                 if (payload.new.player_state !== undefined) {
                     if (payload.new.player_state === YT.PlayerState.PLAYING) {
                         window.youtubePlayer.playVideo();
@@ -3299,7 +3337,6 @@ window.subscribeToActivitySync = function(activityId) {
                     }
                 }
                 
-                // Sync playback time - เฉพาะเมื่อห่างกันเกิน 2 วินาที
                 if (!window.youtubeIsSeeking && payload.new.playback_time !== undefined) {
                     try {
                         const currentTime = window.youtubePlayer.getCurrentTime();
@@ -3767,6 +3804,7 @@ window.resizeYoutubePlayer = function() {
 </script>
 </body>
 </html>
+
 
 
 
