@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
     <script>
@@ -52,25 +52,16 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
+            // ใช้ฟังก์ชันจาก supabase-client.js
             const result = await loginUser(email, password);
             
             if (result.success) {
                 window.location.href = 'chat.html';
             } else {
-                showError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+                document.getElementById('errorMessage').textContent = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
             }
         });
-        
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-        }
-        
-        function fillDemoAccount() {
-            document.getElementById('email').value = 'demo@chatapp.com';
-            document.getElementById('password').value = 'demo1234';
-        }
     </script>
 </body>
+
 </html>
