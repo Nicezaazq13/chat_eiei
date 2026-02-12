@@ -13,8 +13,8 @@
             
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="email">ชื่อผู้ใช้</label>
-                    <input type="username" id="username" placeholder="username" required>
+                    <label for="username">ชื่อผู้ใช้</label>
+                    <input type="text" id="username" placeholder="เช่น john_doe" required>
                 </div>
                 
                 <div class="form-group">
@@ -42,65 +42,49 @@
         </div>
     </div>
 
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
     <script>
-        // รอให้ DOM โหลดเสร็จ
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('loginForm');
-            if (!form) return;
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('errorMessage');
+            
+            if (!username || !password) {
+                errorEl.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
+                return;
+            }
+            
+            // แสดงสถานะกำลังโหลด
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'กำลังเข้าสู่ระบบ...';
+            submitBtn.disabled = true;
+            errorEl.textContent = '';
+            
+            try {
+                const result = await loginUser(username, password);
                 
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-                const errorEl = document.getElementById('errorMessage');
-                
-                if (!email || !password) {
-                    errorEl.textContent = 'กรุณากรอกอีเมลและรหัสผ่าน';
-                    return;
+                if (result.success) {
+                    window.location.href = 'chat.html';
+                } else {
+                    errorEl.textContent = result.error;
                 }
-                
-                // ตรวจสอบว่า loginUser พร้อมใช้งาน
-                if (typeof window.loginUser !== 'function') {
-                    errorEl.textContent = 'ระบบยังไม่พร้อม กรุณารีเฟรชหน้าเว็บ';
-                    console.error('loginUser is not defined');
-                    return;
-                }
-                
-                // แสดงสถานะกำลังโหลด
-                const submitBtn = form.querySelector('button[type="submit"]');
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'กำลังเข้าสู่ระบบ...';
-                submitBtn.disabled = true;
-                errorEl.textContent = '';
-                
-                try {
-                    const result = await window.loginUser(username, password);
-                    
-                    if (result.success) {
-                        window.location.href = 'chat.html';
-                    } else {
-                        errorEl.textContent = result.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    errorEl.textContent = 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง';
-                } finally {
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                }
-            });
+            } catch (error) {
+                errorEl.textContent = 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง';
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         });
 
-        // ฟังก์ชันเติมข้อมูลทดสอบ
         window.fillDemoAccount = function() {
-            document.getElementById('username').value = 'demo';
+            document.getElementById('username').value = 'demo_user';
             document.getElementById('password').value = 'demo1234';
         };
     </script>
 </body>
 </html>
-
