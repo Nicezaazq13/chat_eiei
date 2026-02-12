@@ -218,7 +218,25 @@ body {
     gap: 8px;
     border-bottom: 1px solid var(--border-color);
 }
+/* ========== FORCE CLICKABLE ========== */
+.rooms-panel.mobile-active,
+.rooms-panel.mobile-active * {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
 
+.rooms-panel.mobile-active .room-item {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.rooms-panel.mobile-active button,
+.rooms-panel.mobile-active .tab-btn,
+.rooms-panel.mobile-active .create-room-btn {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    z-index: 9999 !important;
+}
 .tab-btn {
     flex: 1;
     padding: 8px;
@@ -3531,7 +3549,82 @@ body.sidebar-open {
             }
         });
     };
+// ========== MOBILE SIDEBAR ==========
+window.toggleMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (!sidebar) return;
+    
+    sidebar.classList.toggle('mobile-active');
+    
+    if (overlay) {
+        overlay.classList.toggle('active', sidebar.classList.contains('mobile-active'));
+    }
+    
+    // ป้องกันการเลื่อนพื้นหลัง
+    if (sidebar.classList.contains('mobile-active')) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+};
 
+window.closeMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar) {
+        sidebar.classList.remove('mobile-active');
+    }
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+};
+
+// ✅ เพิ่ม: ปิด sidebar เมื่อเลือกห้อง
+window.selectRoom = async function(roomId) {
+    // ปิด sidebar ก่อน
+    window.closeMobileSidebar();
+    
+    try {
+        const { data: room, error } = await supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('id', roomId)
+            .single();
+            
+        if (error) throw error;
+        
+        if (room.room_type === 'private') {
+            const { data: member } = await supabaseClient
+                .from('room_members')
+                .select('*')
+                .eq('room_id', roomId)
+                .eq('user_id', window.currentUser.id)
+                .maybeSingle();
+                
+            if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                showJoinPrivateModal(room);
+                return;
+            }
+        }
+        
+        await joinRoom(room);
+        
+    } catch (error) {
+        console.error('❌ Error selecting room:', error);
+    }
+};
+
+// ✅ เพิ่ม: ปิด sidebar เมื่อคลิก overlay
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', window.closeMobileSidebar);
+    }
+});
     // ========== UTILITIES ==========
     window.formatTime = function(timestamp) {
         if (!timestamp) return '';
@@ -3592,6 +3685,7 @@ body.sidebar-open {
 </script>
 </body>
 </html>
+
 
 
 
