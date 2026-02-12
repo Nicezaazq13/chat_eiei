@@ -13,8 +13,8 @@
             
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="email">อีเมล</label>
-                    <input type="email" id="email" placeholder="your@email.com" required>
+                    <label for="email">ชื่อผู้ใช้</label>
+                    <input type="username" id="username" placeholder="username" required>
                 </div>
                 
                 <div class="form-group">
@@ -54,7 +54,7 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                const email = document.getElementById('email').value.trim();
+                const username = document.getElementById('username').value.trim();
                 const password = document.getElementById('password').value;
                 const errorEl = document.getElementById('errorMessage');
                 
@@ -78,7 +78,7 @@
                 errorEl.textContent = '';
                 
                 try {
-                    const result = await window.loginUser(email, password);
+                    const result = await window.loginUser(username, password);
                     
                     if (result.success) {
                         window.location.href = 'chat.html';
@@ -97,9 +97,10 @@
 
         // ฟังก์ชันเติมข้อมูลทดสอบ
         window.fillDemoAccount = function() {
-            document.getElementById('email').value = 'demo@chatapp.com';
+            document.getElementById('username').value = 'demo';
             document.getElementById('password').value = 'demo1234';
         };
     </script>
 </body>
 </html>
+
