@@ -264,7 +264,6 @@
             }
         }
         
-        /* ========== CHAT ADJUSTMENTS ========== */
         .chat-main {
             display: flex;
             flex: 1;
@@ -306,7 +305,7 @@
             </div>
             <div class="chat-header-right">
                 <div class="user-profile" id="userProfile"></div>
-                <button onclick="logout()" class="btn btn-outline">
+                <button onclick="window.logout()" class="btn btn-outline">
                     ออกจากระบบ
                 </button>
             </div>
@@ -317,19 +316,18 @@
             <!-- Rooms Panel (ซ้าย) -->
             <div class="rooms-panel">
                 <div class="rooms-header">
-                    <button class="create-room-btn" onclick="showCreateRoomModal()">
+                    <button class="create-room-btn" onclick="window.showCreateRoomModal()">
                         + สร้างห้องใหม่
                     </button>
                 </div>
                 
                 <div class="room-tabs">
-                    <button class="tab-btn active" onclick="filterRooms('all', this)">ทั้งหมด</button>
-                    <button class="tab-btn" onclick="filterRooms('public', this)">สาธารณะ</button>
-                    <button class="tab-btn" onclick="filterRooms('private', this)">ส่วนตัว</button>
+                    <button class="tab-btn active" onclick="window.filterRooms('all', this)">ทั้งหมด</button>
+                    <button class="tab-btn" onclick="window.filterRooms('public', this)">สาธารณะ</button>
+                    <button class="tab-btn" onclick="window.filterRooms('private', this)">ส่วนตัว</button>
                 </div>
                 
                 <div class="room-list" id="roomList">
-                    <!-- รายการห้องจะโหลดมาใส่ที่นี่ -->
                     <div style="text-align: center; padding: 40px 20px; color: #a0aec0;">
                         ⏳ กำลังโหลดห้อง...
                     </div>
@@ -367,11 +365,9 @@
             <div class="members-panel" id="membersPanel">
                 <div class="members-header">
                     <h3>👥 สมาชิกในห้อง</h3>
-                    <button onclick="toggleMembersPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+                    <button onclick="window.toggleMembersPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
                 </div>
-                <div class="members-list" id="membersList">
-                    <!-- รายการสมาชิกจะโหลดมาใส่ที่นี่ -->
-                </div>
+                <div class="members-list" id="membersList"></div>
             </div>
         </div>
     </div>
@@ -393,7 +389,7 @@
                 
                 <div class="form-group">
                     <label>ประเภทห้อง</label>
-                    <select id="roomType" onchange="togglePasswordField()">
+                    <select id="roomType" onchange="window.togglePasswordField()">
                         <option value="public">🌍 สาธารณะ - ทุกคนเข้าได้</option>
                         <option value="private">🔒 ส่วนตัว - ต้องใช้รหัสผ่าน</option>
                     </select>
@@ -412,7 +408,7 @@
                 
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
                     <button type="submit" class="btn btn-primary" style="flex: 1;">สร้างห้อง</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeCreateRoomModal()">ยกเลิก</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.closeCreateRoomModal()">ยกเลิก</button>
                 </div>
             </form>
         </div>
@@ -430,8 +426,8 @@
             </div>
             
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button onclick="confirmJoinPrivateRoom()" class="btn btn-primary" style="flex: 1;">เข้าร่วม</button>
-                <button onclick="closeJoinPrivateModal()" class="btn btn-secondary">ยกเลิก</button>
+                <button onclick="window.confirmJoinPrivateRoom()" class="btn btn-primary" style="flex: 1;">เข้าร่วม</button>
+                <button onclick="window.closeJoinPrivateModal()" class="btn btn-secondary">ยกเลิก</button>
             </div>
         </div>
     </div>
@@ -444,8 +440,8 @@
             <p style="color: #718096; margin-bottom: 24px;">คุณแน่ใจหรือไม่ว่าต้องการเตะสมาชิกคนนี้ออกจากห้อง?</p>
             
             <div style="display: flex; gap: 12px;">
-                <button onclick="confirmKickMember()" class="btn" style="flex: 1; background: #f56565; color: white;">เตะออก</button>
-                <button onclick="closeKickModal()" class="btn btn-secondary">ยกเลิก</button>
+                <button onclick="window.confirmKickMember()" class="btn" style="flex: 1; background: #f56565; color: white;">เตะออก</button>
+                <button onclick="window.closeKickModal()" class="btn btn-secondary">ยกเลิก</button>
             </div>
         </div>
     </div>
@@ -455,43 +451,30 @@
     <script src="supabase-client.js"></script>
     <script>
         // ========== GLOBAL VARIABLES ==========
-        let currentUser = null;
-        let currentRoom = null;
-        let currentRoomId = '00000000-0000-0000-0000-000000000000';
-        let messageSubscription = null;
-        let messagesContainer = document.getElementById('messagesContainer');
-        let messageInput = document.getElementById('messageInput');
-        let sendButton = document.getElementById('sendButton');
-        let typingTimeout = null;
+        window.currentUser = null;
+        window.currentRoom = null;
+        window.currentRoomId = '00000000-0000-0000-0000-000000000000';
+        window.messageSubscription = null;
+        window.messagesContainer = document.getElementById('messagesContainer');
+        window.messageInput = document.getElementById('messageInput');
+        window.sendButton = document.getElementById('sendButton');
         
         const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
 
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // ตรวจสอบการล็อกอิน
-                currentUser = await checkUser();
-                if (!currentUser) {
+                window.currentUser = await checkUser();
+                if (!window.currentUser) {
                     window.location.href = 'login.html';
                     return;
                 }
 
-                // แสดงข้อมูลผู้ใช้
                 displayUserInfo();
-                
-                // โหลดรายการห้อง
                 await loadRooms();
-                
-                // เข้าร่วม public room อัตโนมัติ
                 await selectRoom(PUBLIC_ROOM_ID);
-                
-                // โหลดรายชื่อออนไลน์
                 await loadOnlineUsers();
-                
-                // ตั้งค่า Event Listeners
                 setupEventListeners();
-                
-                // ตั้งค่า Mobile Handler
                 initMobileHandler();
                 
                 console.log('✅ Chat initialized');
@@ -501,10 +484,10 @@
         });
 
         // ========== USER INFO ==========
-        function displayUserInfo() {
+        window.displayUserInfo = function() {
             const userProfile = document.getElementById('userProfile');
-            const username = currentUser.user_metadata?.display_name || 
-                            currentUser.user_metadata?.username || 
+            const username = window.currentUser.user_metadata?.display_name || 
+                            window.currentUser.user_metadata?.username || 
                             'ผู้ใช้';
             
             userProfile.innerHTML = `
@@ -513,10 +496,10 @@
                      class="avatar">
                 <span class="username">${username}</span>
             `;
-        }
+        };
 
         // ========== ROOM MANAGEMENT ==========
-        async function loadRooms(filter = 'all') {
+        window.loadRooms = async function(filter = 'all') {
             try {
                 let query = supabaseClient
                     .from('rooms')
@@ -546,9 +529,9 @@
             } catch (error) {
                 console.error('❌ Error loading rooms:', error);
             }
-        }
+        };
 
-        function displayRooms(rooms) {
+        window.displayRooms = function(rooms) {
             const roomList = document.getElementById('roomList');
             if (!roomList) return;
             
@@ -558,12 +541,12 @@
             }
             
             roomList.innerHTML = rooms.map(room => {
-                const isOwner = room.owner_id === currentUser?.id;
+                const isOwner = room.owner_id === window.currentUser?.id;
                 const memberCount = room.room_members?.length || 0;
-                const isActive = currentRoomId === room.id;
+                const isActive = window.currentRoomId === room.id;
                 
                 return `
-                    <div class="room-item ${isActive ? 'active' : ''}" onclick="selectRoom('${room.id}')">
+                    <div class="room-item ${isActive ? 'active' : ''}" onclick="window.selectRoom('${room.id}')">
                         <div class="room-header">
                             <span class="room-name">
                                 ${room.room_type === 'private' ? '🔒' : '🌍'} ${room.name}
@@ -581,11 +564,10 @@
                     </div>
                 `;
             }).join('');
-        }
+        };
 
-        async function selectRoom(roomId) {
+        window.selectRoom = async function(roomId) {
             try {
-                // ตรวจสอบข้อมูลห้อง
                 const { data: room, error } = await supabaseClient
                     .from('rooms')
                     .select('*')
@@ -594,16 +576,15 @@
                     
                 if (error) throw error;
                 
-                // ถ้าเป็นห้องส่วนตัวและยังไม่เป็นสมาชิก
                 if (room.room_type === 'private') {
                     const { data: member } = await supabaseClient
                         .from('room_members')
                         .select('*')
                         .eq('room_id', roomId)
-                        .eq('user_id', currentUser.id)
+                        .eq('user_id', window.currentUser.id)
                         .maybeSingle();
                         
-                    if (!member && room.owner_id !== currentUser.id) {
+                    if (!member && room.owner_id !== window.currentUser.id) {
                         showJoinPrivateModal(room);
                         return;
                     }
@@ -614,16 +595,15 @@
             } catch (error) {
                 console.error('❌ Error selecting room:', error);
             }
-        }
+        };
 
-        async function joinRoom(room) {
+        window.joinRoom = async function(room) {
             try {
-                // เข้าร่วมห้อง
                 const { data: existingMember } = await supabaseClient
                     .from('room_members')
                     .select('*')
                     .eq('room_id', room.id)
-                    .eq('user_id', currentUser.id)
+                    .eq('user_id', window.currentUser.id)
                     .maybeSingle();
                     
                 if (!existingMember) {
@@ -631,17 +611,15 @@
                         .from('room_members')
                         .insert([{
                             room_id: room.id,
-                            user_id: currentUser.id,
-                            role: room.owner_id === currentUser.id ? 'owner' : 'member',
+                            user_id: window.currentUser.id,
+                            role: room.owner_id === window.currentUser.id ? 'owner' : 'member',
                             joined_at: new Date().toISOString()
                         }]);
                 }
                 
-                // ตั้งค่าห้องปัจจุบัน
-                currentRoom = room;
-                currentRoomId = room.id;
+                window.currentRoom = room;
+                window.currentRoomId = room.id;
                 
-                // อัปเดต UI
                 document.getElementById('currentRoomTitle').innerHTML = `
                     ${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}
                 `;
@@ -649,25 +627,18 @@
                     room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
                 document.getElementById('messageInputArea').style.display = 'block';
                 
-                // โหลดข้อความ
                 await loadMessages(room.id);
-                
-                // โหลดสมาชิก
                 await loadRoomMembers(room.id);
-                
-                // ตั้งค่า Realtime
                 setupMessageSubscription(room.id);
-                
-                // อัปเดตรายการห้อง
                 loadRooms();
                 
             } catch (error) {
                 console.error('❌ Error joining room:', error);
             }
-        }
+        };
 
         // ========== MESSAGES ==========
-        async function loadMessages(roomId) {
+        window.loadMessages = async function(roomId) {
             try {
                 const { data: messages, error } = await supabaseClient
                     .from('messages')
@@ -685,10 +656,10 @@
                     
                 if (error) throw error;
                 
-                messagesContainer.innerHTML = '';
+                window.messagesContainer.innerHTML = '';
                 
                 if (messages.length === 0) {
-                    messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
+                    window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
                 } else {
                     messages.forEach(msg => displayMessage(msg));
                 }
@@ -698,12 +669,12 @@
             } catch (error) {
                 console.error('❌ Error loading messages:', error);
             }
-        }
+        };
 
-        function displayMessage(message) {
-            if (!messagesContainer) return;
+        window.displayMessage = function(message) {
+            if (!window.messagesContainer) return;
             
-            const isOwnMessage = message.user_id === currentUser?.id;
+            const isOwnMessage = message.user_id === window.currentUser?.id;
             const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
             const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
             
@@ -721,41 +692,41 @@
                 </div>
             `;
             
-            messagesContainer.appendChild(messageDiv);
+            window.messagesContainer.appendChild(messageDiv);
             scrollToBottom();
-        }
+        };
 
-        async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message || !currentRoomId) return;
+        window.sendMessage = async function() {
+            const message = window.messageInput.value.trim();
+            if (!message || !window.currentRoomId) return;
             
             try {
                 const { error } = await supabaseClient
                     .from('messages')
                     .insert([{
-                        user_id: currentUser.id,
-                        room_id: currentRoomId,
+                        user_id: window.currentUser.id,
+                        room_id: window.currentRoomId,
                         message: message,
                         created_at: new Date().toISOString()
                     }]);
                     
                 if (error) throw error;
                 
-                messageInput.value = '';
+                window.messageInput.value = '';
                 document.getElementById('charCount').textContent = '0/500';
                 
             } catch (error) {
                 console.error('❌ Error sending message:', error);
             }
-        }
+        };
 
         // ========== REALTIME ==========
-        function setupMessageSubscription(roomId) {
-            if (messageSubscription) {
-                messageSubscription.unsubscribe();
+        window.setupMessageSubscription = function(roomId) {
+            if (window.messageSubscription) {
+                window.messageSubscription.unsubscribe();
             }
             
-            messageSubscription = supabaseClient
+            window.messageSubscription = supabaseClient
                 .channel(`room-${roomId}`)
                 .on(
                     'postgres_changes',
@@ -779,10 +750,10 @@
                     }
                 )
                 .subscribe();
-        }
+        };
 
         // ========== ROOM MEMBERS ==========
-        async function loadRoomMembers(roomId) {
+        window.loadRoomMembers = async function(roomId) {
             try {
                 const { data: members, error } = await supabaseClient
                     .from('room_members')
@@ -804,17 +775,17 @@
             } catch (error) {
                 console.error('❌ Error loading members:', error);
             }
-        }
+        };
 
-        function displayRoomMembers(members) {
+        window.displayRoomMembers = function(members) {
             const container = document.getElementById('membersList');
             if (!container) return;
             
-            const isOwner = currentRoom?.owner_id === currentUser.id;
+            const isOwner = window.currentRoom?.owner_id === window.currentUser.id;
             
             container.innerHTML = members.map(member => {
                 const profile = member.profiles;
-                const isCurrentUser = member.user_id === currentUser.id;
+                const isCurrentUser = member.user_id === window.currentUser.id;
                 const canKick = isOwner && !isCurrentUser && member.role !== 'owner';
                 
                 return `
@@ -832,53 +803,53 @@
                             </div>
                         </div>
                         ${canKick ? `
-                            <button class="kick-btn" onclick="showKickModal('${member.user_id}', '${profile?.display_name || profile?.username}')">
+                            <button class="kick-btn" onclick="window.showKickModal('${member.user_id}', '${profile?.display_name || profile?.username}')">
                                 เตะออก
                             </button>
                         ` : ''}
                     </div>
                 `;
             }).join('');
-        }
+        };
 
         // ========== KICK MEMBER ==========
-        let kickMemberId = null;
+        window.kickMemberId = null;
 
-        function showKickModal(userId, username) {
-            kickMemberId = userId;
+        window.showKickModal = function(userId, username) {
+            window.kickMemberId = userId;
             document.getElementById('kickMemberName').textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
             document.getElementById('kickMemberModal').classList.add('active');
-        }
+        };
 
-        function closeKickModal() {
-            kickMemberId = null;
+        window.closeKickModal = function() {
+            window.kickMemberId = null;
             document.getElementById('kickMemberModal').classList.remove('active');
-        }
+        };
 
-        async function confirmKickMember() {
-            if (!kickMemberId || !currentRoomId) return;
+        window.confirmKickMember = async function() {
+            if (!window.kickMemberId || !window.currentRoomId) return;
             
             try {
                 const { error } = await supabaseClient
                     .from('room_members')
                     .delete()
-                    .eq('room_id', currentRoomId)
-                    .eq('user_id', kickMemberId);
+                    .eq('room_id', window.currentRoomId)
+                    .eq('user_id', window.kickMemberId);
                     
                 if (error) throw error;
                 
                 alert('✅ เตะสมาชิกออกจากห้องแล้ว');
                 closeKickModal();
-                await loadRoomMembers(currentRoomId);
+                await loadRoomMembers(window.currentRoomId);
                 
             } catch (error) {
                 console.error('❌ Error kicking member:', error);
                 alert('ไม่สามารถเตะสมาชิกได้');
             }
-        }
+        };
 
         // ========== CREATE ROOM ==========
-        async function createRoom(event) {
+        window.createRoom = async function(event) {
             event.preventDefault();
             
             try {
@@ -906,7 +877,7 @@
                         description: description,
                         room_type: roomType,
                         password: roomType === 'private' ? password : null,
-                        owner_id: currentUser.id,
+                        owner_id: window.currentUser.id,
                         created_at: new Date().toISOString()
                     }])
                     .select()
@@ -914,12 +885,11 @@
                     
                 if (error) throw error;
                 
-                // เพิ่มเจ้าของเป็นสมาชิก
                 await supabaseClient
                     .from('room_members')
                     .insert([{
                         room_id: room.id,
-                        user_id: currentUser.id,
+                        user_id: window.currentUser.id,
                         role: 'owner',
                         joined_at: new Date().toISOString()
                     }]);
@@ -933,10 +903,10 @@
                 console.error('❌ Error creating room:', error);
                 alert('เกิดข้อผิดพลาดในการสร้างห้อง');
             }
-        }
+        };
 
         // ========== ONLINE USERS ==========
-        async function loadOnlineUsers() {
+        window.loadOnlineUsers = async function() {
             try {
                 const { data, error } = await supabaseClient
                     .from('profiles')
@@ -981,37 +951,37 @@
             } catch (error) {
                 console.error('❌ Error loading online users:', error);
             }
-        }
+        };
 
         // ========== MODAL CONTROLS ==========
-        function showCreateRoomModal() {
+        window.showCreateRoomModal = function() {
             document.getElementById('createRoomModal').classList.add('active');
-        }
+        };
 
-        function closeCreateRoomModal() {
+        window.closeCreateRoomModal = function() {
             document.getElementById('createRoomModal').classList.remove('active');
             document.getElementById('createRoomForm').reset();
             document.getElementById('passwordField').classList.remove('show');
-        }
+        };
 
-        function togglePasswordField() {
+        window.togglePasswordField = function() {
             const roomType = document.getElementById('roomType').value;
             const passwordField = document.getElementById('passwordField');
             passwordField.classList.toggle('show', roomType === 'private');
-        }
+        };
 
-        function showJoinPrivateModal(room) {
+        window.showJoinPrivateModal = function(room) {
             document.getElementById('joinRoomName').textContent = `ห้อง: ${room.name}`;
             document.getElementById('joinPrivateRoomModal').dataset.roomId = room.id;
             document.getElementById('joinPrivateRoomModal').classList.add('active');
-        }
+        };
 
-        function closeJoinPrivateModal() {
+        window.closeJoinPrivateModal = function() {
             document.getElementById('joinPrivateRoomModal').classList.remove('active');
             document.getElementById('joinRoomPassword').value = '';
-        }
+        };
 
-        async function confirmJoinPrivateRoom() {
+        window.confirmJoinPrivateRoom = async function() {
             const roomId = document.getElementById('joinPrivateRoomModal').dataset.roomId;
             const password = document.getElementById('joinRoomPassword').value;
             
@@ -1036,51 +1006,51 @@
                 console.error('❌ Error joining private room:', error);
                 alert('ไม่สามารถเข้าร่วมห้องได้');
             }
-        }
+        };
 
         // ========== UI CONTROLS ==========
-        function filterRooms(filter, btn) {
+        window.filterRooms = function(filter, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             loadRooms(filter);
-        }
+        };
 
-        function toggleMembersPanel() {
+        window.toggleMembersPanel = function() {
             document.getElementById('membersPanel').classList.toggle('active');
-        }
+        };
 
         // ========== EVENT LISTENERS ==========
-        function setupEventListeners() {
-            if (sendButton) {
-                sendButton.addEventListener('click', sendMessage);
+        window.setupEventListeners = function() {
+            if (window.sendButton) {
+                window.sendButton.addEventListener('click', window.sendMessage);
             }
             
-            if (messageInput) {
-                messageInput.addEventListener('keydown', (e) => {
+            if (window.messageInput) {
+                window.messageInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        sendMessage();
+                        window.sendMessage();
                     }
                 });
                 
-                messageInput.addEventListener('input', () => {
-                    const count = messageInput.value.length;
+                window.messageInput.addEventListener('input', () => {
+                    const count = window.messageInput.value.length;
                     const charCount = document.getElementById('charCount');
                     if (charCount) {
                         charCount.textContent = `${count}/500`;
                     }
                     
                     if (count > 500) {
-                        messageInput.value = messageInput.value.slice(0, 500);
+                        window.messageInput.value = window.messageInput.value.slice(0, 500);
                     }
                 });
             }
             
-            document.getElementById('createRoomForm').addEventListener('submit', createRoom);
-        }
+            document.getElementById('createRoomForm').addEventListener('submit', window.createRoom);
+        };
 
         // ========== MOBILE HANDLER ==========
-        function initMobileHandler() {
+        window.initMobileHandler = function() {
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             if (!isMobile) return;
             
@@ -1091,18 +1061,18 @@
                 if (originalHeight - newHeight > 150) {
                     document.body.classList.add('keyboard-open');
                     setTimeout(() => {
-                        if (messageInput) {
-                            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (window.messageInput) {
+                            window.messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }, 300);
                 } else {
                     document.body.classList.remove('keyboard-open');
                 }
             });
-        }
+        };
 
         // ========== UTILITIES ==========
-        function formatTime(timestamp) {
+        window.formatTime = function(timestamp) {
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
@@ -1119,31 +1089,31 @@
                 hour: '2-digit',
                 minute: '2-digit'
             });
-        }
+        };
 
-        function linkify(text) {
+        window.linkify = function(text) {
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             return text.replace(urlRegex, url => 
                 `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
             );
-        }
+        };
 
-        function scrollToBottom() {
-            if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        window.scrollToBottom = function() {
+            if (window.messagesContainer) {
+                window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight;
             }
-        }
+        };
 
         // ========== LOGOUT ==========
-        async function logout() {
+        window.logout = async function() {
             await supabaseClient.auth.signOut();
             window.location.href = 'index.html';
-        }
+        };
 
         // ========== CLEANUP ==========
         window.addEventListener('beforeunload', () => {
-            if (messageSubscription) {
-                messageSubscription.unsubscribe();
+            if (window.messageSubscription) {
+                window.messageSubscription.unsubscribe();
             }
         });
     </script>
