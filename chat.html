@@ -316,6 +316,7 @@
             background: #e2e8f0;
             color: #4a5568;
         }
+        
         /* ========== ADMIN BUTTON ========== */
         .btn-admin {
             background: #805ad5;
@@ -453,7 +454,8 @@
             background: #fed7d7;
             color: #e53e3e;
         }
-                /* ========== INPUT TOOLBAR ========== */
+        
+        /* ========== INPUT TOOLBAR ========== */
         .input-toolbar {
             display: flex;
             gap: 8px;
@@ -606,6 +608,577 @@
             background: rgba(255,255,255,0.3);
             transform: scale(1.1);
         }
+        
+        /* ========== READ RECEIPTS ========== */
+        .read-by-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 8px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .own-message .read-by-container {
+            justify-content: flex-start;
+            flex-direction: row-reverse;
+        }
+        
+        .read-icon {
+            font-size: 12px;
+            color: #48bb78;
+            margin-right: 6px;
+            font-weight: 600;
+        }
+        
+        .read-by-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 4px;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .read-by-avatar:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+        
+        .read-by-more {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #4a5568;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .read-by-more:hover {
+            background: #cbd5e0;
+        }
+        
+        /* ========== MUSIC PLAYER ========== */
+        .music-playlist {
+            margin-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .playlist-item:hover {
+            background: #f7fafc;
+        }
+        
+        .playlist-info {
+            flex: 1;
+        }
+        
+        .playlist-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .playlist-artist {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .playlist-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .playlist-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .playlist-btn:hover {
+            background: #e2e8f0;
+        }
+        
+        /* ========== MUSIC BAR ========== */
+        .music-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .music-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .music-icon {
+            font-size: 20px;
+        }
+        
+        .music-title {
+            font-weight: 600;
+        }
+        
+        .music-controls {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .music-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .music-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        /* ========== MOBILE ADJUSTMENTS ========== */
+        @media (max-width: 768px) {
+            .read-by-avatar {
+                width: 18px;
+                height: 18px;
+            }
+            
+            .read-by-more {
+                width: 18px;
+                height: 18px;
+                font-size: 9px;
+            }
+            
+            .music-bar {
+                padding: 8px 16px;
+            }
+            
+            .music-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            
+            .toolbar-btn {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        /* ========== BUTTON STYLES ========== */
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-send {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-send:hover {
+            background: #5a67d8;
+            transform: scale(1.05);
+        }
+        
+        /* ========== FORM STYLES ========== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* ========== TYPOGRAPHY ========== */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-muted {
+            color: #718096;
+        }
+        
+        /* ========== AVATAR ========== */
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            margin-right: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        /* ========== ONLINE STATUS ========== */
+        .online-status {
+            font-size: 14px;
+            color: #48bb78;
+            background: #f0fff4;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: 12px;
+        }
+        
+        /* ========== ONLINE USERS ========== */
+        .online-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-bottom: 1px solid #edf2f7;
+        }
+        
+        .online-user:last-child {
+            border-bottom: none;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        
+        .user-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: #48bb78;
+            border-radius: 50%;
+            margin-left: auto;
+        }
+        
+        /* ========== TYPING INDICATOR ========== */
+        .typing-indicator {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #718096;
+            font-style: italic;
+        }
+        
+        /* ========== CHAT CONTAINER ========== */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: white;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .chat-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* ========== INPUT AREA ========== */
+        .message-input-area {
+            padding: 16px 24px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            background: #f7fafc;
+            border-radius: 24px;
+            padding: 4px 4px 4px 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        
+        .input-wrapper:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-wrapper textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 12px 0;
+            max-height: 120px;
+            font-size: 15px;
+            line-height: 1.5;
+            resize: none;
+        }
+        
+        .input-wrapper textarea:focus {
+            outline: none;
+        }
+        
+        .input-footer {
+            margin-top: 8px;
+            display: flex;
+            justify-content: flex-end;
+            color: #a0aec0;
+            font-size: 13px;
+        }
+        
+        /* ========== MESSAGES CONTAINER ========== */
+        .messages-container {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .own-message {
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .message-content {
+            background: #f7fafc;
+            padding: 12px 16px;
+            border-radius: 18px 18px 18px 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            max-width: 100%;
+            word-break: break-word;
+        }
+        
+        .own-message .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .message-author {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .own-message .message-author {
+            color: rgba(255,255,255,0.95);
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #a0aec0;
+            margin-left: 8px;
+        }
+        
+        .own-message .message-time {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .message-body {
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        .message-body a {
+            color: inherit;
+            text-decoration: underline;
+        }
+        
+        /* ========== CHAT SIDEBAR ========== */
+        .chat-sidebar {
+            width: 260px;
+            background: #f7fafc;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .online-users {
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .online-users h3 {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .room-info {
+            padding: 16px 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #718096;
+            font-size: 13px;
+        }
+        
+        /* ========== KEYBOARD OPEN FIX ========== */
+        .keyboard-open .chat-container {
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .keyboard-open .message-input-area {
+            position: sticky;
+            bottom: 0;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -668,15 +1241,18 @@
                     🗑️ ลบ 0 ข้อความ
                 </div>
                 
-                <!-- Input Area พร้อมปุ่มอิโมจิและรูปภาพ -->
+                <!-- Input Area พร้อมปุ่มอิโมจิ รูปภาพ และเพลง -->
                 <div class="message-input-area" id="messageInputArea" style="display: none;">
-                    <!-- Toolbar สำหรับอิโมจิและรูปภาพ -->
+                    <!-- Toolbar สำหรับอิโมจิ รูปภาพ และเพลง -->
                     <div class="input-toolbar">
                         <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()" title="เพิ่มอิโมจิ">
                             😊
                         </button>
                         <button type="button" class="toolbar-btn" onclick="window.uploadImage()" title="อัปโหลดรูปภาพ">
                             📷
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="window.openMusicPlayer()" title="เครื่องเล่นเพลง">
+                            🎵
                         </button>
                     </div>
                     
@@ -824,6 +1400,51 @@
                     ยกเลิก
                 </button>
             </div>
+        </div>
+    </div>
+    
+    <!-- ========== MUSIC PLAYER MODAL ========== -->
+    <div id="musicPlayerModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>🎵</span> เครื่องเล่นเพลง
+            </h3>
+            
+            <!-- URL Input -->
+            <div class="form-group">
+                <label>URL เพลง (YouTube, SoundCloud, MP3)</label>
+                <input type="text" id="musicUrlInput" placeholder="วางลิงก์เพลงที่นี่...">
+            </div>
+            <button onclick="window.addMusicToRoom()" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                ➕ เพิ่มเพลง
+            </button>
+            
+            <!-- Playlist -->
+            <div class="music-playlist">
+                <h4 style="margin-bottom: 12px;">📋 เพลย์ลิสต์</h4>
+                <div id="playlistItems" style="max-height: 300px; overflow-y: auto;">
+                    <!-- รายการเพลงจะโหลดมาใส่ที่นี่ -->
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button onclick="window.closeMusicPlayer()" class="btn btn-secondary" style="flex: 1;">
+                    ปิด
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========== CURRENT MUSIC BAR ========== -->
+    <div id="currentMusicBar" class="music-bar" style="display: none;">
+        <div class="music-info">
+            <span class="music-icon">🎵</span>
+            <span id="currentMusicTitle" class="music-title">กำลังเล่นเพลง...</span>
+        </div>
+        <div class="music-controls">
+            <button onclick="window.togglePlayPause()" id="playPauseBtn" class="music-btn">⏸️</button>
+            <button onclick="window.stopMusic()" class="music-btn">⏹️</button>
+            <button onclick="window.hideMusicBar()" class="music-btn">✕</button>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2420,6 +3041,7 @@
     </script>
 </body>
 </html>
+
 
 
 
