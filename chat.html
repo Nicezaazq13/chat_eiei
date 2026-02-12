@@ -1224,303 +1224,408 @@
             height: 100%;
         }
 
-        /* ========== MOBILE RESPONSIVE ========== */
-        @media (max-width: 768px) {
-            .chat-main {
-                flex-direction: column;
-                position: relative;
-            }
+      /* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .chat-main {
+        flex-direction: column;
+        position: relative;
+    }
 
-            .rooms-panel {
-                position: fixed !important;
-                left: -100%;
-                top: 0;
-                width: 85% !important;
-                height: 100vh !important;
-                z-index: 2000;
-                transition: left 0.3s ease;
-                background: var(--bg-white);
-                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-            }
+    /* ===== ROOMS PANEL ===== */
+    .rooms-panel {
+        position: fixed !important;
+        left: -100%;
+        top: 0;
+        width: 85% !important;
+        height: 100vh !important;
+        z-index: 2000 !important;
+        transition: left 0.3s ease;
+        background: var(--bg-white);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        pointer-events: none !important;  /* ปิดการคลิกเมื่อซ่อน */
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
 
-            .rooms-panel.mobile-active {
-                left: 0 !important;
-            }
+    .rooms-panel.mobile-active {
+        left: 0 !important;
+        pointer-events: auto !important;  /* เปิดการคลิกเมื่อแสดง */
+    }
 
-            .rooms-panel.mobile-active,
-            .rooms-panel.mobile-active * {
-                pointer-events: auto !important;
-            }
+    /* ให้ทุกอย่างใน sidebar คลิกได้ */
+    .rooms-panel.mobile-active,
+    .rooms-panel.mobile-active * {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1999;
-            }
+    /* ===== ROOM ITEMS ===== */
+    .rooms-panel.mobile-active .room-item {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        position: relative;
+        z-index: 2001 !important;
+    }
 
-            .sidebar-overlay.active {
-                display: block;
-            }
+    .rooms-panel.mobile-active .room-item:active {
+        background: var(--primary-color) !important;
+        color: white !important;
+        transform: scale(0.98);
+    }
 
-            .chat-header {
-                padding: 12px 16px;
-            }
+    .rooms-panel.mobile-active .room-item.active {
+        background: var(--primary-color) !important;
+        color: white !important;
+    }
 
-            .chat-header-left {
-                gap: 8px;
-            }
+    /* ===== BUTTONS IN SIDEBAR ===== */
+    .rooms-panel.mobile-active button,
+    .rooms-panel.mobile-active .tab-btn,
+    .rooms-panel.mobile-active .create-room-btn,
+    .rooms-panel.mobile-active .delete-room-btn,
+    .rooms-panel.mobile-active .admin-delete-room-btn {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        position: relative;
+        z-index: 2002 !important;
+    }
 
-            .mobile-menu-btn {
-                display: inline-block !important;
-            }
+    /* ===== SIDEBAR OVERLAY ===== */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1999;
+        pointer-events: auto;
+    }
 
-            .current-room-info h2 {
-                font-size: 18px;
-                max-width: 200px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
+    .sidebar-overlay.active {
+        display: block !important;
+    }
 
-            .room-badge,
-            .online-status {
-                display: none;
-            }
+    /* ===== CHAT HEADER ===== */
+    .chat-header {
+        padding: 12px 16px;
+    }
 
-            .chat-header-right {
-                gap: 8px;
-            }
+    .chat-header-left {
+        gap: 8px;
+    }
 
-            .user-profile .username {
-                display: none;
-            }
+    .mobile-menu-btn {
+        display: inline-block !important;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+        z-index: 2001 !important;
+    }
 
-            .avatar {
-                margin-right: 0;
-                width: 40px;
-                height: 40px;
-            }
+    .current-room-info h2 {
+        font-size: 18px;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-            .btn-outline,
-            .btn-admin {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
+    .room-badge,
+    .online-status {
+        display: none;
+    }
 
-            .messages-container {
-                padding: 16px;
-                padding-bottom: 100px;
-            }
+    .chat-header-right {
+        gap: 8px;
+    }
 
-            .message {
-                max-width: 85%;
-            }
+    .user-profile .username {
+        display: none;
+    }
 
-            .message-avatar {
-                width: 36px;
-                height: 36px;
-            }
+    .avatar {
+        margin-right: 0;
+        width: 40px;
+        height: 40px;
+    }
 
-            .message-content {
-                padding: 10px 14px;
-            }
+    .btn-outline,
+    .btn-admin {
+        padding: 8px 12px;
+        font-size: 13px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .message-author {
-                font-size: 13px;
-            }
+    /* ===== MESSAGES ===== */
+    .messages-container {
+        padding: 16px;
+        padding-bottom: 100px;
+    }
 
-            .message-time {
-                font-size: 10px;
-            }
+    .message {
+        max-width: 85%;
+    }
 
-            .message-body {
-                font-size: 14px;
-            }
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+    }
 
-            .message-input-area {
-                position: sticky;
-                bottom: 0;
-                padding: 12px 16px;
-                background: var(--bg-white);
-                border-top: 1px solid var(--border-color);
-                box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
-                z-index: 1500;
-            }
+    .message-content {
+        padding: 10px 14px;
+    }
 
-            .input-toolbar {
-                margin-bottom: 8px;
-            }
+    .message-author {
+        font-size: 13px;
+    }
 
-            .toolbar-btn {
-                padding: 10px 16px;
-                font-size: 16px;
-            }
+    .message-time {
+        font-size: 10px;
+    }
 
-            .input-wrapper {
-                padding: 4px 4px 4px 16px;
-            }
+    .message-body {
+        font-size: 14px;
+    }
 
-            .input-wrapper textarea {
-                padding: 12px 0;
-                font-size: 16px;
-            }
+    /* ===== INPUT AREA ===== */
+    .message-input-area {
+        position: sticky;
+        bottom: 0;
+        padding: 12px 16px;
+        background: var(--bg-white);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+        z-index: 1500;
+    }
 
-            .btn-send {
-                padding: 12px 24px;
-            }
+    .input-toolbar {
+        margin-bottom: 8px;
+    }
 
-            .input-footer {
-                display: none;
-            }
+    .toolbar-btn {
+        padding: 10px 16px;
+        font-size: 16px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .members-panel {
-                position: fixed;
-                right: -100%;
-                top: 0;
-                width: 85%;
-                height: 100vh;
-                z-index: 2000;
-                transition: right 0.3s;
-                background: var(--bg-white);
-                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-            }
+    .input-wrapper {
+        padding: 4px 4px 4px 16px;
+    }
 
-            .members-panel.active {
-                right: 0;
-            }
+    .input-wrapper textarea {
+        padding: 12px 0;
+        font-size: 16px;
+    }
 
-            .members-panel.active,
-            .members-panel.active * {
-                pointer-events: auto !important;
-            }
+    .btn-send {
+        padding: 12px 24px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .member-item {
-                padding: 16px;
-            }
+    .input-footer {
+        display: none;
+    }
 
-            .kick-btn {
-                padding: 10px 16px;
-            }
+    /* ===== MEMBERS PANEL ===== */
+    .members-panel {
+        position: fixed;
+        right: -100%;
+        top: 0;
+        width: 85%;
+        height: 100vh;
+        z-index: 2000;
+        transition: right 0.3s;
+        background: var(--bg-white);
+        box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        pointer-events: none !important;
+    }
 
-            .delete-selected-btn {
-                position: fixed;
-                bottom: 100px;
-                padding: 14px 28px;
-                font-size: 15px;
-                z-index: 2001;
-            }
+    .members-panel.active {
+        right: 0 !important;
+        pointer-events: auto !important;
+    }
 
-            .read-by-avatar {
-                width: 20px;
-                height: 20px;
-            }
+    .members-panel.active,
+    .members-panel.active * {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .read-by-more {
-                width: 20px;
-                height: 20px;
-                font-size: 10px;
-            }
+    .member-item {
+        padding: 16px;
+    }
 
-            .music-bar {
-                padding: 12px 16px;
-                z-index: 2002;
-            }
+    .kick-btn {
+        padding: 10px 16px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .music-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 18px;
-            }
+    /* ===== DELETE SELECTED BUTTON ===== */
+    .delete-selected-btn {
+        position: fixed;
+        bottom: 100px;
+        padding: 14px 28px;
+        font-size: 15px;
+        z-index: 2001;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .modal-content {
-                padding: 24px;
-                width: 95%;
-                max-height: 80vh;
-            }
+    /* ===== READ RECEIPTS ===== */
+    .read-by-avatar {
+        width: 20px;
+        height: 20px;
+    }
 
-            .emoji-grid {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 12px;
-                padding: 12px;
-            }
+    .read-by-more {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
 
-            .emoji-item {
-                font-size: 28px;
-                padding: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
+    /* ===== MUSIC BAR ===== */
+    .music-bar {
+        padding: 12px 16px;
+        z-index: 2002;
+    }
 
-            .form-group input,
-            .form-group textarea,
-            .form-group select {
-                font-size: 16px;
-                padding: 14px;
-            }
+    .music-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .form-group label {
-                font-size: 15px;
-                margin-bottom: 8px;
-            }
+    /* ===== MODAL ===== */
+    .modal-content {
+        padding: 24px;
+        width: 95%;
+        max-height: 80vh;
+    }
 
-            .room-tabs {
-                padding: 16px;
-            }
+    /* ===== EMOJI GRID ===== */
+    .emoji-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+        padding: 12px;
+    }
 
-            .tab-btn {
-                padding: 12px;
-                font-size: 15px;
-            }
+    .emoji-item {
+        font-size: 28px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            .create-room-btn {
-                padding: 14px;
-                font-size: 16px;
-            }
+    /* ===== FORM ELEMENTS ===== */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px;
+        padding: 14px;
+    }
 
-            button, 
-            .btn, 
-            .room-item,
-            .tab-btn,
-            .toolbar-btn,
-            .kick-btn,
-            .delete-room-btn,
-            .admin-delete-room-btn,
-            .create-room-btn,
-            .mobile-menu-btn {
-                min-height: 44px;
-                min-width: 44px;
-            }
+    .form-group label {
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
 
-            .room-item:active,
-            .tab-btn:active,
-            .btn:active,
-            button:active {
-                opacity: 0.7;
-                transform: scale(0.98);
-            }
+    /* ===== ROOM TABS ===== */
+    .room-tabs {
+        padding: 16px;
+    }
 
-            .rooms-panel::-webkit-scrollbar,
-            .members-list::-webkit-scrollbar,
-            .messages-container::-webkit-scrollbar {
-                width: 0;
-                background: transparent;
-            }
+    .tab-btn {
+        padding: 12px;
+        font-size: 15px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
-            input, select, textarea {
-                font-size: 16px !important;
-            }
-        }
+    /* ===== CREATE ROOM BUTTON ===== */
+    .create-room-btn {
+        padding: 14px;
+        font-size: 16px;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
 
+    /* ===== MINIMUM TOUCH TARGETS ===== */
+    button, 
+    .btn, 
+    .room-item,
+    .tab-btn,
+    .toolbar-btn,
+    .kick-btn,
+    .delete-room-btn,
+    .admin-delete-room-btn,
+    .create-room-btn,
+    .mobile-menu-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* ===== TOUCH FEEDBACK ===== */
+    .room-item:active,
+    .tab-btn:active,
+    .btn:active,
+    button:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+
+    /* ===== HIDE SCROLLBAR ===== */
+    .rooms-panel::-webkit-scrollbar,
+    .members-list::-webkit-scrollbar,
+    .messages-container::-webkit-scrollbar {
+        width: 0;
+        background: transparent;
+    }
+
+    /* ===== PREVENT ZOOM ===== */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* ========== DEBUG FIX - บังคับให้คลิกได้ ========== */
+@media (max-width: 768px) {
+    .rooms-panel.mobile-active {
+        pointer-events: auto !important;
+        left: 0 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .rooms-panel.mobile-active .room-item,
+    .rooms-panel.mobile-active button,
+    .rooms-panel.mobile-active .tab-btn,
+    .rooms-panel.mobile-active .create-room-btn {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .sidebar-overlay.active {
+        display: block !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+    }
+}
         /* ========== SMALL PHONES ========== */
         @media (max-width: 375px) {
             .current-room-info h2 {
@@ -2679,3 +2784,4 @@
     </script>
 </body>
 </html>
+
