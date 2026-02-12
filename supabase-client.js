@@ -9,12 +9,11 @@ const supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFI
 console.log('✅ Supabase client initialized');
 
 // ========== AUTH FUNCTIONS ==========
-// เปลี่ยนจาก email เป็น username
 async function registerUser(username, password, displayName) {
     console.log('📝 กำลังสมัครสมาชิก:', { username, displayName });
     
     try {
-        // 1. ตรวจสอบ username ซ้ำ
+        // 1. ตรวจสอบ username ซ้ำใน profiles
         const { data: existingUser, error: checkError } = await supabaseClient
             .from('profiles')
             .select('username')
@@ -25,8 +24,12 @@ async function registerUser(username, password, displayName) {
             throw new Error('ชื่อผู้ใช้นี้มีคนใช้แล้ว');
         }
 
-        // 2. สร้างอีเมลปลอม (Supabase Auth จำเป็นต้องใช้อีเมล)
-        const fakeEmail = `${username}@chatapp.local`;
+        // 2. สร้างอีเมลปลอมที่ไม่ซ้ำแน่นอน (สำคัญมาก!)
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const fakeEmail = `${username}_${timestamp}_${random}@chat.local`;
+        
+        console.log('📧 ใช้อีเมล:', fakeEmail);
         
         // 3. สมัครสมาชิกด้วย Supabase Auth
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
@@ -41,10 +44,14 @@ async function registerUser(username, password, displayName) {
             }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+            console.error('❌ Auth error:', authError);
+            throw authError;
+        }
+        
         console.log('✅ Auth success:', authData.user.id);
 
-        // 4. เพิ่มข้อมูลใน profiles table (ต้องเก็บ email ปลอมด้วย!)
+        // 4. เพิ่มข้อมูลใน profiles table
         const { error: profileError } = await supabaseClient
             .from('profiles')
             .insert([
@@ -53,15 +60,18 @@ async function registerUser(username, password, displayName) {
                     username: username,
                     display_name: displayName,
                     avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=667eea&color=fff`,
-                    email: fakeEmail,  // ✅ เก็บ email ปลอมไว้ใช้ตอน login
+                    email: fakeEmail,
                     created_at: new Date().toISOString(),
                     is_online: false
                 }
             ]);
 
-        if (profileError) throw profileError;
-        console.log('✅ Profile created');
+        if (profileError) {
+            console.error('❌ Profile error:', profileError);
+            throw profileError;
+        }
         
+        console.log('✅ Profile created');
         return { success: true, data: authData };
         
     } catch (error) {
@@ -73,7 +83,6 @@ async function registerUser(username, password, displayName) {
     }
 }
 
-// เปลี่ยนจาก email เป็น username
 async function loginUser(username, password) {
     console.log('🔐 กำลังเข้าสู่ระบบ:', username);
     
@@ -92,14 +101,12 @@ async function loginUser(username, password) {
             throw profileError;
         }
         
-        console.log('📄 พบข้อมูลผู้ใช้:', profile);
-
         if (!profile) {
             console.error('❌ ไม่พบ username:', username);
             throw new Error('ไม่พบชื่อผู้ใช้นี้');
         }
 
-        console.log('📧 ใช้อีเมล:', profile.email);
+        console.log('📄 พบข้อมูลผู้ใช้:', profile.email);
 
         // 2. เข้าสู่ระบบด้วยอีเมลที่ค้นพบ
         const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -332,3 +339,4 @@ window.emitTyping = emitTyping;
 
 console.log('✅ supabase-client.js loaded successfully!');
 console.log('🎯 ระบบ Login ด้วย username พร้อมใช้งาน');
+console.log('📧 ใช้อีเมลแบบสุ่ม: username_timestamp_random@chat.local');
