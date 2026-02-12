@@ -329,6 +329,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            position: relative;
         }
 
         .message {
@@ -336,6 +337,11 @@
             gap: 12px;
             max-width: 70%;
             animation: fadeIn 0.3s ease;
+            position: relative;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
         }
 
         @keyframes fadeIn {
@@ -446,25 +452,6 @@
             color: var(--danger-dark);
         }
 
-        .message-checkbox {
-            display: flex;
-            align-items: center;
-            margin-right: 8px;
-        }
-
-        .message-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: var(--primary-color);
-        }
-
-        .message.selected {
-            background-color: rgba(102, 126, 234, 0.1);
-            border-radius: var(--radius-lg);
-            padding-left: 8px;
-        }
-
         .message-image {
             max-width: 300px;
             max-height: 300px;
@@ -478,6 +465,194 @@
         .message-image:hover {
             transform: scale(1.02);
             border-color: var(--primary-color);
+        }
+
+        /* ========== LONG PRESS SELECTION MODE ========== */
+        .selection-hint {
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            animation: slideDown 0.3s ease;
+        }
+
+        .selection-hint span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selection-hint .btn-icon {
+            color: white;
+            opacity: 0.9;
+            transition: all 0.2s;
+        }
+
+        .selection-hint .btn-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Messages Container ในโหมดเลือก */
+        .messages-container.selection-mode .message {
+            cursor: pointer;
+            padding-left: 50px;
+        }
+
+        .messages-container.selection-mode .own-message {
+            padding-left: 16px;
+            padding-right: 50px;
+        }
+
+        .messages-container.selection-mode .message:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Checkbox สไตล์ */
+        .message-checkbox {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .own-message .message-checkbox {
+            left: auto;
+            right: 10px;
+        }
+
+        .message-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin: 0;
+        }
+
+        .message-checkbox input[type="checkbox"]:checked {
+            transform: scale(1.1);
+        }
+
+        /* ข้อความที่ถูกเลือก */
+        .message.selected {
+            background-color: rgba(102, 126, 234, 0.15);
+            border-radius: 12px;
+            transform: scale(0.99);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .message.selected .message-content {
+            background-color: transparent;
+        }
+
+        .own-message.selected {
+            background-color: rgba(102, 126, 234, 0.25);
+        }
+
+        /* Animation ตอนกดค้าง */
+        .message:active {
+            transform: scale(0.98);
+            background-color: rgba(102, 126, 234, 0.1);
+            transition: all 0.1s;
+        }
+
+        /* ปุ่มลบหลายข้อความ */
+        .delete-selected-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 8px 25px rgba(229, 62, 62, 0.4);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+            animation: slideUp 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .delete-selected-btn:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 12px 30px rgba(229, 62, 62, 0.5);
+        }
+
+        .delete-selected-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Tooltip แนะนำ */
+        .long-press-tip {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1999;
+            animation: fadeInOut 3s ease forwards;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
         }
 
         /* ========== INPUT AREA ========== */
@@ -848,18 +1023,6 @@
             border-color: var(--primary-color);
         }
 
-        .activity-status {
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: var(--radius-xl);
-            background: #48bb78;
-            color: white;
-        }
-
-        .activity-status.ended {
-            background: #a0aec0;
-        }
-
         /* ========== PARTICIPANTS LIST ========== */
         .participants-list {
             display: flex;
@@ -1055,34 +1218,6 @@
         .music-btn:hover {
             background: rgba(255,255,255,0.3);
             transform: scale(1.1);
-        }
-
-        /* ========== DELETE SELECTED BUTTON ========== */
-        .delete-selected-btn {
-            position: sticky;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--danger-color);
-            color: white;
-            padding: 12px 24px;
-            border-radius: var(--radius-xl);
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 1000;
-            transition: all 0.3s;
-            width: fit-content;
-            margin: 0 auto 20px;
-            border: none;
-        }
-
-        .delete-selected-btn:hover {
-            background: var(--danger-dark);
-            transform: translateX(-50%) scale(1.05);
         }
 
         /* ========== ADMIN BUTTON ========== */
@@ -1354,6 +1489,11 @@
             background: rgba(0,0,0,0.5);
             z-index: 1999;
         }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
         body.sidebar-open {
             overflow: hidden;
             position: fixed;
@@ -1407,6 +1547,58 @@
             font-size: 14px;
             text-align: center;
             margin-bottom: 12px;
+        }
+
+        /* ========== JITSI CALL MODAL ========== */
+        #jitsiCallModal .modal-content {
+            max-width: 1000px;
+            width: 95%;
+            height: 80vh;
+            padding: 0;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        #jitsiCallModal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: #f7fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        #jitsi-container {
+            width: 100%;
+            height: calc(100% - 73px);
+        }
+
+        /* ========== CALL TOAST NOTIFICATION ========== */
+        .call-toast {
+            animation: slideIn 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
         }
 
         /* ========== MOBILE RESPONSIVE ========== */
@@ -1551,6 +1743,54 @@
                 flex: 1;
                 min-width: 100px;
             }
+
+            #jitsiCallModal .modal-content {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+
+            #jitsi-container {
+                height: calc(100% - 60px);
+            }
+
+            .call-toast {
+                top: auto !important;
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+            }
+
+            .call-toast > div {
+                width: 100%;
+            }
+
+            .messages-container.selection-mode .message {
+                padding-left: 45px;
+            }
+
+            .own-message.selection-mode {
+                padding-left: 16px;
+                padding-right: 45px;
+            }
+
+            .message-checkbox {
+                width: 22px;
+                height: 22px;
+            }
+
+            .message-checkbox input[type="checkbox"] {
+                width: 22px;
+                height: 22px;
+            }
+
+            .delete-selected-btn {
+                bottom: 20px;
+                padding: 14px 28px;
+                font-size: 15px;
+                width: calc(100% - 40px);
+                justify-content: center;
+            }
         }
 
         @media (max-width: 375px) {
@@ -1595,46 +1835,7 @@
         .keyboard-open .messages-container {
             padding-bottom: 120px;
         }
-        /* ========== CALL TOAST NOTIFICATION ========== */
-        .call-toast {
-            animation: slideIn 0.3s ease;
-            margin-bottom: 12px;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .call-toast {
-                top: auto !important;
-                bottom: 20px;
-                right: 20px;
-                left: 20px;
-            }
-            
-            .call-toast > div {
-                width: 100%;
-            }
-        }
+
         /* ========== iOS SPECIFIC FIXES ========== */
         @supports (-webkit-touch-callout: none) {
             .chat-container {
@@ -1731,9 +1932,18 @@
 
             <!-- MESSAGES AREA (กลาง) -->
             <div class="chat-content">
-                <div class="messages-container" id="messagesContainer"></div>
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will be loaded here -->
+                </div>
+                
+                <!-- Selection Hint -->
+                <div id="selectionHint" class="selection-hint">
+                    <span>✅ เลือกข้อความที่ต้องการลบ</span>
+                    <button onclick="window.exitSelectionMode()" class="btn-icon" style="color: white;">✕</button>
+                </div>
+                
                 <div id="typingIndicator" class="typing-indicator"></div>
-                <div id="deleteSelectedBtn" class="delete-selected-btn" style="display: none;" onclick="window.deleteSelectedMessages()">🗑️ ลบ 0 ข้อความ</div>
+                <div id="deleteSelectedBtn" class="delete-selected-btn" onclick="window.deleteSelectedMessages()">🗑️ ลบ 0 ข้อความ</div>
                 
                 <!-- Input Area -->
                 <div class="message-input-area" id="messageInputArea">
@@ -1889,38 +2099,36 @@
             </div>
         </div>
     </div>
+
     <!-- ========== MODAL: JITSI CALL ========== -->
-<div id="jitsiCallModal" class="modal" style="z-index: 2100;">
-    <div class="modal-content" style="max-width: 1000px; width: 95%; height: 80vh; padding: 0; overflow: hidden; border-radius: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: #f7fafc; border-bottom: 1px solid #e2e8f0;">
-            <h3 style="display: flex; align-items: center; gap: 8px;">
-                <span>📞</span> <span id="jitsiRoomName">ห้องสนทนา</span>
-            </h3>
-            <div style="display: flex; gap: 8px;">
-                <button onclick="window.copyCallLink()" class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">
-                    🔗 แชร์ลิงก์
-                </button>
-                <button onclick="window.endCall()" class="btn-icon" style="font-size: 24px;">✕</button>
+    <div id="jitsiCallModal" class="modal" style="z-index: 2100;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <span>📞</span> <span id="jitsiRoomName">ห้องสนทนา</span>
+                </h3>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="window.copyCallLink()" class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;">
+                        🔗 แชร์ลิงก์
+                    </button>
+                    <button onclick="window.endCall()" class="btn-icon" style="font-size: 24px;">✕</button>
+                </div>
             </div>
+            <div id="jitsi-container"></div>
         </div>
-        
-        <!-- Jitsi Container -->
-        <div id="jitsi-container" style="width: 100%; height: calc(100% - 73px);"></div>
     </div>
-</div>
+
     <!-- ========== MODAL: สร้างกิจกรรม ========== -->
     <div id="createActivityModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
                 <span>🎮</span> สร้างกิจกรรมใหม่
             </h3>
-            
             <form id="createActivityForm">
                 <div class="form-group">
                     <label>ชื่อกิจกรรม <span style="color: #e53e3e;">*</span></label>
                     <input type="text" id="activityTitle" placeholder="เช่น ดูหนังด้วยกัน, เล่นเกม" required>
                 </div>
-                
                 <div class="form-group">
                     <label>ประเภทกิจกรรม</label>
                     <select id="activityType" onchange="window.toggleActivityTypeFields()">
@@ -1930,7 +2138,6 @@
                         <option value="custom">✨ กิจกรรมทั่วไป</option>
                     </select>
                 </div>
-                
                 <div id="youtubeField" class="activity-field">
                     <div class="form-group">
                         <label>URL YouTube</label>
@@ -1938,31 +2145,26 @@
                         <small>📌 รองรับ youtube.com และ youtu.be</small>
                     </div>
                 </div>
-                
                 <div id="gameField" class="activity-field" style="display: none;">
                     <div class="form-group">
                         <label>ชื่อเกม</label>
                         <input type="text" id="gameName" placeholder="เช่น Among Us, Valorant">
                     </div>
                 </div>
-                
                 <div id="pollField" class="activity-field" style="display: none;">
                     <div class="form-group">
                         <label>ตัวเลือก (คั่นด้วย ,)</label>
                         <input type="text" id="pollOptions" placeholder="ตัวเลือก1, ตัวเลือก2, ตัวเลือก3">
                     </div>
                 </div>
-                
                 <div class="form-group">
                     <label>คำอธิบาย</label>
                     <textarea id="activityDescription" placeholder="รายละเอียดกิจกรรม..." rows="2"></textarea>
                 </div>
-                
                 <div class="form-group">
                     <label>จำนวนผู้เข้าร่วมสูงสุด (0 = ไม่จำกัด)</label>
                     <input type="number" id="maxParticipants" value="0" min="0" max="50">
                 </div>
-                
                 <div style="display: flex; gap: 12px; margin-top: 20px;">
                     <button type="submit" class="btn btn-primary" style="flex: 1;">สร้างกิจกรรม</button>
                     <button type="button" class="btn btn-secondary" onclick="window.closeCreateActivityModal()">ยกเลิก</button>
@@ -1980,30 +2182,16 @@
                 </h3>
                 <button onclick="window.closeYoutubePlayer()" class="btn-icon" style="font-size: 24px;">✕</button>
             </div>
-            
             <div id="youtubePlayerContainer">
                 <div id="youtube-player"></div>
             </div>
-            
             <div class="youtube-controls">
-                <button onclick="window.syncPlayPause()" id="syncPlayPauseBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px;">
-                    ▶️ เล่น
-                </button>
-                <button onclick="window.syncSeek(-10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">
-                    ⏪ -10
-                </button>
-                <button onclick="window.syncSeek(10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">
-                    ⏩ +10
-                </button>
-                <button onclick="window.syncRestart()" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">
-                    🔄 เริ่มใหม่
-                </button>
+                <button onclick="window.syncPlayPause()" id="syncPlayPauseBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px;">▶️ เล่น</button>
+                <button onclick="window.syncSeek(-10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">⏪ -10</button>
+                <button onclick="window.syncSeek(10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">⏩ +10</button>
+                <button onclick="window.syncRestart()" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">🔄 เริ่มใหม่</button>
             </div>
-            
-            <div id="youtubePlayerState" style="color: var(--text-light); font-size: 14px; text-align: center; margin-bottom: 12px;">
-                ⏸️ หยุด
-            </div>
-            
+            <div id="youtubePlayerState" style="color: var(--text-light); font-size: 14px; text-align: center; margin-bottom: 12px;">⏸️ หยุด</div>
             <div class="activity-participants">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h4 style="display: flex; align-items: center; gap: 8px;">👥 ผู้เข้าร่วม <span id="youtubeParticipantsCount">(0)</span></h4>
@@ -2024,17 +2212,11 @@
                 <input type="text" id="musicUrlInput" placeholder="https://example.com/song.mp3">
                 <small style="color: #e53e3e;">⚠️ รองรับเฉพาะไฟล์ .mp3 เท่านั้น</small>
             </div>
-            <button onclick="window.addMusicToRoom()" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
-                ➕ เพิ่มเพลง
-            </button>
-            
+            <button onclick="window.addMusicToRoom()" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">➕ เพิ่มเพลง</button>
             <div class="music-playlist">
-                <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                    📋 เพลย์ลิสต์
-                </h4>
+                <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">📋 เพลย์ลิสต์</h4>
                 <div id="playlistItems" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
-            
             <div style="display: flex; gap: 12px; margin-top: 20px;">
                 <button onclick="window.closeMusicPlayer()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
             </div>
@@ -2058,7 +2240,6 @@
     <script src="config.js"></script>
     <script src="https://meet.jit.si/external_api.js"></script>
     <script src="supabase-client.js"></script>
-    
     <script>
         // ========== GLOBAL VARIABLES ==========
         window.currentUser = null;
@@ -2088,49 +2269,173 @@
         window.youtubePlayerReady = false;
         window.pendingYoutubeActivity = null;
 
+        // Long Press Variables
+        window.longPressTimer = null;
+        window.isSelectionMode = false;
+        window.longPressThreshold = 500;
+
+        // Call Variables
+        window.jitsiApi = null;
+        window.currentCallRoom = null;
+        window.activeCall = {
+            isActive: false,
+            roomId: null,
+            callRoom: null,
+            participants: new Set()
+        };
+        window.callStatusSubscription = null;
+
         const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
         const STORAGE_KEY = 'chat_last_room_id';
         
         const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
 
+        // ========== LONG PRESS SELECTION ==========
+        window.startLongPress = function(messageId, element, event) {
+            if (!event) return;
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (window.isSelectionMode) return;
+            
+            window.longPressTimer = setTimeout(() => {
+                window.enterSelectionMode(messageId, element);
+            }, window.longPressThreshold);
+        };
+
+        window.cancelLongPress = function(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            clearTimeout(window.longPressTimer);
+        };
+
+        window.enterSelectionMode = function(messageId, element) {
+            if (window.isSelectionMode) return;
+            
+            console.log('✅ Enter selection mode');
+            window.isSelectionMode = true;
+            
+            // Add class to container
+            const container = document.querySelector('.messages-container');
+            if (container) {
+                container.classList.add('selection-mode');
+            }
+            
+            // Show hint
+            const hint = document.getElementById('selectionHint');
+            if (hint) {
+                hint.style.display = 'flex';
+            }
+            
+            // Add checkboxes to all messages
+            document.querySelectorAll('.message').forEach(msg => {
+                if (!msg.querySelector('.message-checkbox')) {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'message-checkbox';
+                    checkbox.innerHTML = '<input type="checkbox">';
+                    msg.insertBefore(checkbox, msg.firstChild);
+                    
+                    const chk = checkbox.querySelector('input[type="checkbox"]');
+                    chk.addEventListener('change', function(e) {
+                        e.stopPropagation();
+                        const msgId = msg.dataset.messageId;
+                        if (this.checked) {
+                            window.selectedMessages.add(msgId);
+                            msg.classList.add('selected');
+                        } else {
+                            window.selectedMessages.delete(msgId);
+                            msg.classList.remove('selected');
+                        }
+                        window.updateDeleteButton();
+                    });
+                }
+            });
+            
+            // Select the long-pressed message
+            setTimeout(() => {
+                const targetMsg = document.querySelector(`.message[data-message-id="${messageId}"]`);
+                if (targetMsg) {
+                    const chk = targetMsg.querySelector('.message-checkbox input');
+                    if (chk) {
+                        chk.checked = true;
+                        window.selectedMessages.add(messageId);
+                        targetMsg.classList.add('selected');
+                        window.updateDeleteButton();
+                    }
+                }
+            }, 50);
+        };
+
+        window.exitSelectionMode = function() {
+            window.isSelectionMode = false;
+            window.selectedMessages.clear();
+            
+            // Remove selection class
+            document.querySelectorAll('.message').forEach(el => {
+                el.classList.remove('selected');
+                const checkbox = el.querySelector('.message-checkbox');
+                if (checkbox) {
+                    checkbox.remove();
+                }
+            });
+            
+            // Remove container class
+            const container = document.querySelector('.messages-container');
+            if (container) {
+                container.classList.remove('selection-mode');
+            }
+            
+            // Hide hint
+            const hint = document.getElementById('selectionHint');
+            if (hint) {
+                hint.style.display = 'none';
+            }
+            
+            // Hide delete button
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+            }
+        };
+
+        window.updateDeleteButton = function() {
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (!deleteBtn) return;
+            
+            if (window.selectedMessages.size > 0) {
+                deleteBtn.style.display = 'flex';
+                deleteBtn.innerHTML = `🗑️ ลบ ${window.selectedMessages.size} ข้อความ`;
+            } else {
+                deleteBtn.style.display = 'none';
+                window.exitSelectionMode();
+            }
+        };
+
         // ========== YOUTUBE API ==========
         window.loadYouTubeAPI = function() {
             if (window.YT && window.YT.Player) {
-                console.log('✅ YouTube API already loaded');
                 window.youtubeApiReady = true;
                 return;
             }
-            
-            console.log('📦 Loading YouTube API...');
             const tag = document.createElement('script');
             tag.id = 'youtube-iframe-api';
             tag.src = 'https://www.youtube.com/iframe_api';
-            tag.onload = () => console.log('✅ YouTube script loaded');
-            tag.onerror = (e) => console.error('❌ Failed to load YouTube API:', e);
-            
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            document.getElementsByTagName('script')[0].parentNode.insertBefore(tag, document.getElementsByTagName('script')[0]);
         };
 
         window.onYouTubeIframeAPIReady = function() {
-            console.log('✅ YouTube API พร้อมใช้งาน');
             window.youtubeApiReady = true;
-            
             if (window.pendingYoutubeActivity) {
-                console.log('🎬 Playing pending YouTube activity:', window.pendingYoutubeActivity);
                 const { activityId, videoId } = window.pendingYoutubeActivity;
                 window.pendingYoutubeActivity = null;
-                setTimeout(() => {
-                    window.openYoutubePlayer(activityId, videoId);
-                }, 100);
+                window.openYoutubePlayer(activityId, videoId);
             }
         };
 
         // ========== YOUTUBE PLAYER ==========
         window.openYoutubePlayer = function(activityId, videoId) {
-            console.log('🎬 ===== OPEN YOUTUBE PLAYER =====');
-            console.log('activityId:', activityId, 'videoId:', videoId);
-            
             if (!activityId || !videoId) {
                 alert('ข้อมูลไม่ครบถ้วน');
                 return;
@@ -2138,7 +2443,6 @@
             
             const modal = document.getElementById('youtubePlayerModal');
             const container = document.getElementById('youtube-player');
-            const titleEl = document.getElementById('youtubeActivityTitle');
             
             if (!modal || !container) {
                 alert('ไม่พบ YouTube Player');
@@ -2152,16 +2456,11 @@
                 return;
             }
             
-            // ปิด player เก่า
             if (window.youtubePlayer) {
-                try {
-                    window.youtubePlayer.destroy();
-                } catch (e) {}
+                try { window.youtubePlayer.destroy(); } catch (e) {}
                 window.youtubePlayer = null;
-                window.youtubePlayerReady = false;
             }
             
-            // ล้าง container
             container.innerHTML = '';
             container.style.position = 'absolute';
             container.style.top = '0';
@@ -2169,23 +2468,15 @@
             container.style.width = '100%';
             container.style.height = '100%';
             
-            // สร้าง player container
             const playerContainer = document.createElement('div');
             playerContainer.id = 'youtube-player-container';
             playerContainer.style.width = '100%';
             playerContainer.style.height = '100%';
             container.appendChild(playerContainer);
             
-            // ตั้งค่า title
-            if (titleEl) {
-                titleEl.textContent = `กำลังเล่น: ${videoId}`;
-            }
-            
-            // แสดง modal
             modal.classList.add('active');
             window.youtubeActivityId = activityId;
             
-            // สร้าง YouTube Player
             try {
                 window.youtubePlayer = new YT.Player('youtube-player-container', {
                     height: '100%',
@@ -2206,18 +2497,13 @@
                         'onError': onPlayerError
                     }
                 });
-                console.log('✅ YouTube player created');
             } catch (e) {
-                console.error('❌ Error:', e);
                 alert('ไม่สามารถสร้าง YouTube Player ได้');
             }
             
-            // โหลด participants
             if (typeof window.loadActivityParticipants === 'function') {
                 window.loadActivityParticipants(activityId);
             }
-            
-            // Subscribe to sync
             if (typeof window.subscribeToActivitySync === 'function') {
                 window.subscribeToActivitySync(activityId);
             }
@@ -2225,62 +2511,31 @@
 
         window.closeYoutubePlayer = function() {
             const modal = document.getElementById('youtubePlayerModal');
-            if (modal) {
-                modal.classList.remove('active');
-            }
-            
+            if (modal) modal.classList.remove('active');
             if (window.youtubePlayer) {
-                try {
-                    window.youtubePlayer.destroy();
-                } catch (e) {}
+                try { window.youtubePlayer.destroy(); } catch (e) {}
                 window.youtubePlayer = null;
             }
-            
             window.youtubePlayerReady = false;
             window.youtubeActivityId = null;
-            
             const container = document.getElementById('youtube-player');
-            if (container) {
-                container.innerHTML = '';
-            }
+            if (container) container.innerHTML = '';
         };
 
         function onPlayerReady(event) {
-            console.log('✅ YouTube Player ready');
             window.youtubePlayerReady = true;
             window.youtubeIsSeeking = false;
-            
-            const btn = document.getElementById('syncPlayPauseBtn');
-            if (btn) btn.innerHTML = '⏸️ หยุด';
         }
 
         function onPlayerStateChange(event) {
             if (!window.youtubePlayer) return;
-            
             const state = event.data;
-            const btn = document.getElementById('syncPlayPauseBtn');
-            const stateEl = document.getElementById('youtubePlayerState');
-            
-            if (btn) {
-                if (state === YT.PlayerState.PLAYING) {
-                    btn.innerHTML = '⏸️ หยุด';
-                    if (stateEl) stateEl.textContent = '▶️ กำลังเล่น';
-                } else if (state === YT.PlayerState.PAUSED) {
-                    btn.innerHTML = '▶️ เล่น';
-                    if (stateEl) stateEl.textContent = '⏸️ หยุด';
-                } else if (state === YT.PlayerState.ENDED) {
-                    btn.innerHTML = '▶️ เล่นใหม่';
-                    if (stateEl) stateEl.textContent = '⏹️ จบแล้ว';
-                }
-            }
-            
             if (!window.youtubeIsSeeking && state !== YT.PlayerState.BUFFERING) {
                 syncStateToServer(state);
             }
         }
 
         function onPlayerError(event) {
-            console.error('❌ YouTube error:', event.data);
             let msg = 'ไม่สามารถเล่นวิดีโอนี้ได้';
             if (event.data === 2) msg = '❌ Video ID ไม่ถูกต้อง';
             if (event.data === 5) msg = '❌ ไม่สามารถเล่น HTML5 player ได้';
@@ -2288,6 +2543,251 @@
             if (event.data === 101 || event.data === 150) msg = '❌ ไม่ได้รับอนุญาตให้เล่น';
             alert(msg);
         }
+
+        // ========== JITSI CALL ==========
+        window.startCall = async function() {
+            if (!window.currentRoomId) {
+                alert('❌ กรุณาเลือกห้องก่อนโทร');
+                return;
+            }
+            
+            try {
+                const callRoom = `chatapp-${window.currentRoomId}-${Date.now()}`;
+                const modal = document.getElementById('jitsiCallModal');
+                const roomEl = document.getElementById('jitsiRoomName');
+                roomEl.textContent = `📞 ${window.currentRoom?.name || 'ประชุม'}`;
+                modal.classList.add('active');
+                
+                await initJitsiCall(callRoom);
+                
+                await sendRealtimeNotification({
+                    type: 'call_started',
+                    roomId: window.currentRoomId,
+                    callRoom: callRoom,
+                    startedBy: window.currentUser.id,
+                    startedByName: window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้',
+                    timestamp: new Date().toISOString()
+                });
+                
+                subscribeToCallStatus(window.currentRoomId);
+                
+            } catch (error) {
+                console.error('❌ Error starting call:', error);
+                alert('ไม่สามารถเริ่มการโทรได้');
+            }
+        };
+
+        async function initJitsiCall(callRoom) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const container = document.getElementById('jitsi-container');
+                    container.innerHTML = '';
+                    
+                    const domain = 'meet.jit.si';
+                    const options = {
+                        roomName: callRoom,
+                        width: '100%',
+                        height: '100%',
+                        parentNode: container,
+                        configOverwrite: {
+                            startWithAudioMuted: false,
+                            startWithVideoMuted: false,
+                            enableWelcomePage: false,
+                            enableClosePage: false,
+                            disableInviteFunctions: true,
+                            prejoinPageEnabled: false,
+                            resolution: 720
+                        },
+                        interfaceConfigOverwrite: {
+                            TOOLBAR_BUTTONS: [
+                                'microphone', 'camera', 'desktop', 'fullscreen',
+                                'hangup', 'chat', 'settings', 'raisehand',
+                                'videoquality', 'filmstrip', 'tileview'
+                            ],
+                            SHOW_JITSI_WATERMARK: false,
+                            SHOW_WATERMARK_FOR_GUESTS: false,
+                            DEFAULT_BACKGROUND: '#0a0a0a',
+                            MOBILE_APP_PROMO: false,
+                            TOOLBAR_ALWAYS_VISIBLE: true
+                        },
+                        userInfo: {
+                            displayName: window.currentUser?.user_metadata?.display_name || 
+                                        window.currentUser?.user_metadata?.username || 'ผู้ใช้',
+                            email: window.currentUser?.email || ''
+                        }
+                    };
+                    
+                    window.jitsiApi = new JitsiMeetExternalAPI(domain, options);
+                    
+                    window.jitsiApi.addEventListeners({
+                        readyToClose: () => endCall(),
+                        videoConferenceJoined: () => {
+                            window.activeCall.isActive = true;
+                            window.activeCall.callRoom = callRoom;
+                        },
+                        participantJoined: (participant) => {
+                            window.activeCall.participants.add(participant.id);
+                            sendSystemMessage(`👤 ${participant.displayName} เข้าร่วมการโทร`);
+                            updateParticipantsCount();
+                        },
+                        participantLeft: (participant) => {
+                            window.activeCall.participants.delete(participant.id);
+                            sendSystemMessage(`👤 ${participant.displayName} ออกจากการโทร`);
+                            updateParticipantsCount();
+                        }
+                    });
+                    
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        window.endCall = async function() {
+            const modal = document.getElementById('jitsiCallModal');
+            modal.classList.remove('active');
+            
+            if (window.jitsiApi) {
+                window.jitsiApi.dispose();
+                window.jitsiApi = null;
+            }
+            
+            if (window.activeCall.isActive) {
+                await sendSystemMessage(`การโทรสิ้นสุดลง`);
+            }
+            
+            window.activeCall = {
+                isActive: false,
+                roomId: null,
+                callRoom: null,
+                participants: new Set()
+            };
+            window.currentCallRoom = null;
+            
+            const container = document.getElementById('jitsi-container');
+            container.innerHTML = '';
+        };
+
+        window.copyCallLink = function() {
+            if (!window.currentCallRoom) return;
+            const url = `https://meet.jit.si/${window.currentCallRoom}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ คัดลอกลิงก์เชิญแล้ว');
+            }).catch(() => {
+                prompt('📋 คัดลอกลิงก์นี้:', url);
+            });
+        };
+
+        window.joinCall = async function(callRoom) {
+            if (!callRoom) return;
+            
+            if (window.activeCall.isActive) {
+                if (!confirm('คุณกำลังอยู่ในการโทรอยู่แล้ว ต้องการออกจากการโทรเดิมและเข้าร่วมใหม่หรือไม่?')) {
+                    return;
+                }
+                await endCall();
+            }
+            
+            window.currentCallRoom = callRoom;
+            const modal = document.getElementById('jitsiCallModal');
+            modal.classList.add('active');
+            await initJitsiCall(callRoom);
+        };
+
+        function updateParticipantsCount() {
+            const count = window.activeCall.participants.size;
+            const title = document.getElementById('jitsiRoomName');
+            if (title) {
+                title.innerHTML = `📞 ${window.currentRoom?.name || 'ประชุม'} <span style="font-size: 14px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px;">${count} คน</span>`;
+            }
+        }
+
+        async function sendRealtimeNotification(data) {
+            if (!window.currentRoomId) return;
+            try {
+                await supabaseClient
+                    .from('call_notifications')
+                    .insert([{
+                        room_id: window.currentRoomId,
+                        call_data: data,
+                        created_at: new Date().toISOString()
+                    }]);
+                    
+                if (data.type === 'call_started') {
+                    await sendSystemMessage(`📞 ${data.startedByName} เริ่มการโทร - คลิกปุ่ม 📞 เพื่อเข้าร่วม`);
+                }
+            } catch (error) {
+                console.error('❌ Error sending notification:', error);
+            }
+        }
+
+        function subscribeToCallStatus(roomId) {
+            if (window.callStatusSubscription) {
+                window.callStatusSubscription.unsubscribe();
+            }
+            
+            window.callStatusSubscription = supabaseClient
+                .channel(`call-status-${roomId}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'call_notifications',
+                    filter: `room_id=eq.${roomId}`
+                }, (payload) => {
+                    const data = payload.new.call_data;
+                    if (data.type === 'call_started' && data.startedBy !== window.currentUser.id) {
+                        showCallNotification(data);
+                    }
+                })
+                .subscribe();
+        }
+
+        function showCallNotification(data) {
+            const toast = document.createElement('div');
+            toast.className = 'call-toast';
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <span style="font-size: 24px;">📞</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${data.startedByName} เริ่มการโทร</div>
+                        <div style="font-size: 12px; opacity: 0.9;">คลิกเพื่อเข้าร่วม</div>
+                    </div>
+                    <button onclick="window.joinCall('${data.callRoom}')" style="padding: 8px 16px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        เข้าร่วม
+                    </button>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">✕</button>
+                </div>
+            `;
+            
+            toast.style.position = 'fixed';
+            toast.style.top = '20px';
+            toast.style.right = '20px';
+            toast.style.zIndex = '9999';
+            toast.style.animation = 'slideIn 0.3s ease';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 10000);
+        }
+
+        window.sendSystemMessage = async function(text) {
+            if (!window.currentRoomId) return;
+            try {
+                await supabaseClient.from('messages').insert([{
+                    user_id: '00000000-0000-0000-0000-000000000000',
+                    room_id: window.currentRoomId,
+                    message: `📢 ${text}`,
+                    created_at: new Date().toISOString()
+                }]);
+            } catch (error) {
+                console.error('Error sending system message:', error);
+            }
+        };
 
         // ========== SYNC FUNCTIONS ==========
         async function syncStateToServer(state) {
@@ -2308,38 +2808,41 @@
             }
         }
 
-        async function loadSyncTime() {
-            if (!window.youtubeActivityId || !window.youtubePlayer) return;
-            try {
-                const { data: syncs } = await supabaseClient
-                    .from('activity_sync')
-                    .select('*')
-                    .eq('activity_id', window.youtubeActivityId)
-                    .order('updated_at', { ascending: false })
-                    .limit(1);
-                
-                if (syncs && syncs.length > 0) {
-                    const host = syncs[0];
-                    if (host.user_id !== window.currentUser?.id) {
-                        if (host.playback_time) {
-                            window.youtubePlayer.seekTo(host.playback_time, true);
-                        }
-                        if (host.player_state === YT.PlayerState.PLAYING) {
-                            window.youtubePlayer.playVideo();
+        window.subscribeToActivitySync = function(activityId) {
+            if (window.activitySyncSubscription) {
+                window.activitySyncSubscription.unsubscribe();
+            }
+            
+            window.activitySyncSubscription = supabaseClient
+                .channel(`activity-sync-${activityId}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'activity_sync',
+                    filter: `activity_id=eq.${activityId}`
+                }, (payload) => {
+                    if (!window.youtubePlayer || !window.youtubePlayerReady || payload.new.user_id === window.currentUser?.id) return;
+                    
+                    if (payload.new.player_state === YT.PlayerState.PLAYING) {
+                        window.youtubePlayer.playVideo();
+                    } else if (payload.new.player_state === YT.PlayerState.PAUSED) {
+                        window.youtubePlayer.pauseVideo();
+                    }
+                    
+                    if (!window.youtubeIsSeeking && payload.new.playback_time) {
+                        const currentTime = window.youtubePlayer.getCurrentTime();
+                        if (Math.abs(currentTime - payload.new.playback_time) > 2) {
+                            window.youtubePlayer.seekTo(payload.new.playback_time, true);
                         }
                     }
-                }
-            } catch (error) {
-                console.error('❌ Error loading sync time:', error);
-            }
-        }
+                })
+                .subscribe();
+            
+            return window.activitySyncSubscription;
+        };
 
-        // ========== SYNC CONTROLS ==========
         window.syncPlayPause = function() {
-            if (!window.youtubePlayer || !window.youtubePlayerReady) {
-                alert('Player ยังไม่พร้อม');
-                return;
-            }
+            if (!window.youtubePlayer || !window.youtubePlayerReady) return;
             const state = window.youtubePlayer.getPlayerState();
             if (state === YT.PlayerState.PLAYING) {
                 window.youtubePlayer.pauseVideo();
@@ -2362,94 +2865,239 @@
             window.youtubePlayer.playVideo();
         };
 
-        window.subscribeToActivitySync = function(activityId) {
-            if (window.activitySyncSubscription) {
-                window.activitySyncSubscription.unsubscribe();
+        // ========== DISPLAY MESSAGE ==========
+        window.displayMessage = function(message) {
+            if (!window.messagesContainer) return;
+            
+            if (message.is_deleted) {
+                const deletedDiv = document.createElement('div');
+                deletedDiv.className = 'message deleted-message';
+                const deleterName = message.deleter?.display_name || message.deleter?.username || 'ระบบ';
+                deletedDiv.innerHTML = `<div class="deleted-content"><span class="deleted-icon">🗑️</span><span class="deleted-text">${message.message || `ข้อความถูกลบโดย ${deleterName}`}</span><span class="deleted-time">${formatTime(message.deleted_at || message.created_at)}</span></div>`;
+                window.messagesContainer.appendChild(deletedDiv);
+                return;
             }
             
-            window.activitySyncSubscription = supabaseClient
-                .channel(`activity-sync-${activityId}`)
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'activity_sync', filter: `activity_id=eq.${activityId}` },
-                    (payload) => {
-                        if (!window.youtubePlayer || !window.youtubePlayerReady || payload.new.user_id === window.currentUser?.id) return;
-                        
-                        if (payload.new.player_state === YT.PlayerState.PLAYING) {
-                            window.youtubePlayer.playVideo();
-                        } else if (payload.new.player_state === YT.PlayerState.PAUSED) {
-                            window.youtubePlayer.pauseVideo();
-                        }
-                        
-                        if (!window.youtubeIsSeeking && payload.new.playback_time) {
-                            const currentTime = window.youtubePlayer.getCurrentTime();
-                            if (Math.abs(currentTime - payload.new.playback_time) > 2) {
-                                window.youtubePlayer.seekTo(payload.new.playback_time, true);
-                            }
-                        }
-                    }
-                )
-                .subscribe();
+            const isOwnMessage = message.user_id === window.currentUser?.id;
+            const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
+            const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
             
-            return window.activitySyncSubscription;
+            let messageText = message.message || '';
+            let imageHtml = '';
+            const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+            if (imageMatch) {
+                const imageUrl = imageMatch[1];
+                imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
+                messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
+            messageDiv.dataset.messageId = message.id;
+            messageDiv.dataset.userId = message.user_id;
+            
+            // Long press events
+            messageDiv.addEventListener('touchstart', (e) => window.startLongPress(message.id, messageDiv, e), { passive: false });
+            messageDiv.addEventListener('touchend', (e) => window.cancelLongPress(e), { passive: false });
+            messageDiv.addEventListener('touchmove', (e) => window.cancelLongPress(e), { passive: false });
+            messageDiv.addEventListener('touchcancel', (e) => window.cancelLongPress(e), { passive: false });
+            messageDiv.addEventListener('mousedown', (e) => {
+                if (e.button === 0) window.startLongPress(message.id, messageDiv, e);
+            });
+            messageDiv.addEventListener('mouseup', (e) => window.cancelLongPress(e));
+            messageDiv.addEventListener('mouseleave', (e) => window.cancelLongPress(e));
+            
+            // Click event for selection mode
+            messageDiv.addEventListener('click', (e) => {
+                if (window.isSelectionMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const checkbox = messageDiv.querySelector('.message-checkbox input');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        const event = new Event('change', { bubbles: true });
+                        checkbox.dispatchEvent(event);
+                    }
+                }
+            });
+            
+            const canDelete = window.isAdminMode || isOwnMessage;
+            
+            messageDiv.innerHTML = `
+                <img src="${avatarUrl}" alt="${author}" class="message-avatar" 
+                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-author">${author}</span>
+                        <span class="message-time">${formatTime(message.created_at)}</span>
+                        ${canDelete ? `<button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">🗑️</button>` : ''}
+                    </div>
+                    ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
+                    ${imageHtml}
+                </div>
+            `;
+            
+            window.messagesContainer.appendChild(messageDiv);
+            
+            if (isOwnMessage) {
+                window.displayReadReceipts(messageDiv, message.id, true);
+            }
+            if (!isOwnMessage && window.readReceiptObserver) {
+                window.readReceiptObserver.observe(messageDiv);
+            }
+            
+            scrollToBottom();
         };
 
-        // ========== RESIZE YOUTUBE PLAYER ==========
-        window.resizeYoutubePlayer = function() {
-            // ไม่ต้องทำอะไร
-        };
-
-        // ========== LOAD ACTIVITY PARTICIPANTS ==========
-        window.loadActivityParticipants = async function(activityId) {
-            try {
-                const { data: participants } = await supabaseClient
-                    .from('activity_participants')
-                    .select('user_id, profiles:user_id(username, display_name, avatar_url)')
-                    .eq('activity_id', activityId);
-                
-                const container = document.getElementById('youtubeParticipants');
-                const count = document.getElementById('youtubeParticipantsCount');
-                
-                if (!container) return;
-                if (count) count.textContent = `(${participants?.length || 0})`;
-                
-                if (!participants || participants.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">👥 ยังไม่มีผู้เข้าร่วม</div>';
+        // ========== DELETE MESSAGES ==========
+        window.deleteSelectedMessages = async function() {
+            if (window.selectedMessages.size === 0) return;
+            
+            if (!window.isAdminMode) {
+                const messageIds = Array.from(window.selectedMessages);
+                const { data: messages } = await supabaseClient.from('messages').select('user_id').in('id', messageIds);
+                const hasOtherMessages = messages.some(msg => msg.user_id !== window.currentUser.id);
+                if (hasOtherMessages) {
+                    alert('❌ คุณสามารถลบได้เฉพาะข้อความของตัวเองเท่านั้น');
                     return;
                 }
+            }
+            
+            const confirmMsg = window.isAdminMode 
+                ? `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความ (ในฐานะแอดมิน)` 
+                : `⚠️ คุณกำลังจะลบ ${window.selectedMessages.size} ข้อความของตัวเอง`;
                 
-                container.innerHTML = participants.map(p => `
-                    <div class="participant-item">
-                        <img src="${p.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.profiles?.display_name || p.profiles?.username)}&background=667eea&color=fff`}" 
-                             alt="${p.profiles?.display_name}" 
-                             class="participant-avatar">
-                        <span class="participant-name">${p.profiles?.display_name || p.profiles?.username}</span>
-                        ${p.user_id === window.currentUser?.id ? '<span style="font-size: 11px; color: #48bb78;">(คุณ)</span>' : ''}
-                    </div>
-                `).join('');
-            } catch (error) { 
-                console.error('❌ Error loading participants:', error); 
+            if (!confirm(confirmMsg + '\n\nดำเนินการต่อ?')) return;
+            
+            try {
+                const messageIds = Array.from(window.selectedMessages);
+                const { data: userData } = await supabaseClient.from('profiles').select('username, display_name').eq('id', window.currentUser.id).single();
+                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
+                
+                const { error } = await supabaseClient.from('messages').update({
+                    is_deleted: true,
+                    deleted_by: window.currentUser.id,
+                    deleted_at: new Date().toISOString(),
+                    message: `[ข้อความถูกลบโดย ${deletedByName}]`
+                }).in('id', messageIds);
+                
+                if (error) throw error;
+                
+                alert(`✅ ลบ ${messageIds.length} ข้อความสำเร็จ`);
+                window.exitSelectionMode();
+                await window.loadMessages(window.currentRoomId);
+                
+            } catch (error) {
+                console.error('❌ Error deleting messages:', error);
+                alert('ไม่สามารถลบข้อความได้: ' + error.message);
             }
         };
 
-        window.endActivity = async function(activityId) {
-            if (!confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการจบกิจกรรมนี้?')) return;
+        window.deleteSingleMessage = async function(messageId, userId) {
+            const canDelete = window.isAdminMode || userId === window.currentUser.id;
+            if (!canDelete) {
+                alert('❌ คุณไม่มีสิทธิ์ลบข้อความนี้');
+                return;
+            }
+            if (!confirm('⚠️ ลบข้อความนี้?')) return;
+            
             try {
-                await supabaseClient
-                    .from('activities')
-                    .update({ status: 'ended', ended_at: new Date().toISOString() })
-                    .eq('id', activityId);
+                const { data: userData } = await supabaseClient.from('profiles').select('username, display_name').eq('id', window.currentUser.id).single();
+                const deletedByName = userData?.display_name || userData?.username || (window.isAdminMode ? 'แอดมิน' : 'ผู้ใช้');
                 
-                await supabaseClient.from('activity_sync').delete().eq('activity_id', activityId);
+                const { error } = await supabaseClient.from('messages').update({
+                    is_deleted: true,
+                    deleted_by: window.currentUser.id,
+                    deleted_at: new Date().toISOString(),
+                    message: `[ข้อความถูกลบโดย ${deletedByName}]`
+                }).eq('id', messageId);
                 
-                alert('✅ จบกิจกรรมแล้ว');
-                window.loadActivities();
+                if (error) throw error;
                 
-                if (window.youtubeActivityId === activityId) {
-                    window.closeYoutubePlayer();
+                if (window.isSelectionMode) {
+                    window.exitSelectionMode();
                 }
-            } catch (error) { 
-                console.error('❌ Error ending activity:', error); 
-                alert('ไม่สามารถจบกิจกรรมได้'); 
+                
+                await window.loadMessages(window.currentRoomId);
+                
+            } catch (error) {
+                console.error('❌ Error deleting message:', error);
+                alert('ไม่สามารถลบข้อความได้');
+            }
+        };
+
+        // ========== LOAD MESSAGES ==========
+        window.loadMessages = async function(roomId) {
+            try {
+                if (!window.messagesContainer) window.messagesContainer = document.getElementById('messagesContainer');
+                if (!window.messagesContainer) return;
+                
+                const { data: messages, error } = await supabaseClient.from('messages')
+                    .select('*, profiles:user_id(username, display_name, avatar_url), deleter:deleted_by(username, display_name)')
+                    .eq('room_id', roomId).order('created_at', { ascending: true }).limit(50);
+                
+                if (error) throw error;
+                
+                window.messagesContainer.innerHTML = '';
+                
+                if (window.readReceiptObserver) window.readReceiptObserver.disconnect();
+                window.setupReadReceiptObserver();
+                
+                if (messages.length === 0) {
+                    window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
+                } else {
+                    messages.forEach(msg => window.displayMessage(msg));
+                }
+                
+                window.exitSelectionMode();
+                scrollToBottom();
+            } catch (error) {
+                console.error('❌ Error loading messages:', error);
+            }
+        };
+
+        // ========== SEND MESSAGE ==========
+        window.sendMessage = async function() {
+            const messageInput = document.getElementById('messageInput');
+            if (!messageInput) return;
+            const message = messageInput.value.trim();
+            const hasImage = window.selectedImageFile !== null;
+            if (!message && !hasImage) return;
+            if (!window.currentRoomId) {
+                alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ');
+                return;
+            }
+            
+            try {
+                let imageUrl = null;
+                if (hasImage) {
+                    const fileExt = window.selectedImageFile.name.split('.').pop();
+                    const fileName = `${window.currentUser.id}/${Date.now()}.${fileExt}`;
+                    const { error: uploadError } = await supabaseClient.storage.from('chat_files').upload(fileName, window.selectedImageFile);
+                    if (uploadError) throw uploadError;
+                    const { data: { publicUrl } } = supabaseClient.storage.from('chat_files').getPublicUrl(fileName);
+                    imageUrl = publicUrl;
+                }
+                
+                const messageText = imageUrl ? `${message} [IMAGE]${imageUrl}[/IMAGE]` : message;
+                
+                const { error } = await supabaseClient.from('messages').insert([{
+                    user_id: window.currentUser.id,
+                    room_id: window.currentRoomId,
+                    message: messageText,
+                    created_at: new Date().toISOString()
+                }]);
+                
+                if (error) throw error;
+                
+                messageInput.value = '';
+                window.clearImagePreview();
+                
+                const charCount = document.getElementById('charCount');
+                if (charCount) charCount.textContent = '0/500';
+            } catch (error) {
+                console.error('❌ Error sending message:', error);
+                alert('ไม่สามารถส่งข้อความได้: ' + error.message);
             }
         };
 
@@ -2478,10 +3126,7 @@
                 setupEventListeners();
                 initMobileHandler();
                 
-                // โหลด YouTube API
-                setTimeout(() => {
-                    window.loadYouTubeAPI();
-                }, 1000);
+                setTimeout(() => window.loadYouTubeAPI(), 1000);
 
                 const overlay = document.getElementById('sidebarOverlay');
                 if (overlay) {
@@ -2514,7 +3159,6 @@
             document.body.style.overflow = '';
         };
 
-        // ========== INIT MOBILE HANDLER ==========
         window.initMobileHandler = function() {
             if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) return;
             let originalHeight = window.innerHeight;
@@ -2522,9 +3166,10 @@
                 const newHeight = window.innerHeight;
                 if (originalHeight - newHeight > 150) {
                     document.body.classList.add('keyboard-open');
-                    setTimeout(() => { 
-                        if (window.messageInput) 
-                            window.messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                    setTimeout(() => {
+                        if (window.messageInput) {
+                            window.messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                     }, 300);
                 } else {
                     document.body.classList.remove('keyboard-open');
@@ -2547,7 +3192,6 @@
                 }
             }
         };
-
         // ========== LOAD ROOMS ==========
         window.loadRooms = async function(filter = 'all') {
             try {
@@ -4070,5 +4714,6 @@ async function initJitsiCall(callRoom) {
     </script>
 </body>
 </html>
+
 
 
