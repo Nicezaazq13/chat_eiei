@@ -1,84 +1,68 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สมัครสมาชิก - ChatApp</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="form-container">
-            <h2>📝 สมัครสมาชิก</h2>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="username">ชื่อผู้ใช้</label>
-                    <input type="text" id="username" placeholder="เช่น john_doe" required>
-                    <small>ตัวอักษรภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">อีเมล</label>
-                    <input type="email" id="email" placeholder="your@email.com" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">รหัสผ่าน</label>
-                    <input type="password" id="password" placeholder="อย่างน้อย 6 ตัว" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
-                    <input type="password" id="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="displayName">ชื่อที่แสดง</label>
-                    <input type="text" id="displayName" placeholder="ชื่อเล่นของคุณ">
-                </div>
-
-                <div id="errorMessage" class="error-message"></div>
-                
-                <button type="submit" class="btn btn-primary btn-block">
-                    สมัครสมาชิก
-                </button>
-                
-                <p class="text-center">
-                    มีบัญชีแล้ว? <a href="login.html">เข้าสู่ระบบ</a>
-                </p>
-            </form>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const displayName = document.getElementById('displayName').value.trim() || username;
-            
-            if (password !== confirmPassword) {
-                document.getElementById('errorMessage').textContent = 'รหัสผ่านไม่ตรงกัน';
-                return;
-            }
-            
-            // ตอนนี้ registerUser จะถูกนิยามแล้ว!
-            const result = await registerUser(email, password, username, displayName);
-            
-            if (result.success) {
-                alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
-                window.location.href = 'login.html';
-            } else {
-                document.getElementById('errorMessage').textContent = result.error;
-            }
+        // รอให้ DOM โหลดเสร็จ
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registerForm');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const displayName = document.getElementById('displayName').value.trim() || username;
+                const errorEl = document.getElementById('errorMessage');
+                
+                // ตรวจสอบความถูกต้อง
+                if (!username.match(/^[a-zA-Z0-9_]+$/)) {
+                    errorEl.textContent = 'ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น';
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    errorEl.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    errorEl.textContent = 'รหัสผ่านไม่ตรงกัน';
+                    return;
+                }
+                
+                // ตรวจสอบว่า registerUser พร้อมใช้งาน
+                if (typeof window.registerUser !== 'function') {
+                    errorEl.textContent = 'ระบบยังไม่พร้อม กรุณารีเฟรชหน้าเว็บ';
+                    console.error('registerUser is not defined');
+                    return;
+                }
+                
+                // แสดงสถานะกำลังโหลด
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'กำลังสมัคร...';
+                submitBtn.disabled = true;
+                errorEl.textContent = '';
+                
+                try {
+                    const result = await window.registerUser(email, password, username, displayName);
+                    
+                    if (result.success) {
+                        alert('🎉 สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+                        window.location.href = 'login.html';
+                    } else {
+                        errorEl.textContent = result.error || 'สมัครสมาชิกไม่สำเร็จ';
+                    }
+                } catch (error) {
+                    console.error('Register error:', error);
+                    errorEl.textContent = 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง';
+                } finally {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
         });
     </script>
-</body>
-
-</html>
