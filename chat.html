@@ -1659,9 +1659,391 @@
                 window.messageSubscription.unsubscribe();
             }
         });
+    // ========== EMOJI PICKER ==========
+const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
+
+window.openEmojiPicker = function() {
+    const modal = document.getElementById('emojiPickerModal');
+    const grid = document.getElementById('emojiGrid');
+    
+    grid.innerHTML = emojiList.map(emoji => 
+        `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`
+    ).join('');
+    
+    modal.classList.add('active');
+};
+
+window.closeEmojiPicker = function() {
+    document.getElementById('emojiPickerModal').classList.remove('active');
+};
+
+window.insertEmoji = function(emoji) {
+    const input = document.getElementById('messageInput');
+    input.value += emoji;
+    input.focus();
+    window.closeEmojiPicker();
+};
+
+// ========== IMAGE UPLOAD ==========
+window.selectedImageFile = null;
+
+window.uploadImage = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            window.selectedImageFile = file;
+            
+            // แสดง preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                const img = document.getElementById('previewImg');
+                img.src = e.target.result;
+                preview.style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+window.clearImagePreview = function() {
+    window.selectedImageFile = null;
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+};
+
+// ========== SEND MESSAGE WITH IMAGE ==========
+window.sendMessage = async function() {
+    const message = window.messageInput.value.trim();
+    const hasImage = window.selectedImageFile !== null;
+    
+    if (!message && !hasImage) return;
+    if (!window.currentRoomId) return;
+    
+    try {
+        let imageUrl = null;
+        
+        // อัปโหลดรูปภาพ (ถ้ามี)
+        if (hasImage) {
+            const fileExt = window.selectedImageFile.name.split('.').pop();
+            const fileName = `${window.currentUser.id}/${Date.now()}.${fileExt}`;
+            
+            const { data: uploadData, error: uploadError } = await supabaseClient
+                .storage
+                .from('chat_files')
+                .upload(fileName, window.selectedImageFile);
+                
+            if (uploadError) throw uploadError;
+            
+            const { data: { publicUrl } } = supabaseClient
+                .storage
+                .from('chat_files')
+                .getPublicUrl(fileName);
+                
+            imageUrl = publicUrl;
+        }
+        
+        // สร้างข้อความ
+        const messageText = imageUrl 
+            ? `${message} [IMAGE]${imageUrl}[/IMAGE]` 
+            : message;
+        
+        const { error } = await supabaseClient
+            .from('messages')
+            .insert([{
+                user_id: window.currentUser.id,
+                room_id: window.currentRoomId,
+                message: messageText,
+                created_at: new Date().toISOString()
+            }]);
+            
+        if (error) throw error;
+        
+        window.messageInput.value = '';
+        window.clearImagePreview();
+        document.getElementById('charCount').textContent = '0/500';
+        
+    } catch (error) {
+        console.error('❌ Error sending message:', error);
+        alert('ไม่สามารถส่งข้อความได้: ' + error.message);
+    }
+    };
+    
+    // ========== DISPLAY MESSAGE WITH IMAGE ==========
+    window.displayMessage = function(message) {
+        if (!window.messagesContainer) return;
+        
+        if (message.is_deleted) {
+            // ... (โค้ดเดิมสำหรับข้อความที่ถูกลบ)
+            return;
+        }
+        
+        const isOwnMessage = message.user_id === window.currentUser?.id;
+        const author = message.profiles?.display_name || message.profiles?.username || 'ผู้ใช้';
+        const avatarUrl = message.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff`;
+        
+        // แยกข้อความและรูปภาพ
+        let messageText = message.message || '';
+        let imageHtml = '';
+        
+        const imageMatch = messageText.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+        if (imageMatch) {
+            const imageUrl = imageMatch[1];
+            imageHtml = `<img src="${imageUrl}" class="message-image" onclick="window.openLightbox('${imageUrl}')">`;
+            messageText = messageText.replace(/\[IMAGE\].*?\[\/IMAGE\]/, '').trim();
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
+        messageDiv.dataset.messageId = message.id;
+        messageDiv.dataset.userId = message.user_id;
+        
+        const canSelect = window.isAdminMode || isOwnMessage;
+        const canDelete = window.isAdminMode || isOwnMessage;
+        
+        messageDiv.innerHTML = `
+            ${canSelect ? `
+                <div class="message-checkbox" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="window.toggleSelectMessage('${message.id}', this.closest('.message'))">
+                </div>
+            ` : ''}
+            <img src="${avatarUrl}" alt="${author}" class="message-avatar"
+                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
+            <div class="message-content">
+                <div class="message-header">
+                    <span class="message-author">${author}</span>
+                    <span class="message-time">${formatTime(message.created_at)}</span>
+                    ${canDelete ? `
+                        <button onclick="window.deleteSingleMessage('${message.id}', '${message.user_id}')" class="delete-message-btn">
+                            🗑️
+                        </button>
+                    ` : ''}
+                </div>
+                ${messageText ? `<div class="message-body">${linkify(messageText)}</div>` : ''}
+                ${imageHtml}
+            </div>
+        `;
+        
+        window.messagesContainer.appendChild(messageDiv);
+        scrollToBottom();
+    };
+    
+    // ========== LIGHTBOX ==========
+    window.openLightbox = function(imageUrl) {
+        const lightbox = document.createElement('div');
+        lightbox.className = 'lightbox';
+        lightbox.onclick = function() { document.body.removeChild(lightbox); };
+        
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'lightbox-close';
+        closeBtn.innerHTML = '✕';
+        closeBtn.onclick = function() { document.body.removeChild(lightbox); };
+        
+        lightbox.appendChild(img);
+        lightbox.appendChild(closeBtn);
+        document.body.appendChild(lightbox);
+    };
+    
+    // ========== MUSIC PLAYER ==========
+    window.currentMusic = null;
+    window.audioPlayer = null;
+    
+    window.openMusicPlayer = function() {
+        document.getElementById('musicPlayerModal').classList.add('active');
+        window.loadPlaylist();
+    };
+    
+    window.closeMusicPlayer = function() {
+        document.getElementById('musicPlayerModal').classList.remove('active');
+    };
+    
+    window.addMusicToRoom = async function() {
+        const url = document.getElementById('musicUrlInput').value.trim();
+        if (!url) {
+            alert('❌ กรุณาใส่ URL เพลง');
+            return;
+        }
+        
+        try {
+            // ดึงข้อมูลเพลงจาก URL
+            const musicInfo = await window.fetchMusicInfo(url);
+            
+            const { error } = await supabaseClient
+                .from('room_music')
+                .insert([{
+                    room_id: window.currentRoomId,
+                    user_id: window.currentUser.id,
+                    music_url: url,
+                    music_title: musicInfo.title,
+                    music_artist: musicInfo.artist || window.currentUser.user_metadata?.username,
+                    is_playing: false
+                }]);
+                
+            if (error) throw error;
+            
+            document.getElementById('musicUrlInput').value = '';
+            alert('✅ เพิ่มเพลงสำเร็จ');
+            window.loadPlaylist();
+            
+        } catch (error) {
+            console.error('❌ Error adding music:', error);
+            alert('ไม่สามารถเพิ่มเพลงได้');
+        }
+    };
+    
+    window.fetchMusicInfo = async function(url) {
+        // ดึงข้อมูลจาก URL (YouTube, SoundCloud, ฯลฯ)
+        // ตัวอย่างง่ายๆ
+        return {
+            title: url.split('/').pop() || 'เพลงไม่มีชื่อ',
+            artist: 'ผู้ใช้'
+        };
+    };
+    
+    window.loadPlaylist = async function() {
+        if (!window.currentRoomId) return;
+        
+        try {
+            const { data: playlist, error } = await supabaseClient
+                .from('room_music')
+                .select(`
+                    *,
+                    profiles:user_id (
+                        username,
+                        display_name
+                    )
+                `)
+                .eq('room_id', window.currentRoomId)
+                .order('created_at', { ascending: false });
+                
+            if (error) throw error;
+            
+            const container = document.getElementById('playlistItems');
+            container.innerHTML = playlist.map(song => `
+                <div class="playlist-item">
+                    <div class="playlist-info">
+                        <div class="playlist-title">${song.music_title}</div>
+                        <div class="playlist-artist">เพิ่มโดย ${song.profiles?.display_name || song.profiles?.username}</div>
+                    </div>
+                    <div class="playlist-controls">
+                        <button onclick="window.playMusic('${song.id}', '${song.music_url}')" class="playlist-btn">▶️</button>
+                        ${song.user_id === window.currentUser.id || window.isAdmin ? `
+                            <button onclick="window.removeMusic('${song.id}')" class="playlist-btn">🗑️</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+        } catch (error) {
+            console.error('❌ Error loading playlist:', error);
+        }
+    };
+    
+    window.playMusic = async function(musicId, url) {
+        try {
+            // หยุดเพลงเก่า
+            if (window.audioPlayer) {
+                window.audioPlayer.pause();
+                window.audioPlayer = null;
+            }
+            
+            // สร้าง audio player ใหม่
+            window.audioPlayer = new Audio(url);
+            window.audioPlayer.play();
+            
+            // อัปเดต UI
+            window.currentMusic = { id: musicId, url };
+            document.getElementById('currentMusicTitle').textContent = 'กำลังเล่นเพลง...';
+            document.getElementById('currentMusicBar').style.display = 'flex';
+            document.getElementById('playPauseBtn').innerHTML = '⏸️';
+            
+            // อัปเดตสถานะในฐานข้อมูล
+            await supabaseClient
+                .from('room_music')
+                .update({ is_playing: true })
+                .eq('id', musicId);
+                
+        } catch (error) {
+            console.error('❌ Error playing music:', error);
+            alert('ไม่สามารถเล่นเพลงได้');
+        }
+    };
+    
+    window.togglePlayPause = function() {
+        if (!window.audioPlayer) return;
+        
+        if (window.audioPlayer.paused) {
+            window.audioPlayer.play();
+            document.getElementById('playPauseBtn').innerHTML = '⏸️';
+        } else {
+            window.audioPlayer.pause();
+            document.getElementById('playPauseBtn').innerHTML = '▶️';
+        }
+    };
+    
+    window.stopMusic = function() {
+        if (window.audioPlayer) {
+            window.audioPlayer.pause();
+            window.audioPlayer.currentTime = 0;
+            window.audioPlayer = null;
+        }
+        window.currentMusic = null;
+        document.getElementById('currentMusicBar').style.display = 'none';
+    };
+    
+    window.hideMusicBar = function() {
+        document.getElementById('currentMusicBar').style.display = 'none';
+    };
+    
+    window.removeMusic = async function(musicId) {
+        if (!confirm('🗑️ ลบเพลงนี้ออกจากเพลย์ลิสต์?')) return;
+        
+        try {
+            const { error } = await supabaseClient
+                .from('room_music')
+                .delete()
+                .eq('id', musicId);
+                
+            if (error) throw error;
+            
+            alert('✅ ลบเพลงสำเร็จ');
+            window.loadPlaylist();
+            
+        } catch (error) {
+            console.error('❌ Error removing music:', error);
+            alert('ไม่สามารถลบเพลงได้');
+        }
+    };
+    
+    // ========== REALTIME MUSIC ==========
+    window.setupMusicSubscription = function(roomId) {
+        return supabaseClient
+            .channel(`room-music-${roomId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'room_music',
+                    filter: `room_id=eq.${roomId}`
+                },
+                () => {
+                    window.loadPlaylist();
+                }
+            )
+            .subscribe();
+    };
     </script>
 </body>
 </html>
+
 
 
 
