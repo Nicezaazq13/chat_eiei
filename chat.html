@@ -1963,32 +1963,24 @@
                 console.error('❌ Init error:', error);
             }
         });
-
-        // ========== MOBILE SIDEBAR ==========
-        window.toggleMobileSidebar = function() {
+        
+              window.closeMobileSidebar = function () {
             const sidebar = document.querySelector('.rooms-panel');
             const overlay = document.getElementById('sidebarOverlay');
-            
-            if (!sidebar) return;
-            
-            sidebar.classList.toggle('mobile-active');
-            
-            if (overlay) {
-                if (sidebar.classList.contains('mobile-active')) {
-                    overlay.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    
-                    // ✅ จัดการ z-index
-                    sidebar.style.zIndex = '2000';
-                    overlay.style.zIndex = '1999';
-                } else {
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                    document.body.style.position = '';
-                }
-            }
+        
+            if (!sidebar || !overlay) return;
+        
+            sidebar.classList.remove('mobile-active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
         };
+        
+        // 🔁 ปิดอัตโนมัติเมื่อจอใหญ่ขึ้น
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMobileSidebar();
+            }
+        });
 
         window.closeMobileSidebar = function() {
             const sidebar = document.querySelector('.rooms-panel');
@@ -2848,3 +2840,4 @@
     </script>
 </body>
 </html>
+
