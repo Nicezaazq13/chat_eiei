@@ -1,24 +1,36 @@
 // supabase-client.js
 
 // ========== INITIALIZE SUPABASE ==========
-// ตรวจสอบว่า Supabase Script โหลดมาแล้ว
 if (typeof supabase === 'undefined') {
-    console.error('⚠️ Supabase library not loaded! Make sure to include supabase-js script first');
+    console.error('⚠️ Supabase library not loaded!');
 }
 
-// สร้าง Supabase client - ใช้ชื่ออื่นเพื่อไม่ให้ซ้ำ
 const supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-
-console.log('✅ Supabase client initialized:', SUPABASE_CONFIG.url ? 'URL OK' : 'No URL');
+console.log('✅ Supabase client initialized');
 
 // ========== AUTH FUNCTIONS ==========
-async function registerUser(email, password, username, displayName) {
-    console.log('📝 กำลังสมัครสมาชิก:', { email, username, displayName });
+// เปลี่ยนจาก email เป็น username
+async function registerUser(username, password, displayName) {
+    console.log('📝 กำลังสมัครสมาชิก:', { username, displayName });
     
     try {
-        // 1. สมัครสมาชิกด้วย Supabase Auth
+        // 1. ตรวจสอบ username ซ้ำ
+        const { data: existingUser, error: checkError } = await supabaseClient
+            .from('profiles')
+            .select('username')
+            .eq('username', username)
+            .maybeSingle();
+            
+        if (existingUser) {
+            throw new Error('ชื่อผู้ใช้นี้มีคนใช้แล้ว');
+        }
+
+        // 2. สร้างอีเมลปลอม (Supabase Auth จำเป็นต้องใช้อีเมล)
+        const fakeEmail = `${username}@chatapp.local`;
+        
+        // 3. สมัครสมาชิกด้วย Supabase Auth
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-            email: email,
+            email: fakeEmail,
             password: password,
             options: {
                 data: {
@@ -32,7 +44,7 @@ async function registerUser(email, password, username, displayName) {
         if (authError) throw authError;
         console.log('✅ Auth success:', authData.user.id);
 
-        // 2. เพิ่มข้อมูลใน profiles table
+        // 4. เพิ่มข้อมูลใน profiles table (ต้องเก็บ email ปลอมด้วย!)
         const { error: profileError } = await supabaseClient
             .from('profiles')
             .insert([
@@ -41,7 +53,7 @@ async function registerUser(email, password, username, displayName) {
                     username: username,
                     display_name: displayName,
                     avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=667eea&color=fff`,
-                    email: email,
+                    email: fakeEmail,  // ✅ เก็บ email ปลอมไว้ใช้ตอน login
                     created_at: new Date().toISOString(),
                     is_online: false
                 }
@@ -61,28 +73,56 @@ async function registerUser(email, password, username, displayName) {
     }
 }
 
-async function loginUser(email, password) {
-    console.log('🔐 กำลังเข้าสู่ระบบ:', email);
+// เปลี่ยนจาก email เป็น username
+async function loginUser(username, password) {
+    console.log('🔐 กำลังเข้าสู่ระบบ:', username);
     
     try {
+        // 1. ค้นหาอีเมลจาก username ใน profiles
+        console.log('📡 ค้นหาผู้ใช้:', username);
+        
+        const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('email, username, display_name')
+            .eq('username', username)
+            .maybeSingle();
+
+        if (profileError) {
+            console.error('❌ Profile query error:', profileError);
+            throw profileError;
+        }
+        
+        console.log('📄 พบข้อมูลผู้ใช้:', profile);
+
+        if (!profile) {
+            console.error('❌ ไม่พบ username:', username);
+            throw new Error('ไม่พบชื่อผู้ใช้นี้');
+        }
+
+        console.log('📧 ใช้อีเมล:', profile.email);
+
+        // 2. เข้าสู่ระบบด้วยอีเมลที่ค้นพบ
         const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: email,
+            email: profile.email,
             password: password
         });
 
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Auth error:', error);
+            throw error;
+        }
         
-        // อัปเดตสถานะออนไลน์
+        // 3. อัปเดตสถานะออนไลน์
         await updateUserStatus(data.user.id, true);
         
-        console.log('✅ Login success:', data.user.id);
+        console.log('✅ Login success:', username);
         return { success: true, data };
         
     } catch (error) {
         console.error('❌ Login error:', error);
         return { 
             success: false, 
-            error: error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+            error: error.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
         };
     }
 }
@@ -291,6 +331,4 @@ window.getOnlineUsers = getOnlineUsers;
 window.emitTyping = emitTyping;
 
 console.log('✅ supabase-client.js loaded successfully!');
-console.log('📦 Functions available:', Object.keys(window).filter(k => 
-    ['registerUser', 'loginUser', 'logout', 'sendMessage', 'getMessages'].includes(k)
-));
+console.log('🎯 ระบบ Login ด้วย username พร้อมใช้งาน');
