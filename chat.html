@@ -104,7 +104,27 @@ body {
     border-radius: var(--radius-xl);
     font-weight: 500;
 }
+/* ========== SIDEBAR OVERLAY ========== */
+.sidebar-overlay {
+    display: none;  /* ซ่อนไว้ก่อน */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;  /* อยู่ใต้ sidebar (2000) */
+    pointer-events: auto;  /* ให้รับ events ได้ */
+}
 
+.sidebar-overlay.active {
+    display: block;  /* แสดงเมื่อ active */
+}
+
+/* ป้องกันการคลิกผ่าน overlay */
+.sidebar-overlay.active ~ .chat-main .rooms-panel.mobile-active {
+    pointer-events: auto;
+}
 /* ========== ROOM ACTIONS ========== */
 .room-actions {
     display: flex;
@@ -3870,6 +3890,7 @@ body {
 </script>
 </body>
 </html>
+
 
 
 
