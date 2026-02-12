@@ -130,6 +130,31 @@
             color: rgba(255,255,255,0.8);
         }
         
+        /* ========== ROOM ACTIONS ========== */
+        .room-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        
+        .delete-room-btn {
+            padding: 6px 12px;
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .delete-room-btn:hover {
+            background: #e53e3e;
+        }
+        
         /* ========== MEMBERS PANEL ========== */
         .members-panel {
             width: 280px;
@@ -281,6 +306,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-wrap: wrap;
         }
         
         .room-badge {
@@ -300,6 +326,7 @@
                 <div class="current-room-info">
                     <h2 id="currentRoomTitle">💬 ห้องแชทสาธารณะ</h2>
                     <span class="room-badge" id="currentRoomTypeBadge">สาธารณะ</span>
+                    <div id="roomActions" class="room-actions"></div>
                 </div>
                 <span class="online-status" id="onlineStatus">🟢 ออนไลน์</span>
             </div>
@@ -442,6 +469,27 @@
             <div style="display: flex; gap: 12px;">
                 <button onclick="window.confirmKickMember()" class="btn" style="flex: 1; background: #f56565; color: white;">เตะออก</button>
                 <button onclick="window.closeKickModal()" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: ลบห้อง -->
+    <div id="deleteRoomModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 24px; color: #f56565;">⚠️ ลบห้อง</h2>
+            <p id="deleteRoomName" style="margin-bottom: 20px; font-weight: 600;"></p>
+            <p style="color: #718096; margin-bottom: 24px;">
+                ข้อความและสมาชิกทั้งหมดจะถูกลบอย่างถาวร<br>
+                <strong>การดำเนินการนี้ไม่สามารถเรียกคืนได้!</strong>
+            </p>
+            
+            <div style="display: flex; gap: 12px;">
+                <button onclick="window.confirmDeleteRoom()" class="btn" style="flex: 1; background: #f56565; color: white;">
+                    🗑️ ยืนยันการลบ
+                </button>
+                <button onclick="window.closeDeleteRoomModal()" class="btn btn-secondary" style="flex: 1;">
+                    ยกเลิก
+                </button>
             </div>
         </div>
     </div>
@@ -620,11 +668,25 @@
                 window.currentRoom = room;
                 window.currentRoomId = room.id;
                 
+                // อัปเดต header
                 document.getElementById('currentRoomTitle').innerHTML = `
                     ${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}
                 `;
                 document.getElementById('currentRoomTypeBadge').textContent = 
                     room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+                
+                // แสดง/ซ่อนปุ่มลบห้อง
+                const roomActions = document.getElementById('roomActions');
+                if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
+                    roomActions.innerHTML = `
+                        <button onclick="window.showDeleteRoomModal()" class="delete-room-btn">
+                            🗑️ ลบห้อง
+                        </button>
+                    `;
+                } else {
+                    roomActions.innerHTML = '';
+                }
+                
                 document.getElementById('messageInputArea').style.display = 'block';
                 
                 await loadMessages(room.id);
@@ -634,6 +696,50 @@
                 
             } catch (error) {
                 console.error('❌ Error joining room:', error);
+            }
+        };
+
+        // ========== DELETE ROOM ==========
+        window.showDeleteRoomModal = function() {
+            if (!window.currentRoom) return;
+            document.getElementById('deleteRoomName').innerHTML = 
+                `ต้องการลบห้อง: <strong>${window.currentRoom.name}</strong>?`;
+            document.getElementById('deleteRoomModal').classList.add('active');
+        };
+
+        window.closeDeleteRoomModal = function() {
+            document.getElementById('deleteRoomModal').classList.remove('active');
+        };
+
+        window.confirmDeleteRoom = async function() {
+            if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) {
+                alert('ไม่สามารถลบห้องสาธารณะได้');
+                window.closeDeleteRoomModal();
+                return;
+            }
+            
+            try {
+                console.log('🗑️ กำลังลบห้อง:', window.currentRoomId);
+                
+                const { error } = await supabaseClient
+                    .from('rooms')
+                    .delete()
+                    .eq('id', window.currentRoomId)
+                    .eq('owner_id', window.currentUser.id);
+                
+                if (error) throw error;
+                
+                alert('✅ ลบห้องสำเร็จ');
+                window.closeDeleteRoomModal();
+                
+                // กลับไปห้อง public
+                await selectRoom(PUBLIC_ROOM_ID);
+                await loadRooms();
+                
+            } catch (error) {
+                console.error('❌ Error deleting room:', error);
+                alert('ไม่สามารถลบห้องได้: ' + error.message);
+                window.closeDeleteRoomModal();
             }
         };
 
