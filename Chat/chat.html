@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ห้องแชท - ChatApp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <h2>💬 ห้องแชทสาธารณะ</h2>
+                <span class="online-status" id="onlineStatus">🟢 ออนไลน์</span>
+            </div>
+            <div class="chat-header-right">
+                <div class="user-profile" id="userProfile"></div>
+                <button onclick="logout()" class="btn btn-outline">
+                    ออกจากระบบ
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <!-- Sidebar -->
+            <div class="chat-sidebar">
+                <div class="online-users">
+                    <h3>👥 สมาชิกออนไลน์</h3>
+                    <div id="onlineUsersList" class="users-list"></div>
+                </div>
+                <div class="room-info">
+                    <p>🔊 มีสมาชิกทั้งหมด <span id="totalUsers">0</span> คน</p>
+                </div>
+            </div>
+            
+            <!-- Messages Area -->
+            <div class="chat-content">
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will be loaded here -->
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div id="typingIndicator" class="typing-indicator"></div>
+                
+                <!-- Input Area -->
+                <div class="message-input-area">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="พิมพ์ข้อความ..." 
+                            rows="1"
+                        ></textarea>
+                        <button id="sendButton" class="btn-send">
+                            📤 ส่ง
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <span class="character-count" id="charCount">0/500</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="messageTemplate">
+        <div class="message">
+            <div class="message-header">
+                <span class="message-author"></span>
+                <span class="message-time"></span>
+            </div>
+            <div class="message-body"></div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>

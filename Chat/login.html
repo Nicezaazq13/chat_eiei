@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - ChatApp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2>🔐 เข้าสู่ระบบ</h2>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">อีเมล</label>
+                    <input type="email" id="email" placeholder="your@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">รหัสผ่าน</label>
+                    <input type="password" id="password" placeholder="รหัสผ่านของคุณ" required>
+                </div>
+                
+                <div id="errorMessage" class="error-message"></div>
+                
+                <button type="submit" class="btn btn-primary btn-block">
+                    เข้าสู่ระบบ
+                </button>
+                
+                <p class="text-center">
+                    ยังไม่มีบัญชี? <a href="register.html">สมัครสมาชิก</a>
+                </p>
+            </form>
+            
+            <div class="demo-accounts">
+                <p class="text-muted">บัญชีทดสอบ:</p>
+                <button onclick="fillDemoAccount()" class="btn btn-ghost">
+                    ใช้บัญชีทดสอบ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="supabase-client.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const result = await loginUser(email, password);
+            
+            if (result.success) {
+                window.location.href = 'chat.html';
+            } else {
+                showError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+            }
+        });
+        
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+        
+        function fillDemoAccount() {
+            document.getElementById('email').value = 'demo@chatapp.com';
+            document.getElementById('password').value = 'demo1234';
+        }
+    </script>
+</body>
+</html>
