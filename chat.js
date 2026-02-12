@@ -220,5 +220,4 @@ window.addEventListener('beforeunload', async () => {
 });
 
 // เริ่มต้นแอพ
-
 initChat();
