@@ -497,7 +497,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
-    <script>
+<script>
         // ========== GLOBAL VARIABLES ==========
         window.currentUser = null;
         window.currentRoom = null;
@@ -668,14 +668,12 @@
                 window.currentRoom = room;
                 window.currentRoomId = room.id;
                 
-                // อัปเดต header
                 document.getElementById('currentRoomTitle').innerHTML = `
                     ${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}
                 `;
                 document.getElementById('currentRoomTypeBadge').textContent = 
                     room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
                 
-                // แสดง/ซ่อนปุ่มลบห้อง
                 const roomActions = document.getElementById('roomActions');
                 if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
                     roomActions.innerHTML = `
@@ -732,7 +730,6 @@
                 alert('✅ ลบห้องสำเร็จ');
                 window.closeDeleteRoomModal();
                 
-                // กลับไปห้อง public
                 await selectRoom(PUBLIC_ROOM_ID);
                 await loadRooms();
                 
@@ -1087,30 +1084,69 @@
             document.getElementById('joinRoomPassword').value = '';
         };
 
+        // ========== ✅ FIXED: JOIN PRIVATE ROOM ==========
         window.confirmJoinPrivateRoom = async function() {
             const roomId = document.getElementById('joinPrivateRoomModal').dataset.roomId;
             const password = document.getElementById('joinRoomPassword').value;
             
+            if (!password) {
+                alert('❌ กรุณากรอกรหัสผ่าน');
+                return;
+            }
+            
             try {
+                console.log('🔐 กำลังตรวจสอบรหัสผ่านห้อง:', roomId);
+                
+                // 1. ตรวจสอบรหัสผ่าน
                 const { data: room, error } = await supabaseClient
                     .from('rooms')
-                    .select('password')
+                    .select('*')
                     .eq('id', roomId)
                     .single();
                     
                 if (error) throw error;
                 
+                // 2. เปรียบเทียบรหัสผ่าน
                 if (room.password !== password) {
                     alert('❌ รหัสผ่านไม่ถูกต้อง');
                     return;
                 }
                 
-                await selectRoom(roomId);
-                closeJoinPrivateModal();
+                console.log('✅ รหัสผ่านถูกต้อง');
+                
+                // 3. ปิด modal
+                window.closeJoinPrivateModal();
+                
+                // 4. ตรวจสอบและเพิ่มสมาชิก
+                const { data: existingMember } = await supabaseClient
+                    .from('room_members')
+                    .select('*')
+                    .eq('room_id', roomId)
+                    .eq('user_id', window.currentUser.id)
+                    .maybeSingle();
+                
+                if (!existingMember) {
+                    console.log('➕ กำลังเพิ่มสมาชิกใหม่');
+                    const { error: insertError } = await supabaseClient
+                        .from('room_members')
+                        .insert([{
+                            room_id: roomId,
+                            user_id: window.currentUser.id,
+                            role: 'member',
+                            joined_at: new Date().toISOString()
+                        }]);
+                        
+                    if (insertError) throw insertError;
+                    console.log('✅ เพิ่มสมาชิกสำเร็จ');
+                }
+                
+                // 5. เข้าห้อง
+                console.log('🚪 กำลังเข้าห้อง:', room.name);
+                await window.selectRoom(roomId);
                 
             } catch (error) {
                 console.error('❌ Error joining private room:', error);
-                alert('ไม่สามารถเข้าร่วมห้องได้');
+                alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
             }
         };
 
@@ -1225,3 +1261,4 @@
     </script>
 </body>
 </html>
+
