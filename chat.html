@@ -325,7 +325,46 @@
             position: relative;
             animation: slideIn 0.3s ease;
         }
-
+        /* เพิ่ม CSS สำหรับ Voice Visualizer */
+        .voice-visualizer {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 24px;
+            margin-left: 8px;
+        }
+        
+        .voice-bar {
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to top, #8b5cf6, #c084fc);
+            border-radius: 2px;
+            animation: voiceWave 0.5s ease infinite;
+            transform-origin: bottom;
+        }
+        
+        @keyframes voiceWave {
+            0%, 100% { transform: scaleY(0.3); }
+            50% { transform: scaleY(1); }
+        }
+        
+        .voice-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 20px;
+            color: #8b5cf6;
+            font-size: 12px;
+        }
+        
+        .network-quality {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            color: #48bb78;
+        }                
         .room-item:hover {
             border-color: var(--primary-color);
             transform: translateX(5px) translateY(-2px);
@@ -1754,23 +1793,6 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast" style="display: none;"></div>
      <!-- ========== SCRIPTS - แก้ไขลำดับและชื่อฟังก์ชัน ========== -->
-    
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ChatApp - ห้องแชทและห้องเสียง</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* ========== CSS เดียวกันทั้งหมด (copy จากที่ให้ไปแล้ว) ========== */
-        /* ผมตัดออกเพื่อความสั้น แต่ให้ใช้ CSS เดิมทั้งหมด */
-    </style>
-</head>
-<body>
-    <!-- ========== HTML เดียวกันทั้งหมด (copy จากที่ให้ไปแล้ว) ========== -->
-
-    <!-- ========== SCRIPTS ========== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="supabase-client.js"></script>
@@ -1790,13 +1812,18 @@
         window.selectedMessages = new Set();
         window.selectedImageFile = null;
         
-        // Voice Chat Variables
+        // ========== WEBRTC VARIABLES ==========
         window.localStream = null;
+        window.remoteStreams = {};  // เสียงของคนอื่น
+        window.peerConnections = {}; // การเชื่อมต่อ WebRTC
+        window.roomChannel = null;   // Signaling channel
         window.isVoiceMuted = false;
         window.isVoiceDeafened = false;
-        window.voiceSubscription = null;
         window.voiceParticipantsInterval = null;
         window.speakingInterval = null;
+        window.audioContext = null;
+        window.analyser = null;
+        window.microphoneSource = null;
         
         const PUBLIC_ROOM_ID = '00000000-0000-0000-0000-000000000000';
         const STORAGE_KEY = 'chat_last_room_id';
@@ -1924,7 +1951,7 @@
             `;
         };
 
-        // ========== LOAD ROOMS - แก้ไขใหม่ทั้งหมด ไม่ใช้ join ==========
+        // ========== LOAD ROOMS ==========
         window.loadRooms = async function(filter = 'all') {
             try {
                 const roomList = document.getElementById('roomList');
@@ -1939,7 +1966,7 @@
                 
                 let allRooms = [];
                 
-                // 1. โหลดห้องแชท
+                // โหลดห้องแชท
                 if (filter === 'all' || filter === 'chat') {
                     try {
                         const { data: chatRooms, error: chatError } = await supabaseClient
@@ -1948,9 +1975,7 @@
                             .order('created_at', { ascending: false });
                         
                         if (!chatError && chatRooms) {
-                            // ดึง owner และ members ทีละห้อง
                             for (const room of chatRooms) {
-                                // ดึง owner
                                 if (room.owner_id) {
                                     const { data: owner } = await supabaseClient
                                         .from('profiles')
@@ -1962,7 +1987,6 @@
                                     room.owner = { display_name: 'ระบบ' };
                                 }
                                 
-                                // ดึงจำนวนสมาชิก
                                 const { data: members } = await supabaseClient
                                     .from('room_members')
                                     .select('user_id')
@@ -1982,7 +2006,7 @@
                     }
                 }
                 
-                // 2. โหลดห้องเสียง
+                // โหลดห้องเสียง
                 if (filter === 'all' || filter === 'voice') {
                     try {
                         const { data: voiceRooms, error: voiceError } = await supabaseClient
@@ -1992,9 +2016,7 @@
                             .order('created_at', { ascending: false });
                         
                         if (!voiceError && voiceRooms) {
-                            // ดึง owner และ members ทีละห้อง
                             for (const room of voiceRooms) {
-                                // ดึง owner
                                 if (room.owner_id) {
                                     const { data: owner } = await supabaseClient
                                         .from('profiles')
@@ -2006,7 +2028,6 @@
                                     room.owner = { display_name: 'ระบบ' };
                                 }
                                 
-                                // ดึงจำนวนสมาชิก
                                 const { data: members } = await supabaseClient
                                     .from('voice_room_members')
                                     .select('user_id')
@@ -2021,7 +2042,6 @@
                             }));
                             allRooms = [...allRooms, ...voiceRoomsWithType];
                         } else {
-                            // ถ้า error ให้เพิ่มห้องเสียงตัวอย่าง
                             addDemoVoiceRooms(allRooms);
                         }
                     } catch (e) {
@@ -2030,10 +2050,8 @@
                     }
                 }
                 
-                // เรียงลำดับ
                 allRooms.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 
-                // กรองตาม filter
                 let filteredRooms = allRooms;
                 if (filter === 'chat') {
                     filteredRooms = allRooms.filter(r => r.room_type_real === 'chat');
@@ -2049,7 +2067,6 @@
             }
         };
 
-        // เพิ่มห้องเสียงตัวอย่าง
         function addDemoVoiceRooms(allRooms) {
             const demoVoiceRooms = [
                 {
@@ -2092,7 +2109,6 @@
             allRooms.push(...demoVoiceRooms);
         }
 
-        // แสดงห้องเสียงตัวอย่าง
         window.showDemoVoiceRooms = function() {
             const roomList = document.getElementById('roomList');
             if (!roomList) return;
@@ -2208,7 +2224,6 @@
                 }
                 
                 if (type === 'voice') {
-                    // ถ้าเป็น demo room
                     if (roomId.startsWith('demo-')) {
                         const demoRoom = {
                             id: roomId,
@@ -2404,6 +2419,873 @@
             }
         };
 
+        // ========== WEBRTC IMPLEMENTATION ==========
+        
+        /**
+         * เข้าร่วมห้องเสียงพร้อม WebRTC
+         */
+        window.joinVoiceRoom = async function(room) {
+            try {
+                // ออกจากห้องเก่าก่อน
+                if (window.currentVoiceRoom) {
+                    await window.leaveVoiceRoom();
+                }
+                
+                // ซ่อน input area
+                const inputArea = document.getElementById('messageInputArea');
+                if (inputArea) inputArea.style.display = 'none';
+                
+                // 1. ขออนุญาตไมโครโฟน
+                try {
+                    const constraints = {
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 48000,
+                            channelCount: 1
+                        },
+                        video: false
+                    };
+                    
+                    window.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('✅ ได้รับอนุญาตไมโครโฟน');
+                    
+                    // สร้าง AudioContext สำหรับวัดระดับเสียง
+                    window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    window.analyser = window.audioContext.createAnalyser();
+                    window.analyser.fftSize = 256;
+                    window.microphoneSource = window.audioContext.createMediaStreamSource(window.localStream);
+                    window.microphoneSource.connect(window.analyser);
+                    
+                    // เริ่มวัดระดับเสียง
+                    startVolumeMeter();
+                    
+                } catch (micError) {
+                    console.error('❌ Microphone error:', micError);
+                    if (micError.name === 'NotAllowedError') {
+                        showToast('❌ ไม่ได้รับอนุญาตให้ใช้งานไมโครโฟน กรุณาอนุญาตใน Settings', 'error');
+                    } else if (micError.name === 'NotFoundError') {
+                        showToast('❌ ไม่พบไมโครโฟน กรุณาเชื่อมต่ออุปกรณ์เสียง', 'error');
+                    } else {
+                        showToast('❌ ไม่สามารถเข้าถึงไมโครโฟน: ' + micError.message, 'error');
+                    }
+                    return;
+                }
+                
+                // 2. เพิ่มสมาชิกลงฐานข้อมูล (ถ้าไม่ใช่ demo)
+                if (!room.id.startsWith('demo-')) {
+                    try {
+                        const { data: existingMember } = await supabaseClient
+                            .from('voice_room_members')
+                            .select('*')
+                            .eq('room_id', room.id)
+                            .eq('user_id', window.currentUser.id)
+                            .maybeSingle();
+                        
+                        if (!existingMember) {
+                            await supabaseClient
+                                .from('voice_room_members')
+                                .insert([{
+                                    room_id: room.id,
+                                    user_id: window.currentUser.id,
+                                    role: room.owner_id === window.currentUser.id ? 'owner' : 'member',
+                                    is_muted: false,
+                                    is_deafened: false,
+                                    joined_at: new Date().toISOString()
+                                }]);
+                        }
+                    } catch (dbError) {
+                        console.log('Voice room members table not available');
+                    }
+                }
+                
+                // 3. สร้าง Signaling Channel (ใช้ Supabase Realtime)
+                const channelName = `voice-${room.id}`;
+                window.roomChannel = supabaseClient.channel(channelName);
+                
+                // 4. ตั้งค่า WebRTC event listeners
+                window.roomChannel
+                    .on('broadcast', { event: 'offer' }, async ({ payload }) => {
+                        console.log('📞 ได้รับ Offer จาก:', payload.from);
+                        await handleWebRTCOffer(payload);
+                    })
+                    .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+                        console.log('📞 ได้รับ Answer จาก:', payload.from);
+                        await handleWebRTCAnswer(payload);
+                    })
+                    .on('broadcast', { event: 'candidate' }, async ({ payload }) => {
+                        console.log('📡 ได้รับ ICE Candidate จาก:', payload.from);
+                        await handleICECandidate(payload);
+                    })
+                    .on('broadcast', { event: 'user-joined' }, ({ payload }) => {
+                        console.log('👤 ผู้ใช้เข้า:', payload.username);
+                        // ถ้ามีคนเข้าใหม่ และไม่ใช่ตัวเอง ให้สร้าง offer
+                        if (payload.userId !== window.currentUser.id) {
+                            createWebRTCOffer(payload.userId);
+                        }
+                    })
+                    .on('broadcast', { event: 'user-left' }, ({ payload }) => {
+                        console.log('👋 ผู้ใช้ออก:', payload.username);
+                        removePeerConnection(payload.userId);
+                    })
+                    .subscribe();
+                
+                // 5. บอกคนอื่นว่าเราเข้ามา
+                window.roomChannel.send({
+                    type: 'broadcast',
+                    event: 'user-joined',
+                    payload: {
+                        userId: window.currentUser.id,
+                        username: window.currentUser.user_metadata?.display_name || 
+                                 window.currentUser.user_metadata?.username || 
+                                 'ผู้ใช้',
+                        roomId: room.id
+                    }
+                });
+                
+                // 6. อัปเดต UI
+                window.currentVoiceRoom = room;
+                updateVoiceRoomUI(room);
+                
+                // 7. โหลดรายชื่อสมาชิก
+                await loadVoiceRoomMembers(room.id);
+                
+                // 8. เริ่มตรวจสอบสมาชิก (update ทุก 5 วินาที)
+                if (window.voiceParticipantsInterval) {
+                    clearInterval(window.voiceParticipantsInterval);
+                }
+                window.voiceParticipantsInterval = setInterval(() => {
+                    if (window.currentVoiceRoom && !window.currentVoiceRoom.id.startsWith('demo-')) {
+                        loadVoiceRoomMembers(window.currentVoiceRoom.id);
+                    }
+                }, 5000);
+                
+                showToast(`✅ เข้าร่วมห้องเสียง "${room.name}"`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Error joining voice room:', error);
+                showToast('❌ ไม่สามารถเข้าร่วมห้องเสียงได้: ' + error.message, 'error');
+            }
+        };
+
+        /**
+         * สร้าง PeerConnection WebRTC
+         */
+        function createPeerConnection(targetUserId) {
+            // ใช้ STUN servers ของ Google
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ],
+                iceCandidatePoolSize: 10
+            };
+            
+            const peerConnection = new RTCPeerConnection(configuration);
+            
+            // เพิ่ม audio track ของตัวเอง
+            if (window.localStream) {
+                window.localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, window.localStream);
+                });
+            }
+            
+            // รอรับ audio track จากอีกฝ่าย
+            peerConnection.ontrack = (event) => {
+                console.log('📡 ได้รับ audio track จาก:', targetUserId);
+                
+                const [remoteStream] = event.streams;
+                window.remoteStreams[targetUserId] = remoteStream;
+                
+                // สร้าง audio element เพื่อเล่นเสียง
+                const audioId = `remote-audio-${targetUserId}`;
+                let audio = document.getElementById(audioId);
+                
+                if (!audio) {
+                    audio = new Audio();
+                    audio.id = audioId;
+                    audio.srcObject = remoteStream;
+                    audio.autoplay = true;
+                    audio.controls = false;
+                    audio.style.display = 'none';
+                    document.body.appendChild(audio);
+                }
+                
+                // เล่นเสียง
+                audio.play().catch(e => console.log('⚠️ Auto-play prevented:', e));
+                
+                // อัปเดต UI ว่ากำลังพูด
+                updateSpeakingStatus(targetUserId, true);
+            };
+            
+            // จัดการ ICE candidates
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && window.roomChannel) {
+                    console.log('📡 ส่ง ICE candidate ไปยัง:', targetUserId);
+                    window.roomChannel.send({
+                        type: 'broadcast',
+                        event: 'candidate',
+                        payload: {
+                            from: window.currentUser.id,
+                            to: targetUserId,
+                            candidate: event.candidate
+                        }
+                    });
+                }
+            };
+            
+            // ตรวจสอบสถานะการเชื่อมต่อ
+            peerConnection.onconnectionstatechange = () => {
+                console.log(`🔌 Connection state (${targetUserId}):`, peerConnection.connectionState);
+                
+                if (peerConnection.connectionState === 'connected') {
+                    console.log('✅ เชื่อมต่อ WebRTC สำเร็จกับ:', targetUserId);
+                    showToast(`🔊 เชื่อมต่อกับผู้ใช้ ${targetUserId.slice(0, 8)}...`, 'success');
+                }
+                
+                if (peerConnection.connectionState === 'disconnected' || 
+                    peerConnection.connectionState === 'failed' ||
+                    peerConnection.connectionState === 'closed') {
+                    console.log('❌ การเชื่อมต่อกับ:', targetUserId, 'สิ้นสุดลง');
+                    removePeerConnection(targetUserId);
+                }
+            };
+            
+            peerConnection.oniceconnectionstatechange = () => {
+                console.log(`❄️ ICE state (${targetUserId}):`, peerConnection.iceConnectionState);
+            };
+            
+            // เก็บ peer connection
+            window.peerConnections[targetUserId] = peerConnection;
+            
+            return peerConnection;
+        }
+
+        /**
+         * สร้าง WebRTC Offer
+         */
+        async function createWebRTCOffer(targetUserId) {
+            try {
+                // ถ้ามี connection เก่าให้ปิดก่อน
+                if (window.peerConnections[targetUserId]) {
+                    removePeerConnection(targetUserId);
+                }
+                
+                const peerConnection = createPeerConnection(targetUserId);
+                
+                const offer = await peerConnection.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: false
+                });
+                
+                await peerConnection.setLocalDescription(offer);
+                
+                console.log('📞 ส่ง Offer ไปยัง:', targetUserId);
+                
+                window.roomChannel.send({
+                    type: 'broadcast',
+                    event: 'offer',
+                    payload: {
+                        from: window.currentUser.id,
+                        to: targetUserId,
+                        offer: offer
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Error creating offer:', error);
+            }
+        }
+
+        /**
+         * จัดการ WebRTC Offer
+         */
+        async function handleWebRTCOffer(payload) {
+            const { from, to, offer } = payload;
+            
+            // ถ้า offer ส่งมาถึงเรา
+            if (to === window.currentUser.id) {
+                console.log('📞 รับ Offer จาก:', from);
+                
+                // สร้าง peer connection ถ้ายังไม่มี
+                if (!window.peerConnections[from]) {
+                    createPeerConnection(from);
+                }
+                
+                const peerConnection = window.peerConnections[from];
+                
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                    
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
+                    console.log('📞 ส่ง Answer ไปยัง:', from);
+                    
+                    window.roomChannel.send({
+                        type: 'broadcast',
+                        event: 'answer',
+                        payload: {
+                            from: window.currentUser.id,
+                            to: from,
+                            answer: answer
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Error handling offer:', error);
+                }
+            }
+        }
+
+        /**
+         * จัดการ WebRTC Answer
+         */
+        async function handleWebRTCAnswer(payload) {
+            const { from, to, answer } = payload;
+            
+            if (to === window.currentUser.id) {
+                console.log('📞 รับ Answer จาก:', from);
+                
+                const peerConnection = window.peerConnections[from];
+                if (peerConnection) {
+                    try {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                    } catch (error) {
+                        console.error('❌ Error setting remote description:', error);
+                    }
+                }
+            }
+        }
+
+        /**
+         * จัดการ ICE Candidate
+         */
+        async function handleICECandidate(payload) {
+            const { from, to, candidate } = payload;
+            
+            if (to === window.currentUser.id) {
+                const peerConnection = window.peerConnections[from];
+                if (peerConnection) {
+                    try {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (error) {
+                        console.error('❌ Error adding ICE candidate:', error);
+                    }
+                }
+            }
+        }
+
+        /**
+         * ลบ Peer Connection
+         */
+        function removePeerConnection(userId) {
+            if (window.peerConnections[userId]) {
+                console.log('👋 ลบการเชื่อมต่อกับ:', userId);
+                
+                // หยุดเล่นเสียง
+                const audio = document.getElementById(`remote-audio-${userId}`);
+                if (audio) {
+                    audio.pause();
+                    audio.remove();
+                }
+                
+                // ลบ remote stream
+                delete window.remoteStreams[userId];
+                
+                // ปิด connection
+                window.peerConnections[userId].close();
+                delete window.peerConnections[userId];
+                
+                // อัปเดต UI
+                updateSpeakingStatus(userId, false);
+            }
+        }
+
+        /**
+         * ออกจากห้องเสียง
+         */
+        window.leaveVoiceRoom = async function() {
+            if (!window.currentVoiceRoom) return;
+            
+            try {
+                // ปิด peer connections ทั้งหมด
+                Object.keys(window.peerConnections).forEach(userId => {
+                    removePeerConnection(userId);
+                });
+                window.peerConnections = {};
+                window.remoteStreams = {};
+                
+                // ปิด local stream
+                if (window.localStream) {
+                    window.localStream.getTracks().forEach(track => {
+                        track.stop();
+                    });
+                    window.localStream = null;
+                }
+                
+                // ปิด AudioContext
+                if (window.audioContext) {
+                    await window.audioContext.close();
+                    window.audioContext = null;
+                    window.analyser = null;
+                    window.microphoneSource = null;
+                }
+                
+                // ลบข้อมูลในฐานข้อมูล (ถ้าไม่ใช่ demo)
+                if (!window.currentVoiceRoom.id.startsWith('demo-')) {
+                    try {
+                        await supabaseClient
+                            .from('voice_room_members')
+                            .delete()
+                            .eq('room_id', window.currentVoiceRoom.id)
+                            .eq('user_id', window.currentUser.id);
+                    } catch (e) {
+                        console.log('Voice room members table not available');
+                    }
+                }
+                
+                // บอกคนอื่นว่าเราออก
+                if (window.roomChannel) {
+                    window.roomChannel.send({
+                        type: 'broadcast',
+                        event: 'user-left',
+                        payload: {
+                            userId: window.currentUser.id,
+                            username: window.currentUser.user_metadata?.display_name || 'ผู้ใช้',
+                            roomId: window.currentVoiceRoom.id
+                        }
+                    });
+                    
+                    window.roomChannel.unsubscribe();
+                    window.roomChannel = null;
+                }
+                
+                // ซ่อน UI
+                const voiceBar = document.getElementById('voiceBar');
+                const voiceBadge = document.getElementById('currentRoomVoiceBadge');
+                const voicePanel = document.getElementById('voiceParticipantsPanel');
+                
+                if (voiceBar) voiceBar.style.display = 'none';
+                if (voiceBadge) voiceBadge.style.display = 'none';
+                if (voicePanel) voicePanel.classList.remove('active');
+                
+                // หยุด intervals
+                if (window.voiceParticipantsInterval) {
+                    clearInterval(window.voiceParticipantsInterval);
+                    window.voiceParticipantsInterval = null;
+                }
+                
+                if (window.speakingInterval) {
+                    clearInterval(window.speakingInterval);
+                    window.speakingInterval = null;
+                }
+                
+                window.currentVoiceRoom = null;
+                window.isVoiceMuted = false;
+                window.isVoiceDeafened = false;
+                
+                console.log('👋 Left voice room');
+                
+            } catch (error) {
+                console.error('❌ Error leaving voice room:', error);
+                showToast('❌ ไม่สามารถออกจากห้องเสียงได้', 'error');
+            }
+        };
+
+        /**
+         * อัปเดต UI ของห้องเสียง
+         */
+        function updateVoiceRoomUI(room) {
+            const voiceBar = document.getElementById('voiceBar');
+            const roomNameEl = document.getElementById('currentVoiceRoomName');
+            const voiceBadge = document.getElementById('currentRoomVoiceBadge');
+            const titleEl = document.getElementById('currentRoomTitle');
+            const badgeEl = document.getElementById('currentRoomTypeBadge');
+            
+            if (voiceBar) voiceBar.style.display = 'flex';
+            if (roomNameEl) roomNameEl.textContent = `🎤 ${room.name}`;
+            if (voiceBadge) voiceBadge.style.display = 'inline-flex';
+            if (titleEl) {
+                titleEl.innerHTML = `<span>🎤</span> ${escapeHtml(room.name)}`;
+            }
+            if (badgeEl) {
+                badgeEl.style.display = 'none';
+            }
+            
+            // Reset mute states
+            window.isVoiceMuted = false;
+            window.isVoiceDeafened = false;
+            
+            const muteBtn = document.getElementById('voiceMuteBtn');
+            const deafenBtn = document.getElementById('voiceDeafenBtn');
+            if (muteBtn) {
+                muteBtn.innerHTML = '🎤';
+                muteBtn.classList.remove('active');
+            }
+            if (deafenBtn) {
+                deafenBtn.innerHTML = '🔊';
+                deafenBtn.classList.remove('active');
+            }
+            
+            // แสดงข้อความ
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
+                messagesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #a0aec0;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🎤</div>
+                        <div style="font-size: 18px; font-weight: 600;">คุณอยู่ในห้องเสียง</div>
+                        <div style="font-size: 14px; margin-top: 8px;">${escapeHtml(room.description || 'พูดคุยด้วยเสียง')}</div>
+                        <div style="font-size: 12px; margin-top: 16px; color: #8b5cf6;">
+                            🔊 กำลังสนทนาด้วยเสียง...
+                            <span class="voice-visualizer" id="voiceVisualizer">
+                                <span class="voice-bar"></span>
+                                <span class="voice-bar"></span>
+                                <span class="voice-bar"></span>
+                                <span class="voice-bar"></span>
+                                <span class="voice-bar"></span>
+                            </span>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <span class="network-quality">🟢 คุณภาพเครือข่ายดี</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * เริ่มวัดระดับเสียง
+         */
+        function startVolumeMeter() {
+            if (!window.analyser) return;
+            
+            const dataArray = new Uint8Array(window.analyser.frequencyBinCount);
+            
+            function updateVolume() {
+                if (!window.analyser || !window.currentVoiceRoom) return;
+                
+                window.analyser.getByteFrequencyData(dataArray);
+                
+                // คำนวณระดับเสียงเฉลี่ย
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / dataArray.length;
+                
+                // อัปเดต visualizer
+                const visualizer = document.getElementById('voiceVisualizer');
+                if (visualizer) {
+                    const bars = visualizer.querySelectorAll('.voice-bar');
+                    const volume = Math.min(average / 128, 1);
+                    
+                    bars.forEach((bar, index) => {
+                        const height = Math.max(0.3, volume * (0.7 + index * 0.1));
+                        bar.style.transform = `scaleY(${height})`;
+                    });
+                }
+                
+                requestAnimationFrame(updateVolume);
+            }
+            
+            requestAnimationFrame(updateVolume);
+        }
+
+        /**
+         * อัปเดตสถานะกำลังพูด
+         */
+        function updateSpeakingStatus(userId, isSpeaking) {
+            const participantItems = document.querySelectorAll('.voice-participant-item');
+            participantItems.forEach(item => {
+                const nameEl = item.querySelector('.voice-participant-name');
+                if (nameEl && nameEl.textContent.includes(userId.slice(0, 8))) {
+                    if (isSpeaking) {
+                        item.classList.add('speaking');
+                    } else {
+                        item.classList.remove('speaking');
+                    }
+                }
+            });
+        }
+
+        // ========== VOICE CONTROLS ==========
+        window.toggleVoiceMute = function() {
+            if (!window.localStream) {
+                showToast('🎤 ยังไม่ได้เชื่อมต่อไมโครโฟน', 'info');
+                return;
+            }
+            
+            window.isVoiceMuted = !window.isVoiceMuted;
+            const audioTracks = window.localStream.getAudioTracks();
+            
+            audioTracks.forEach(track => {
+                track.enabled = !window.isVoiceMuted;
+            });
+            
+            const muteBtn = document.getElementById('voiceMuteBtn');
+            if (muteBtn) {
+                muteBtn.innerHTML = window.isVoiceMuted ? '🔇' : '🎤';
+                muteBtn.classList.toggle('active', window.isVoiceMuted);
+            }
+            
+            // อัปเดตฐานข้อมูล
+            if (window.currentVoiceRoom && !window.currentVoiceRoom.id.startsWith('demo-')) {
+                supabaseClient
+                    .from('voice_room_members')
+                    .update({ is_muted: window.isVoiceMuted })
+                    .eq('room_id', window.currentVoiceRoom.id)
+                    .eq('user_id', window.currentUser.id)
+                    .then(() => {});
+            }
+            
+            showToast(window.isVoiceMuted ? '🔇 ปิดไมค์แล้ว' : '🎤 เปิดไมค์แล้ว', 'info');
+        };
+
+        window.toggleVoiceDeafen = function() {
+            window.isVoiceDeafened = !window.isVoiceDeafened;
+            
+            if (window.isVoiceDeafened) {
+                // ปิดเสียงทั้งหมด
+                if (window.localStream) {
+                    window.localStream.getAudioTracks().forEach(track => {
+                        track.enabled = false;
+                    });
+                }
+                window.isVoiceMuted = true;
+                
+                // ปิดเสียงคนอื่น
+                Object.keys(window.remoteStreams).forEach(userId => {
+                    const audio = document.getElementById(`remote-audio-${userId}`);
+                    if (audio) {
+                        audio.muted = true;
+                    }
+                });
+            } else {
+                window.isVoiceMuted = false;
+                if (window.localStream) {
+                    window.localStream.getAudioTracks().forEach(track => {
+                        track.enabled = true;
+                    });
+                }
+                
+                // เปิดเสียงคนอื่น
+                Object.keys(window.remoteStreams).forEach(userId => {
+                    const audio = document.getElementById(`remote-audio-${userId}`);
+                    if (audio) {
+                        audio.muted = false;
+                    }
+                });
+            }
+            
+            const deafenBtn = document.getElementById('voiceDeafenBtn');
+            if (deafenBtn) {
+                deafenBtn.innerHTML = window.isVoiceDeafened ? '🔇' : '🔊';
+                deafenBtn.classList.toggle('active', window.isVoiceDeafened);
+            }
+            
+            const muteBtn = document.getElementById('voiceMuteBtn');
+            if (muteBtn) {
+                muteBtn.innerHTML = window.isVoiceDeafened ? '🔇' : '🎤';
+                muteBtn.classList.toggle('active', window.isVoiceDeafened);
+            }
+            
+            // อัปเดตฐานข้อมูล
+            if (window.currentVoiceRoom && !window.currentVoiceRoom.id.startsWith('demo-')) {
+                supabaseClient
+                    .from('voice_room_members')
+                    .update({ 
+                        is_muted: window.isVoiceMuted,
+                        is_deafened: window.isVoiceDeafened 
+                    })
+                    .eq('room_id', window.currentVoiceRoom.id)
+                    .eq('user_id', window.currentUser.id)
+                    .then(() => {});
+            }
+            
+            showToast(window.isVoiceDeafened ? '🔇 ปิดเสียงทั้งหมด' : '🔊 เปิดเสียงแล้ว', 'info');
+        };
+
+        window.toggleVoiceParticipantsPanel = function() {
+            const panel = document.getElementById('voiceParticipantsPanel');
+            if (panel) {
+                panel.classList.toggle('active');
+                if (panel.classList.contains('active') && window.currentVoiceRoom) {
+                    loadVoiceRoomMembers(window.currentVoiceRoom.id);
+                }
+            }
+        };
+
+        // ========== LOAD VOICE ROOM MEMBERS ==========
+        window.loadVoiceRoomMembers = async function(roomId) {
+            try {
+                const container = document.getElementById('voiceParticipantsList');
+                if (!container) return;
+                
+                // Demo room
+                if (roomId.startsWith('demo-')) {
+                    displayVoiceRoomMembersDemo();
+                    return;
+                }
+                
+                const { data: members, error } = await supabaseClient
+                    .from('voice_room_members')
+                    .select('*')
+                    .eq('room_id', roomId);
+                
+                if (error || !members) {
+                    displayVoiceRoomMembersDemo();
+                    return;
+                }
+                
+                // ดึง profile ของสมาชิก
+                const membersWithProfiles = [];
+                for (const member of members) {
+                    try {
+                        const { data: profile } = await supabaseClient
+                            .from('profiles')
+                            .select('username, display_name, avatar_url')
+                            .eq('id', member.user_id)
+                            .single();
+                        
+                        membersWithProfiles.push({
+                            ...member,
+                            profiles: profile || {
+                                display_name: 'ผู้ใช้',
+                                username: 'user',
+                                avatar_url: null
+                            },
+                            isConnected: !!window.peerConnections[member.user_id]
+                        });
+                    } catch (e) {
+                        membersWithProfiles.push({
+                            ...member,
+                            profiles: {
+                                display_name: 'ผู้ใช้',
+                                username: 'user',
+                                avatar_url: null
+                            },
+                            isConnected: !!window.peerConnections[member.user_id]
+                        });
+                    }
+                }
+                
+                displayVoiceRoomMembers(membersWithProfiles);
+                
+                const countEl = document.getElementById('voiceParticipantsCount');
+                if (countEl) {
+                    countEl.innerHTML = `<span>👥</span> ${members.length} คน`;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading voice members:', error);
+                displayVoiceRoomMembersDemo();
+            }
+        };
+
+        // แสดงสมาชิกจำลอง
+        window.displayVoiceRoomMembersDemo = function() {
+            const container = document.getElementById('voiceParticipantsList');
+            if (!container) return;
+            
+            const username = window.currentUser?.user_metadata?.display_name || 'คุณ';
+            
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #718096; margin-bottom: 16px;">
+                    <span style="background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 999px; font-size: 12px;">⚡ โหมดสาธิต</span>
+                    <p style="margin-top: 12px; font-size: 13px;">🔊 ไม่มีการเชื่อมต่อ WebRTC จริง</p>
+                </div>
+                <div class="voice-participant-item speaking">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=8b5cf6&color=fff" 
+                         alt="คุณ" 
+                         class="voice-participant-avatar owner">
+                    <div class="voice-participant-info">
+                        <div class="voice-participant-name">
+                            ${escapeHtml(username)} (คุณ) 👑
+                        </div>
+                        <div class="voice-participant-status">
+                            <span class="speaking-indicator"></span> กำลังพูด
+                        </div>
+                    </div>
+                </div>
+                <div class="voice-participant-item">
+                    <img src="https://ui-avatars.com/api/?name=สมาชิก1&background=8b5cf6&color=fff" 
+                         alt="สมาชิก" 
+                         class="voice-participant-avatar">
+                    <div class="voice-participant-info">
+                        <div class="voice-participant-name">
+                            สมาชิกตัวอย่าง 1
+                        </div>
+                        <div class="voice-participant-status">
+                            🟢 ออนไลน์
+                        </div>
+                    </div>
+                </div>
+                <div class="voice-participant-item">
+                    <img src="https://ui-avatars.com/api/?name=สมาชิก2&background=8b5cf6&color=fff" 
+                         alt="สมาชิก" 
+                         class="voice-participant-avatar">
+                    <div class="voice-participant-info">
+                        <div class="voice-participant-name">
+                            สมาชิกตัวอย่าง 2
+                        </div>
+                        <div class="voice-participant-status">
+                            🟢 ออนไลน์
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const countEl = document.getElementById('voiceParticipantsCount');
+            if (countEl) {
+                countEl.innerHTML = `<span>👥</span> 3 คน`;
+            }
+        };
+
+        window.displayVoiceRoomMembers = function(members) {
+            const container = document.getElementById('voiceParticipantsList');
+            if (!container) return;
+            
+            if (!members || members.length === 0) {
+                displayVoiceRoomMembersDemo();
+                return;
+            }
+            
+            container.innerHTML = members.map(member => {
+                const profile = member.profiles;
+                const isCurrentUser = member.user_id === window.currentUser.id;
+                const isOwner = member.role === 'owner';
+                const isConnected = member.isConnected;
+                
+                return `
+                    <div class="voice-participant-item">
+                        <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=8b5cf6&color=fff`}" 
+                             alt="${profile?.display_name}" 
+                             class="voice-participant-avatar ${isOwner ? 'owner' : ''}">
+                        <div class="voice-participant-info">
+                            <div class="voice-participant-name">
+                                ${profile?.display_name || profile?.username}
+                                ${isCurrentUser ? ' (คุณ)' : ''}
+                                ${isOwner ? ' 👑' : ''}
+                                ${isConnected ? ' 🔗' : ''}
+                            </div>
+                            <div class="voice-participant-status">
+                                ${member.is_muted ? '🔇 ปิดไมค์' : '🎤 เปิดไมค์'}
+                                ${member.is_deafened ? ' 🔇 ปิดเสียง' : ''}
+                                ${!member.is_muted && !member.is_deafened && isConnected ? ' 🟢 ออนไลน์' : ''}
+                                ${!isConnected && !isCurrentUser ? ' ⚠️ กำลังเชื่อมต่อ...' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // ========== CREATE VOICE ROOM ==========
         window.createVoiceRoom = async function(event) {
             event.preventDefault();
             
@@ -2504,467 +3386,6 @@
             } catch (error) {
                 console.error('❌ Error creating voice room:', error);
                 showToast('❌ ไม่สามารถสร้างห้องเสียงได้: ' + error.message, 'error');
-            }
-        };
-
-        window.joinVoiceRoom = async function(room) {
-            try {
-                if (window.currentVoiceRoom) {
-                    await window.leaveVoiceRoom();
-                }
-                
-                const inputArea = document.getElementById('messageInputArea');
-                if (inputArea) {
-                    inputArea.style.display = 'none';
-                }
-                
-                // ขออนุญาตไมโครโฟน
-                try {
-                    const constraints = {
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        }
-                    };
-                    
-                    window.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    console.log('✅ Microphone access granted');
-                } catch (micError) {
-                    console.error('❌ Microphone error:', micError);
-                    // ไม่ต้องแจ้ง error ให้เข้าได้เฉพาะ UI
-                }
-                
-                // เพิ่มสมาชิก (ถ้าไม่ใช่ demo room)
-                if (!room.id.startsWith('demo-')) {
-                    try {
-                        const { data: existingMember } = await supabaseClient
-                            .from('voice_room_members')
-                            .select('*')
-                            .eq('room_id', room.id)
-                            .eq('user_id', window.currentUser.id)
-                            .maybeSingle();
-                        
-                        if (!existingMember) {
-                            await supabaseClient
-                                .from('voice_room_members')
-                                .insert([{
-                                    room_id: room.id,
-                                    user_id: window.currentUser.id,
-                                    role: room.owner_id === window.currentUser.id ? 'owner' : 'member',
-                                    is_muted: false,
-                                    is_deafened: false,
-                                    joined_at: new Date().toISOString()
-                                }]);
-                        }
-                    } catch (dbError) {
-                        console.log('Voice room members table not available');
-                    }
-                }
-                
-                window.currentVoiceRoom = room;
-                
-                // อัปเดต UI
-                const voiceBar = document.getElementById('voiceBar');
-                const roomNameEl = document.getElementById('currentVoiceRoomName');
-                const voiceBadge = document.getElementById('currentRoomVoiceBadge');
-                const titleEl = document.getElementById('currentRoomTitle');
-                const badgeEl = document.getElementById('currentRoomTypeBadge');
-                
-                if (voiceBar) voiceBar.style.display = 'flex';
-                if (roomNameEl) roomNameEl.textContent = `🎤 ${room.name}`;
-                if (voiceBadge) voiceBadge.style.display = 'inline-flex';
-                if (titleEl) {
-                    titleEl.innerHTML = `<span>🎤</span> ${escapeHtml(room.name)}`;
-                }
-                if (badgeEl) {
-                    badgeEl.style.display = 'none';
-                }
-                
-                // Reset mute states
-                window.isVoiceMuted = false;
-                window.isVoiceDeafened = false;
-                
-                const muteBtn = document.getElementById('voiceMuteBtn');
-                const deafenBtn = document.getElementById('voiceDeafenBtn');
-                if (muteBtn) {
-                    muteBtn.innerHTML = '🎤';
-                    muteBtn.classList.remove('active');
-                }
-                if (deafenBtn) {
-                    deafenBtn.innerHTML = '🔊';
-                    deafenBtn.classList.remove('active');
-                }
-                
-                // แสดงข้อความ
-                const messagesContainer = document.getElementById('messagesContainer');
-                if (messagesContainer) {
-                    messagesContainer.innerHTML = `
-                        <div style="text-align: center; padding: 50px; color: #a0aec0;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">🎤</div>
-                            <div style="font-size: 18px; font-weight: 600;">คุณอยู่ในห้องเสียง</div>
-                            <div style="font-size: 14px; margin-top: 8px;">${escapeHtml(room.description || 'พูดคุยด้วยเสียง')}</div>
-                            ${!window.localStream ? '<div style="font-size: 12px; margin-top: 16px; color: #f56565;">⚠️ ไม่ได้เชื่อมต่อไมโครโฟน</div>' : ''}
-                        </div>
-                    `;
-                }
-                
-                // โหลดสมาชิก
-                await loadVoiceRoomMembers(room.id);
-                
-                // เริ่ม simulation
-                startSpeakingSimulation();
-                
-                showToast(`✅ เข้าร่วมห้องเสียง "${room.name}"`, 'success');
-                
-            } catch (error) {
-                console.error('❌ Error joining voice room:', error);
-                showToast('❌ ไม่สามารถเข้าร่วมห้องเสียงได้: ' + error.message, 'error');
-            }
-        };
-
-        window.leaveVoiceRoom = async function() {
-            if (!window.currentVoiceRoom) return;
-            
-            try {
-                if (window.localStream) {
-                    window.localStream.getTracks().forEach(track => {
-                        track.stop();
-                    });
-                    window.localStream = null;
-                }
-                
-                if (!window.currentVoiceRoom.id.startsWith('demo-')) {
-                    try {
-                        await supabaseClient
-                            .from('voice_room_members')
-                            .delete()
-                            .eq('room_id', window.currentVoiceRoom.id)
-                            .eq('user_id', window.currentUser.id);
-                    } catch (e) {
-                        console.log('Voice room members table not available');
-                    }
-                }
-                
-                const voiceBar = document.getElementById('voiceBar');
-                const voiceBadge = document.getElementById('currentRoomVoiceBadge');
-                const voicePanel = document.getElementById('voiceParticipantsPanel');
-                
-                if (voiceBar) voiceBar.style.display = 'none';
-                if (voiceBadge) voiceBadge.style.display = 'none';
-                if (voicePanel) voicePanel.classList.remove('active');
-                
-                if (window.voiceSubscription) {
-                    window.voiceSubscription.unsubscribe();
-                    window.voiceSubscription = null;
-                }
-                
-                if (window.voiceParticipantsInterval) {
-                    clearInterval(window.voiceParticipantsInterval);
-                    window.voiceParticipantsInterval = null;
-                }
-                
-                if (window.speakingInterval) {
-                    clearInterval(window.speakingInterval);
-                    window.speakingInterval = null;
-                }
-                
-                window.currentVoiceRoom = null;
-                window.isVoiceMuted = false;
-                window.isVoiceDeafened = false;
-                
-                console.log('👋 Left voice room');
-                
-            } catch (error) {
-                console.error('❌ Error leaving voice room:', error);
-                showToast('❌ ไม่สามารถออกจากห้องเสียงได้', 'error');
-            }
-        };
-
-        // ========== LOAD VOICE ROOM MEMBERS - แก้ไขใหม่ ==========
-        window.loadVoiceRoomMembers = async function(roomId) {
-            try {
-                const container = document.getElementById('voiceParticipantsList');
-                if (!container) return;
-                
-                // ถ้าเป็น demo room
-                if (roomId.startsWith('demo-')) {
-                    displayVoiceRoomMembersDemo();
-                    return;
-                }
-                
-                const { data: members, error } = await supabaseClient
-                    .from('voice_room_members')
-                    .select('*')
-                    .eq('room_id', roomId);
-                
-                if (error || !members) {
-                    displayVoiceRoomMembersDemo();
-                    return;
-                }
-                
-                // ดึง profile ของสมาชิกแต่ละคน
-                const membersWithProfiles = [];
-                for (const member of members) {
-                    try {
-                        const { data: profile } = await supabaseClient
-                            .from('profiles')
-                            .select('username, display_name, avatar_url')
-                            .eq('id', member.user_id)
-                            .single();
-                        
-                        membersWithProfiles.push({
-                            ...member,
-                            profiles: profile || {
-                                display_name: 'ผู้ใช้',
-                                username: 'user',
-                                avatar_url: null
-                            }
-                        });
-                    } catch (e) {
-                        membersWithProfiles.push({
-                            ...member,
-                            profiles: {
-                                display_name: 'ผู้ใช้',
-                                username: 'user',
-                                avatar_url: null
-                            }
-                        });
-                    }
-                }
-                
-                displayVoiceRoomMembers(membersWithProfiles);
-                
-                const countEl = document.getElementById('voiceParticipantsCount');
-                if (countEl) {
-                    countEl.innerHTML = `<span>👥</span> ${members.length} คน`;
-                }
-                
-            } catch (error) {
-                console.error('❌ Error loading voice members:', error);
-                displayVoiceRoomMembersDemo();
-            }
-        };
-
-        // แสดงสมาชิกจำลอง
-        window.displayVoiceRoomMembersDemo = function() {
-            const container = document.getElementById('voiceParticipantsList');
-            if (!container) return;
-            
-            const username = window.currentUser?.user_metadata?.display_name || 'คุณ';
-            
-            container.innerHTML = `
-                <div style="text-align: center; padding: 20px; color: #718096; margin-bottom: 16px;">
-                    <span style="background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 999px; font-size: 12px;">⚡ โหมดสาธิต</span>
-                </div>
-                <div class="voice-participant-item speaking">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=8b5cf6&color=fff" 
-                         alt="คุณ" 
-                         class="voice-participant-avatar owner">
-                    <div class="voice-participant-info">
-                        <div class="voice-participant-name">
-                            ${escapeHtml(username)} (คุณ) 👑
-                        </div>
-                        <div class="voice-participant-status">
-                            <span class="speaking-indicator"></span> กำลังพูด
-                        </div>
-                    </div>
-                </div>
-                <div class="voice-participant-item">
-                    <img src="https://ui-avatars.com/api/?name=สมาชิก1&background=8b5cf6&color=fff" 
-                         alt="สมาชิก" 
-                         class="voice-participant-avatar">
-                    <div class="voice-participant-info">
-                        <div class="voice-participant-name">
-                            สมาชิกตัวอย่าง 1
-                        </div>
-                        <div class="voice-participant-status">
-                            🟢 ออนไลน์
-                        </div>
-                    </div>
-                </div>
-                <div class="voice-participant-item">
-                    <img src="https://ui-avatars.com/api/?name=สมาชิก2&background=8b5cf6&color=fff" 
-                         alt="สมาชิก" 
-                         class="voice-participant-avatar">
-                    <div class="voice-participant-info">
-                        <div class="voice-participant-name">
-                            สมาชิกตัวอย่าง 2
-                        </div>
-                        <div class="voice-participant-status">
-                            🟢 ออนไลน์
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const countEl = document.getElementById('voiceParticipantsCount');
-            if (countEl) {
-                countEl.innerHTML = `<span>👥</span> 3 คน`;
-            }
-        };
-
-        window.displayVoiceRoomMembers = function(members) {
-            const container = document.getElementById('voiceParticipantsList');
-            if (!container) return;
-            
-            if (!members || members.length === 0) {
-                displayVoiceRoomMembersDemo();
-                return;
-            }
-            
-            container.innerHTML = members.map(member => {
-                const profile = member.profiles;
-                const isCurrentUser = member.user_id === window.currentUser.id;
-                const isOwner = member.role === 'owner';
-                
-                return `
-                    <div class="voice-participant-item">
-                        <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=8b5cf6&color=fff`}" 
-                             alt="${profile?.display_name}" 
-                             class="voice-participant-avatar ${isOwner ? 'owner' : ''}">
-                        <div class="voice-participant-info">
-                            <div class="voice-participant-name">
-                                ${profile?.display_name || profile?.username}
-                                ${isCurrentUser ? ' (คุณ)' : ''}
-                                ${isOwner ? ' 👑' : ''}
-                            </div>
-                            <div class="voice-participant-status">
-                                ${member.is_muted ? '🔇 ปิดไมค์' : '🎤 เปิดไมค์'}
-                                ${member.is_deafened ? ' 🔇 ปิดเสียง' : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        };
-
-        window.subscribeToVoiceRoom = function(roomId) {
-            if (window.voiceSubscription) {
-                window.voiceSubscription.unsubscribe();
-            }
-            
-            try {
-                window.voiceSubscription = supabaseClient
-                    .channel(`voice-room-${roomId}`)
-                    .on('postgres_changes', 
-                        { event: '*', schema: 'public', table: 'voice_room_members', filter: `room_id=eq.${roomId}` },
-                        () => {
-                            if (window.currentVoiceRoom) {
-                                loadVoiceRoomMembers(roomId);
-                            }
-                        }
-                    )
-                    .subscribe();
-            } catch (e) {
-                console.log('Voice subscription not available');
-            }
-            
-            return window.voiceSubscription;
-        };
-
-        window.startSpeakingSimulation = function() {
-            if (window.speakingInterval) {
-                clearInterval(window.speakingInterval);
-            }
-            
-            window.speakingInterval = setInterval(() => {
-                if (window.currentVoiceRoom && window.localStream && !window.isVoiceMuted) {
-                    const speakingMember = document.querySelector('.voice-participant-item');
-                    if (speakingMember) {
-                        speakingMember.classList.add('speaking');
-                        setTimeout(() => {
-                            speakingMember.classList.remove('speaking');
-                        }, 2000);
-                    }
-                }
-            }, 4000);
-        };
-
-        // ========== VOICE CONTROLS ==========
-        window.toggleVoiceMute = function() {
-            if (!window.localStream) {
-                showToast('🎤 ยังไม่ได้เชื่อมต่อไมโครโฟน', 'info');
-                return;
-            }
-            
-            window.isVoiceMuted = !window.isVoiceMuted;
-            const audioTracks = window.localStream.getAudioTracks();
-            audioTracks.forEach(track => {
-                track.enabled = !window.isVoiceMuted;
-            });
-            
-            const muteBtn = document.getElementById('voiceMuteBtn');
-            if (muteBtn) {
-                muteBtn.innerHTML = window.isVoiceMuted ? '🔇' : '🎤';
-                muteBtn.classList.toggle('active', window.isVoiceMuted);
-            }
-            
-            if (window.currentVoiceRoom && !window.currentVoiceRoom.id.startsWith('demo-')) {
-                supabaseClient
-                    .from('voice_room_members')
-                    .update({ is_muted: window.isVoiceMuted })
-                    .eq('room_id', window.currentVoiceRoom.id)
-                    .eq('user_id', window.currentUser.id)
-                    .then(() => {});
-            }
-            
-            showToast(window.isVoiceMuted ? '🔇 ปิดไมค์แล้ว' : '🎤 เปิดไมค์แล้ว', 'info');
-        };
-
-        window.toggleVoiceDeafen = function() {
-            window.isVoiceDeafened = !window.isVoiceDeafened;
-            
-            if (window.isVoiceDeafened) {
-                if (window.localStream) {
-                    window.localStream.getAudioTracks().forEach(track => {
-                        track.enabled = false;
-                    });
-                }
-                window.isVoiceMuted = true;
-            } else {
-                window.isVoiceMuted = false;
-                if (window.localStream) {
-                    window.localStream.getAudioTracks().forEach(track => {
-                        track.enabled = true;
-                    });
-                }
-            }
-            
-            const deafenBtn = document.getElementById('voiceDeafenBtn');
-            if (deafenBtn) {
-                deafenBtn.innerHTML = window.isVoiceDeafened ? '🔇' : '🔊';
-                deafenBtn.classList.toggle('active', window.isVoiceDeafened);
-            }
-            
-            const muteBtn = document.getElementById('voiceMuteBtn');
-            if (muteBtn) {
-                muteBtn.innerHTML = window.isVoiceDeafened ? '🔇' : '🎤';
-                muteBtn.classList.toggle('active', window.isVoiceDeafened);
-            }
-            
-            if (window.currentVoiceRoom && !window.currentVoiceRoom.id.startsWith('demo-')) {
-                supabaseClient
-                    .from('voice_room_members')
-                    .update({ 
-                        is_muted: window.isVoiceMuted,
-                        is_deafened: window.isVoiceDeafened 
-                    })
-                    .eq('room_id', window.currentVoiceRoom.id)
-                    .eq('user_id', window.currentUser.id)
-                    .then(() => {});
-            }
-            
-            showToast(window.isVoiceDeafened ? '🔇 ปิดเสียงทั้งหมด' : '🔊 เปิดเสียงแล้ว', 'info');
-        };
-
-        window.toggleVoiceParticipantsPanel = function() {
-            const panel = document.getElementById('voiceParticipantsPanel');
-            if (panel) {
-                panel.classList.toggle('active');
-                if (panel.classList.contains('active') && window.currentVoiceRoom) {
-                    loadVoiceRoomMembers(window.currentVoiceRoom.id);
-                }
             }
         };
 
@@ -3703,10 +4124,15 @@
             if (window.localStream) {
                 window.localStream.getTracks().forEach(track => track.stop());
             }
+            
+            if (window.roomChannel) {
+                window.roomChannel.unsubscribe();
+            }
         });
     </script>
 </body>
 </html>
-</html>
+
+
 
 
