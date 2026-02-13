@@ -1394,148 +1394,226 @@
             }
         });
 
-        // ========== LOAD ROOMS ==========
-        window.loadRooms = async function(filter = 'all') {
-            try {
-                // Load chat rooms
-                let chatQuery = supabaseClient.from('rooms')
-                    .select('*, owner:owner_id(username, display_name), room_members(user_id, role)')
-                    .order('created_at', { ascending: false });
+// ========== LOAD ROOMS (แก้ไขแล้ว) ==========
+window.loadRooms = async function(filter = 'all') {
+    try {
+        // Load chat rooms
+        let chatQuery = supabaseClient.from('rooms')
+            .select(`
+                *,
+                owner:owner_id (
+                    username,
+                    display_name
+                ),
+                room_members (
+                    user_id,
+                    role
+                )
+            `)
+            .order('created_at', { ascending: false });
+        
+        // Load voice rooms - แก้ไขส่วน select
+        let voiceQuery = supabaseClient.from('voice_rooms')
+            .select(`
+                *,
+                owner:owner_id (
+                    username,
+                    display_name
+                ),
+                voice_room_members (
+                    user_id,
+                    role,
+                    is_muted,
+                    is_deafened
+                )
+            `)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false });
+        
+        if (filter === 'chat') {
+            const { data: chatRooms, error } = await chatQuery;
+            if (error) console.error('Chat rooms error:', error);
+            displayRooms(chatRooms || [], 'chat');
+        } else if (filter === 'voice') {
+            const { data: voiceRooms, error } = await voiceQuery;
+            if (error) console.error('Voice rooms error:', error);
+            displayRooms(voiceRooms || [], 'voice');
+        } else {
+            const [chatResult, voiceResult] = await Promise.allSettled([
+                chatQuery,
+                voiceQuery
+            ]);
+            
+            const chatRooms = chatResult.status === 'fulfilled' ? chatResult.value.data || [] : [];
+            const voiceRooms = voiceResult.status === 'fulfilled' ? voiceResult.value.data || [] : [];
+            
+            const allRooms = [
+                ...chatRooms.map(r => ({ 
+                    ...r, 
+                    room_type_real: 'chat',
+                    member_count: r.room_members?.length || 0
+                })),
+                ...voiceRooms.map(v => ({ 
+                    ...v, 
+                    room_type_real: 'voice',
+                    member_count: v.voice_room_members?.length || 0
+                }))
+            ];
+            
+            displayRooms(allRooms.sort((a, b) => 
+                new Date(b.created_at) - new Date(a.created_at)
+            ));
+        }
+    } catch (error) {
+        console.error('❌ Error loading rooms:', error);
+        // แสดง error ใน UI
+        const roomList = document.getElementById('roomList');
+        if (roomList) {
+            roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #f56565;">⚠️ โหลดห้องไม่สำเร็จ<br><small>กรุณาลองใหม่อีกครั้ง</small></div>';
+        }
+    }
+};
+
+// ========== DISPLAY ROOMS (แก้ไขแล้ว) ==========
+window.displayRooms = function(rooms, filterType = 'all') {
+    const roomList = document.getElementById('roomList');
+    if (!roomList) return;
+    
+    if (!rooms || rooms.length === 0) {
+        roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #a0aec0;">📭 ยังไม่มีห้อง<br><small>คลิก "สร้างห้อง" เพื่อเริ่มต้น</small></div>';
+        return;
+    }
+    
+    roomList.innerHTML = rooms.map(room => {
+        const isOwner = room.owner_id === window.currentUser?.id;
+        const isVoice = room.room_type_real === 'voice';
+        const memberCount = room.member_count || 0;
+        
+        // ตรวจสอบว่าห้องนี้เป็นห้องที่กำลังใช้งานอยู่หรือไม่
+        let isActive = false;
+        if (isVoice) {
+            isActive = window.currentVoiceRoom?.id === room.id;
+        } else {
+            isActive = window.currentRoomId === room.id;
+        }
+        
+        // ดึงข้อมูลเจ้าของห้อง
+        let ownerName = 'ไม่มีเจ้าของ';
+        if (room.owner) {
+            ownerName = room.owner.display_name || room.owner.username || 'ผู้ใช้';
+        }
+        
+        // ประเภทห้อง
+        let roomTypeText = 'สาธารณะ';
+        if (room.room_type === 'private') {
+            roomTypeText = 'ส่วนตัว';
+        } else if (isVoice) {
+            roomTypeText = 'ห้องเสียง';
+        }
+        
+        return `<div class="room-item ${isActive ? 'active' : ''} ${isVoice ? 'voice-room' : ''}" 
+                    onclick="window.selectRoom('${room.id}', '${isVoice ? 'voice' : 'chat'}')">
+            <div class="room-header">
+                <span class="room-name">
+                    ${isVoice ? '🎤' : (room.room_type === 'private' ? '🔒' : '💬')} 
+                    ${escapeHtml(room.name || 'ไม่มีชื่อ')}
+                    ${isVoice ? '<span class="voice-tag">VOICE</span>' : ''}
+                </span>
+                <span class="room-type-badge">
+                    ${roomTypeText}
+                </span>
+            </div>
+            <div class="room-meta">
+                <span>👤 ${escapeHtml(ownerName)}</span>
+                <span>👥 ${memberCount} คน</span>
+                ${isOwner ? '<span style="color: #48bb78;">👑 เจ้าของ</span>' : ''}
+            </div>
+            ${room.description ? `<small style="color: #718096;">${escapeHtml(room.description)}</small>` : ''}
+        </div>`;
+    }).join('');
+};
+
+    // ========== SELECT ROOM (แก้ไขแล้ว) ==========
+    window.selectRoom = async function(roomId, type = 'chat') {
+        window.closeMobileSidebar();
+        
+        try {
+            if (type === 'voice') {
+                // เช็คว่ามีห้องนี้หรือไม่
+                const { data: room, error } = await supabaseClient
+                    .from('voice_rooms')
+                    .select('*')
+                    .eq('id', roomId)
+                    .maybeSingle(); // ใช้ maybeSingle แทน single เพื่อไม่ให้ error ถ้าไม่มีข้อมูล
                 
-                // Load voice rooms
-                let voiceQuery = supabaseClient.from('voice_rooms')
-                    .select('*, owner:owner_id(username, display_name), voice_room_members(user_id, role)')
-                    .eq('is_active', true)
-                    .order('created_at', { ascending: false });
-                
-                if (filter === 'chat') {
-                    const { data: chatRooms } = await chatQuery;
-                    displayRooms(chatRooms || [], 'chat');
-                } else if (filter === 'voice') {
-                    const { data: voiceRooms } = await voiceQuery;
-                    displayRooms(voiceRooms || [], 'voice');
-                } else {
-                    const [chatResult, voiceResult] = await Promise.all([
-                        chatQuery,
-                        voiceQuery
-                    ]);
-                    
-                    const allRooms = [
-                        ...(chatResult.data || []).map(r => ({ ...r, room_type_real: 'chat' })),
-                        ...(voiceResult.data || []).map(v => ({ ...v, room_type_real: 'voice' }))
-                    ];
-                    
-                    displayRooms(allRooms.sort((a, b) => 
-                        new Date(b.created_at) - new Date(a.created_at)
-                    ));
+                if (error) {
+                    console.error('Error fetching voice room:', error);
+                    alert('ไม่พบห้องเสียง');
+                    return;
                 }
-            } catch (error) {
-                console.error('❌ Error loading rooms:', error);
-            }
-        };
-
-        window.displayRooms = function(rooms, filterType = 'all') {
-            const roomList = document.getElementById('roomList');
-            if (!roomList) return;
-            
-            if (rooms.length === 0) {
-                roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #a0aec0;">📭 ยังไม่มีห้อง<br><small>คลิก "สร้างห้อง" เพื่อเริ่มต้น</small></div>';
-                return;
-            }
-            
-            roomList.innerHTML = rooms.map(room => {
-                const isOwner = room.owner_id === window.currentUser?.id;
-                const isVoice = room.room_type_real === 'voice' || room.room_type === 'voice';
-                const memberCount = isVoice 
-                    ? room.voice_room_members?.length || 0
-                    : room.room_members?.length || 0;
-                const isActive = isVoice 
-                    ? window.currentVoiceRoom?.id === room.id
-                    : window.currentRoomId === room.id;
                 
-                return `<div class="room-item ${isActive ? 'active' : ''} ${isVoice ? 'voice-room' : ''}" 
-                            onclick="window.selectRoom('${room.id}', '${isVoice ? 'voice' : 'chat'}')">
-                    <div class="room-header">
-                        <span class="room-name">
-                            ${isVoice ? '🎤' : (room.room_type === 'private' ? '🔒' : '💬')} 
-                            ${room.name}
-                            ${isVoice ? '<span class="voice-tag">VOICE</span>' : ''}
-                        </span>
-                        <span class="room-type-badge">
-                            ${room.room_type === 'private' ? 'ส่วนตัว' : (isVoice ? 'ห้องเสียง' : 'สาธารณะ')}
-                        </span>
-                    </div>
-                    <div class="room-meta">
-                        <span>👤 ${room.owner?.display_name || 'ไม่มีเจ้าของ'}</span>
-                        <span>👥 ${memberCount} คน</span>
-                        ${isOwner ? '<span style="color: #48bb78;">👑 เจ้าของ</span>' : ''}
-                    </div>
-                    ${room.description ? `<small style="color: #718096;">${room.description}</small>` : ''}
-                </div>`;
-            }).join('');
-        };
-
-        // ========== SELECT ROOM ==========
-        window.selectRoom = async function(roomId, type = 'chat') {
-            window.closeMobileSidebar();
-            
-            try {
-                if (type === 'voice') {
-                    const { data: room, error } = await supabaseClient
-                        .from('voice_rooms')
-                        .select('*')
-                        .eq('id', roomId)
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    // Check if private room
-                    if (room.room_type === 'private') {
-                        const { data: member } = await supabaseClient
-                            .from('voice_room_members')
-                            .select('*')
-                            .eq('room_id', roomId)
-                            .eq('user_id', window.currentUser.id)
-                            .maybeSingle();
-                        
-                        if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
-                            showJoinVoiceRoomModal(room);
-                            return;
-                        }
-                    }
-                    
-                    await joinVoiceRoom(room);
-                } else {
-                    const { data: room, error } = await supabaseClient
-                        .from('rooms')
-                        .select('*')
-                        .eq('id', roomId)
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    if (room.room_type === 'private') {
-                        const { data: member } = await supabaseClient
-                            .from('room_members')
-                            .select('*')
-                            .eq('room_id', roomId)
-                            .eq('user_id', window.currentUser.id)
-                            .maybeSingle();
-                        
-                        if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
-                            showJoinPrivateRoomModal(room);
-                            return;
-                        }
-                    }
-                    
-                    await joinChatRoom(room);
+                if (!room) {
+                    alert('ไม่พบห้องเสียง');
+                    return;
                 }
-            } catch (error) {
-                console.error('❌ Error selecting room:', error);
+                
+                // Check if private room
+                if (room.room_type === 'private') {
+                    const { data: member } = await supabaseClient
+                        .from('voice_room_members')
+                        .select('*')
+                        .eq('room_id', roomId)
+                        .eq('user_id', window.currentUser.id)
+                        .maybeSingle();
+                    
+                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                        window.showJoinVoiceRoomModal(room);
+                        return;
+                    }
+                }
+                
+                await window.joinVoiceRoom(room);
+            } else {
+                // Chat room
+                const { data: room, error } = await supabaseClient
+                    .from('rooms')
+                    .select('*')
+                    .eq('id', roomId)
+                    .maybeSingle();
+                
+                if (error) {
+                    console.error('Error fetching chat room:', error);
+                    alert('ไม่พบห้องแชท');
+                    return;
+                }
+                
+                if (!room) {
+                    alert('ไม่พบห้องแชท');
+                    return;
+                }
+                
+                if (room.room_type === 'private') {
+                    const { data: member } = await supabaseClient
+                        .from('room_members')
+                        .select('*')
+                        .eq('room_id', roomId)
+                        .eq('user_id', window.currentUser.id)
+                        .maybeSingle();
+                    
+                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                        window.showJoinPrivateRoomModal(room);
+                        return;
+                    }
+                }
+                
+                await window.joinChatRoom(room);
             }
-        };
-
-        // ========== JOIN CHAT ROOM ==========
+        } catch (error) {
+            console.error('❌ Error selecting room:', error);
+            alert('ไม่สามารถเลือกห้องได้: ' + error.message);
+        }
+    };
+        // ========== JOIN CHAT ROOM (แก้ไขแล้ว) ==========
         window.joinChatRoom = async function(room) {
             try {
                 // Leave voice room if currently in one
@@ -1562,6 +1640,103 @@
                         }]);
                 }
                 
+                window.currentRoom = room;
+                window.currentRoomId = room.id;
+                window.currentVoiceRoom = null; // เคลียร์ห้องเสียง
+                
+                localStorage.setItem(STORAGE_KEY, room.id);
+                
+                // Update UI
+                const titleEl = document.getElementById('currentRoomTitle');
+                if (titleEl) {
+                    titleEl.innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${escapeHtml(room.name)}`;
+                }
+                
+                const badgeEl = document.getElementById('currentRoomTypeBadge');
+                if (badgeEl) {
+                    badgeEl.textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+                }
+                
+                const voiceBadgeEl = document.getElementById('currentRoomVoiceBadge');
+                if (voiceBadgeEl) {
+                    voiceBadgeEl.style.display = 'none';
+                }
+                
+                // Room actions
+                const roomActions = document.getElementById('roomActions');
+                if (roomActions) {
+                    roomActions.innerHTML = '';
+                    if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
+                        roomActions.innerHTML += `<button onclick="window.showDeleteRoomModal()" class="delete-room-btn">🗑️ ลบห้อง</button>`;
+                    }
+                    if (window.isAdmin && room.id !== PUBLIC_ROOM_ID) {
+                        roomActions.innerHTML += `<button onclick="window.adminDeleteRoom('${room.id}', '${escapeHtml(room.name)}')" class="admin-delete-room-btn">👑 ลบห้อง (แอดมิน)</button>`;
+                    }
+                }
+                
+                // Show chat input
+                const inputArea = document.getElementById('messageInputArea');
+                if (inputArea) {
+                    inputArea.style.display = 'block';
+                }
+                
+                // Hide voice bar
+                const voiceBar = document.getElementById('voiceBar');
+                if (voiceBar) {
+                    voiceBar.style.display = 'none';
+                }
+                
+                // Load messages and members
+                await window.loadMessages(room.id);
+                await window.loadRoomMembers(room.id);
+                window.setupMessageSubscription(room.id);
+                
+                // Reload room list
+                window.loadRooms();
+                
+            } catch (error) {
+                console.error('❌ Error joining chat room:', error);
+                alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
+            }
+        };
+        
+        // ========== HELPER: Escape HTML ==========
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ========== HELPER: Show join voice room modal ==========
+        window.showJoinVoiceRoomModal = function(room) {
+            const nameEl = document.getElementById('joinVoiceRoomName');
+            const modal = document.getElementById('joinVoiceRoomModal');
+            
+            if (nameEl) {
+                nameEl.textContent = `ห้อง: ${escapeHtml(room.name)}`;
+            }
+            
+            if (modal) {
+                modal.dataset.roomId = room.id;
+                modal.classList.add('active');
+            }
+        };
+        
+        // ========== HELPER: Show join private room modal ==========
+        window.showJoinPrivateRoomModal = function(room) {
+            const nameEl = document.getElementById('joinRoomName');
+            const modal = document.getElementById('joinPrivateRoomModal');
+            
+            if (nameEl) {
+                nameEl.textContent = `ห้อง: ${escapeHtml(room.name)}`;
+            }
+            
+            if (modal) {
+                modal.dataset.roomId = room.id;
+                modal.classList.add('active');
+            }
+        };     
                 window.currentRoom = room;
                 window.currentRoomId = room.id;
                 
@@ -2806,3 +2981,4 @@
     </script>
 </body>
 </html>
+
