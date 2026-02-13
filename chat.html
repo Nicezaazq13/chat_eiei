@@ -15,14 +15,19 @@
             --danger-dark: #e53e3e;
             --voice-color: #8b5cf6;
             --voice-dark: #7c3aed;
+            --warning-color: #ed8936;
+            --success-color: #48bb78;
+            --info-color: #4299e1;
             --text-dark: #2d3748;
             --text-light: #718096;
             --bg-light: #f7fafc;
             --bg-white: #ffffff;
+            --bg-dark: #1a202c;
             --border-color: #e2e8f0;
             --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
             --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
             --radius-sm: 6px;
             --radius-md: 8px;
             --radius-lg: 12px;
@@ -50,6 +55,7 @@
             flex-direction: column;
             height: 100vh;
             background: var(--bg-white);
+            position: relative;
         }
 
         /* ========== CHAT HEADER ========== */
@@ -61,12 +67,14 @@
             background: var(--bg-white);
             border-bottom: 1px solid var(--border-color);
             box-shadow: var(--shadow-sm);
+            z-index: 100;
         }
 
         .chat-header-left {
             display: flex;
             align-items: center;
             gap: 16px;
+            flex: 1;
         }
 
         .chat-header-right {
@@ -87,6 +95,9 @@
             font-weight: 600;
             color: var(--text-dark);
             margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .room-badge {
@@ -108,6 +119,7 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            animation: pulse 2s infinite;
         }
 
         .online-status {
@@ -117,6 +129,9 @@
             padding: 4px 12px;
             border-radius: var(--radius-xl);
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         /* ========== MOBILE MENU BUTTON ========== */
@@ -131,10 +146,12 @@
             transition: color 0.2s;
             min-width: 44px;
             min-height: 44px;
+            border-radius: var(--radius-md);
         }
 
         .mobile-menu-btn:hover {
             color: var(--primary-color);
+            background: var(--bg-light);
         }
 
         /* ========== ROOM ACTIONS ========== */
@@ -162,6 +179,7 @@
         .delete-room-btn:hover {
             background: var(--danger-dark);
             transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .admin-delete-room-btn {
@@ -179,6 +197,7 @@
         .admin-delete-room-btn:hover {
             background: var(--danger-dark);
             transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         /* ========== MAIN CHAT AREA ========== */
@@ -191,23 +210,26 @@
 
         /* ========== ROOMS PANEL ========== */
         .rooms-panel {
-            width: 300px;
-            background: var(--bg-light);
+            width: 320px;
+            background: linear-gradient(180deg, var(--bg-light) 0%, #ffffff 100%);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: all 0.3s ease;
         }
 
         .rooms-header {
             padding: 20px;
             border-bottom: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px);
         }
 
         .create-room-btn {
             width: 100%;
             padding: 12px;
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
             border-radius: var(--radius-md);
@@ -218,18 +240,18 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.3s;
+            box-shadow: var(--shadow-sm);
         }
 
         .create-room-btn:hover {
-            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
         }
 
         .create-voice-room-btn {
             width: 100%;
             padding: 12px;
-            background: var(--voice-color);
+            background: linear-gradient(135deg, var(--voice-color) 0%, var(--voice-dark) 100%);
             color: white;
             border: none;
             border-radius: var(--radius-md);
@@ -241,12 +263,12 @@
             gap: 8px;
             transition: all 0.3s;
             margin-top: 8px;
+            box-shadow: var(--shadow-sm);
         }
 
         .create-voice-room-btn:hover {
-            background: var(--voice-dark);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
         }
 
         .room-tabs {
@@ -254,11 +276,12 @@
             padding: 16px 20px;
             gap: 8px;
             border-bottom: 1px solid var(--border-color);
+            background: white;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 8px;
+            padding: 8px 12px;
             background: transparent;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-xl);
@@ -266,6 +289,16 @@
             transition: all 0.2s;
             font-size: 14px;
             color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-light);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
 
         .tab-btn.active {
@@ -289,17 +322,18 @@
             box-shadow: var(--shadow-sm);
             transition: all 0.2s;
             cursor: pointer !important;
-            pointer-events: auto !important;
+            position: relative;
+            animation: slideIn 0.3s ease;
         }
 
         .room-item:hover {
             border-color: var(--primary-color);
-            transform: translateX(5px);
+            transform: translateX(5px) translateY(-2px);
             box-shadow: var(--shadow-md);
         }
 
         .room-item.active {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
             color: white;
         }
 
@@ -308,15 +342,7 @@
         }
 
         .room-item.voice-room.active {
-            background: var(--voice-color);
-        }
-
-        .room-item * {
-            pointer-events: none;
-        }
-
-        .room-item button {
-            pointer-events: auto;
+            background: linear-gradient(135deg, var(--voice-color) 0%, var(--voice-dark) 100%);
         }
 
         .room-header {
@@ -331,6 +357,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            font-size: 15px;
         }
 
         .room-type-badge {
@@ -339,6 +366,7 @@
             border-radius: var(--radius-xl);
             background: var(--bg-light);
             color: var(--text-light);
+            font-weight: 500;
         }
 
         .room-item.active .room-type-badge {
@@ -355,7 +383,7 @@
         }
 
         .room-item.active .room-meta {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.9);
         }
 
         .voice-tag {
@@ -365,6 +393,7 @@
             padding: 2px 8px;
             border-radius: var(--radius-full);
             margin-left: 8px;
+            font-weight: 600;
         }
 
         .room-item.active .voice-tag {
@@ -387,6 +416,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            background: linear-gradient(180deg, #ffffff 0%, var(--bg-light) 100%);
         }
 
         .message {
@@ -401,6 +431,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         .own-message {
             margin-left: auto;
             flex-direction: row-reverse;
@@ -411,6 +446,8 @@
             height: 40px;
             border-radius: 50%;
             object-fit: cover;
+            border: 2px solid white;
+            box-shadow: var(--shadow-sm);
         }
 
         .message-content {
@@ -460,11 +497,21 @@
             font-size: 14px;
         }
 
+        .message-body a {
+            color: var(--info-color);
+            text-decoration: none;
+        }
+
+        .message-body a:hover {
+            text-decoration: underline;
+        }
+
         /* ========== INPUT AREA ========== */
         .message-input-area {
             padding: 16px 24px;
             background: var(--bg-white);
             border-top: 1px solid var(--border-color);
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
         }
 
         .input-toolbar {
@@ -480,13 +527,14 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-xl);
             padding: 8px 16px;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 4px;
             color: var(--text-light);
+            background: white;
         }
 
         .toolbar-btn:hover {
@@ -494,6 +542,7 @@
             border-color: var(--primary-color);
             transform: translateY(-2px);
             color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
         }
 
         .toolbar-btn.voice-btn {
@@ -504,6 +553,7 @@
         .toolbar-btn.voice-btn:hover {
             background: var(--voice-color);
             color: white;
+            border-color: var(--voice-color);
         }
 
         .input-wrapper {
@@ -531,6 +581,7 @@
             font-size: 15px;
             line-height: 1.5;
             resize: none;
+            font-family: inherit;
         }
 
         .input-wrapper textarea:focus {
@@ -538,7 +589,7 @@
         }
 
         .btn-send {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
             border-radius: var(--radius-xl);
@@ -546,11 +597,14 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .btn-send:hover {
-            background: var(--primary-dark);
             transform: scale(1.05);
+            box-shadow: var(--shadow-md);
         }
 
         /* ========== VOICE BAR ========== */
@@ -566,7 +620,13 @@
             justify-content: space-between;
             align-items: center;
             z-index: 1900;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 -4px 20px rgba(139, 92, 246, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
 
         .voice-info {
@@ -576,7 +636,7 @@
         }
 
         .voice-icon {
-            font-size: 20px;
+            font-size: 24px;
             animation: pulse 2s infinite;
         }
 
@@ -594,6 +654,9 @@
         .voice-participants {
             font-size: 12px;
             opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .voice-controls {
@@ -607,14 +670,15 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            backdrop-filter: blur(4px);
         }
 
         .voice-btn:hover {
@@ -627,11 +691,11 @@
         }
 
         .voice-btn.leave-btn {
-            background: #dc2626;
+            background: rgba(220, 38, 38, 0.8);
         }
 
         .voice-btn.leave-btn:hover {
-            background: #b91c1c;
+            background: #dc2626;
         }
 
         /* ========== VOICE PARTICIPANTS PANEL ========== */
@@ -648,7 +712,7 @@
             bottom: 0;
             z-index: 2100;
             transition: right 0.3s ease;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
         }
 
         .voice-participants-panel.active {
@@ -661,13 +725,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: linear-gradient(135deg, var(--voice-color) 0%, var(--voice-dark) 100%);
+            color: white;
         }
 
         .voice-participants-header h3 {
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--voice-color);
+            color: white;
         }
 
         .voice-participant-item {
@@ -679,16 +745,29 @@
             margin-bottom: 8px;
             background: var(--bg-light);
             transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .voice-participant-item:hover {
+            background: #e2e8f0;
+            transform: translateX(-5px);
         }
 
         .voice-participant-item.speaking {
             border: 2px solid var(--voice-color);
             background: #ede9fe;
+            animation: speakingPulse 1s infinite;
+        }
+
+        @keyframes speakingPulse {
+            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
         }
 
         .voice-participant-avatar {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid transparent;
@@ -720,14 +799,14 @@
         }
 
         .speaking-indicator {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: var(--voice-color);
             animation: pulse 1s infinite;
         }
 
-        /* ========== VOICE MODAL ========== */
+        /* ========== MODAL STYLES ========== */
         .modal {
             display: none;
             position: fixed;
@@ -735,10 +814,12 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
             align-items: center;
             justify-content: center;
             z-index: 2000;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
         }
 
         .modal.active {
@@ -749,74 +830,92 @@
             background: var(--bg-white);
             padding: 30px;
             border-radius: var(--radius-lg);
-            width: 450px;
+            width: 480px;
             max-width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-xl);
+            animation: slideUp 0.3s ease;
         }
 
         .voice-modal-header {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .voice-modal-icon {
-            width: 48px;
-            height: 48px;
-            background: var(--voice-color);
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--voice-color) 0%, var(--voice-dark) 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px;
+            color: white;
+            box-shadow: var(--shadow-md);
         }
 
         .voice-feature-list {
             margin-top: 20px;
             padding: 16px;
-            background: #f3f4f6;
+            background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%);
             border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .voice-feature-list h4 {
+            color: var(--voice-color);
+            margin-bottom: 12px;
         }
 
         .voice-feature-list ul {
             list-style: none;
             padding: 0;
             margin: 0;
-            font-size: 13px;
-            color: var(--text-light);
         }
 
         .voice-feature-list li {
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 8px;
+            color: var(--text-dark);
+        }
+
+        .voice-feature-list li:before {
+            content: "✓";
+            color: var(--voice-color);
+            font-weight: bold;
         }
 
         /* ========== FORM STYLES ========== */
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
+            margin-bottom: 8px;
+            font-weight: 600;
             color: var(--text-dark);
+            font-size: 14px;
         }
 
         .form-group input,
         .form-group textarea,
         .form-group select {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
+            border-radius: var(--radius-md);
             font-size: 14px;
             transition: all 0.3s;
+            background: var(--bg-light);
         }
 
         .form-group input:focus,
@@ -825,6 +924,7 @@
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
         }
 
         .password-field {
@@ -833,55 +933,105 @@
 
         .password-field.show {
             display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* ========== BUTTON STYLES ========== */
         .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
             border: none;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.3s;
+            font-size: 14px;
         }
 
         .btn-primary {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-voice {
-            background: var(--voice-color);
+            background: linear-gradient(135deg, var(--voice-color) 0%, var(--voice-dark) 100%);
             color: white;
         }
 
         .btn-voice:hover {
-            background: var(--voice-dark);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
             background: var(--border-color);
-            color: var(--text-light);
+            color: var(--text-dark);
         }
 
         .btn-secondary:hover {
             background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-dark);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-light);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
         }
 
         /* ========== USER PROFILE ========== */
         .user-profile {
             display: flex;
             align-items: center;
-            margin-right: 16px;
+            padding: 4px 8px;
+            background: var(--bg-light);
+            border-radius: var(--radius-xl);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-profile:hover {
+            background: #e2e8f0;
         }
 
         .avatar {
@@ -889,11 +1039,87 @@
             height: 32px;
             border-radius: 50%;
             margin-right: 8px;
+            border: 2px solid white;
+            box-shadow: var(--shadow-sm);
         }
 
         .username {
             font-weight: 600;
             color: var(--text-dark);
+            font-size: 14px;
+        }
+
+        /* ========== EMOJI GRID ========== */
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-light);
+            border-radius: var(--radius-md);
+        }
+
+        .emoji-item {
+            font-size: 28px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .emoji-item:hover {
+            background: var(--primary-color);
+            transform: scale(1.2);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* ========== IMAGE PREVIEW ========== */
+        .image-preview {
+            position: relative;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: var(--radius-md);
+            display: inline-block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .image-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: var(--radius-md);
+            border: 2px solid white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .remove-preview {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-md);
+        }
+
+        .remove-preview:hover {
+            background: var(--danger-dark);
+            transform: scale(1.1);
         }
 
         /* ========== SIDEBAR OVERLAY ========== */
@@ -906,10 +1132,63 @@
             bottom: 0;
             background: rgba(0,0,0,0.5);
             z-index: 1999;
+            backdrop-filter: blur(2px);
         }
 
         .sidebar-overlay.active {
             display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* ========== TOAST NOTIFICATION ========== */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: var(--text-dark);
+            padding: 12px 24px;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2500;
+            animation: slideUp 0.3s ease;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast.success {
+            border-left-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger-color);
+        }
+
+        .toast.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .toast.info {
+            border-left-color: var(--info-color);
+        }
+
+        /* ========== LOADING SPINNER ========== */
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-light);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* ========== MOBILE RESPONSIVE ========== */
@@ -926,22 +1205,24 @@
                 height: 100vh !important;
                 z-index: 2000;
                 transition: left 0.3s ease;
-                background: var(--bg-white);
-                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-                overflow-y: auto;
+                background: white;
+                box-shadow: 2px 0 20px rgba(0,0,0,0.15);
+                border-radius: 0 20px 20px 0;
             }
 
             .rooms-panel.mobile-active {
                 left: 0 !important;
             }
 
+            .members-panel,
+            .activities-panel,
             .voice-participants-panel {
-                width: 85%;
+                width: 85% !important;
             }
 
             .current-room-info h2 {
-                font-size: 18px;
-                max-width: 200px;
+                font-size: 16px;
+                max-width: 160px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -953,7 +1234,9 @@
             }
 
             .mobile-menu-btn {
-                display: inline-block !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
             }
 
             .user-profile .username {
@@ -963,24 +1246,53 @@
             .voice-bar {
                 flex-direction: column;
                 gap: 12px;
-                align-items: flex-start;
+                align-items: stretch;
+                padding: 12px 16px;
             }
 
             .voice-controls {
                 width: 100%;
                 justify-content: space-between;
             }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .emoji-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
         }
 
-        @media (max-width: 375px) {
+        @media (max-width: 480px) {
             .current-room-info h2 {
-                max-width: 150px;
-                font-size: 16px;
+                max-width: 120px;
+                font-size: 15px;
             }
 
             .toolbar-btn {
-                padding: 6px 10px;
-                font-size: 13px;
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+
+            .voice-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .emoji-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .emoji-item {
+                font-size: 24px;
+                padding: 6px;
             }
         }
 
@@ -1002,6 +1314,47 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-light);
         }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.5s ease;
+        }
+
+        /* ========== UTILITY CLASSES ========== */
+        .text-center { text-align: center; }
+        .text-muted { color: var(--text-light); }
+        .font-bold { font-weight: 600; }
+        .mt-2 { margin-top: 8px; }
+        .mt-4 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .p-2 { padding: 8px; }
+        .p-4 { padding: 16px; }
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; }
+        .gap-4 { gap: 16px; }
+        .w-full { width: 100%; }
+        .rounded-full { border-radius: var(--radius-full); }
     </style>
 </head>
 <body>
@@ -1009,19 +1362,34 @@
         <!-- ========== HEADER ========== -->
         <div class="chat-header">
             <div class="chat-header-left">
-                <button class="mobile-menu-btn" onclick="window.toggleMobileSidebar()">☰</button>
+                <button class="mobile-menu-btn" onclick="window.toggleMobileSidebar()">
+                    <span>☰</span>
+                </button>
                 <div class="current-room-info">
-                    <h2 id="currentRoomTitle">💬 ห้องแชทสาธารณะ</h2>
+                    <h2 id="currentRoomTitle">
+                        <span>💬</span> ห้องแชทสาธารณะ
+                    </h2>
                     <span class="room-badge" id="currentRoomTypeBadge">สาธารณะ</span>
-                    <span class="voice-badge" id="currentRoomVoiceBadge" style="display: none;">🎤 ห้องเสียง</span>
+                    <span class="voice-badge" id="currentRoomVoiceBadge" style="display: none;">
+                        <span>🎤</span> ห้องเสียง
+                    </span>
                     <div id="roomActions" class="room-actions"></div>
                 </div>
-                <span class="online-status" id="onlineStatus">🟢 ออนไลน์</span>
+                <span class="online-status" id="onlineStatus">
+                    <span>🟢</span> ออนไลน์
+                </span>
             </div>
             <div class="chat-header-right">
-                <div class="user-profile" id="userProfile"></div>
-                <button id="adminModeBtn" onclick="window.toggleAdminMode()" class="btn btn-admin" style="display: none;">👑 แอดมิน</button>
-                <button onclick="window.logout()" class="btn btn-outline">🚪 ออกจากระบบ</button>
+                <div class="user-profile" id="userProfile">
+                    <img src="https://ui-avatars.com/api/?name=User&background=667eea&color=fff" alt="User" class="avatar">
+                    <span class="username">กำลังโหลด...</span>
+                </div>
+                <button id="adminModeBtn" onclick="window.toggleAdminMode()" class="btn btn-outline" style="display: none;">
+                    <span>👑</span> แอดมิน
+                </button>
+                <button onclick="window.logout()" class="btn btn-outline">
+                    <span>🚪</span> ออกจากระบบ
+                </button>
             </div>
         </div>
 
@@ -1031,28 +1399,38 @@
             <div class="rooms-panel">
                 <div class="rooms-header">
                     <button class="create-room-btn" onclick="window.showCreateRoomModal()">
-                        💬 สร้างห้องแชท
+                        <span>💬</span> สร้างห้องแชท
                     </button>
                     <button class="create-voice-room-btn" onclick="window.showCreateVoiceRoomModal()">
-                        🎤 สร้างห้องเสียง
+                        <span>🎤</span> สร้างห้องเสียง
                     </button>
                 </div>
                 <div class="room-tabs">
-                    <button class="tab-btn active" onclick="window.filterRooms('all', this)">ทั้งหมด</button>
-                    <button class="tab-btn" onclick="window.filterRooms('chat', this)">แชท</button>
-                    <button class="tab-btn" onclick="window.filterRooms('voice', this)">เสียง</button>
+                    <button class="tab-btn active" onclick="window.filterRooms('all', this)">
+                        <span>📋</span> ทั้งหมด
+                    </button>
+                    <button class="tab-btn" onclick="window.filterRooms('chat', this)">
+                        <span>💬</span> แชท
+                    </button>
+                    <button class="tab-btn" onclick="window.filterRooms('voice', this)">
+                        <span>🎤</span> เสียง
+                    </button>
                 </div>
                 <div class="room-list" id="roomList">
-                    <div style="text-align: center; padding: 40px 20px; color: #a0aec0;">⏳ กำลังโหลดห้อง...</div>
+                    <div class="text-center p-4" style="color: #a0aec0;">
+                        <div class="loading-spinner" style="margin: 20px auto;"></div>
+                        <div style="margin-top: 16px;">⏳ กำลังโหลดห้อง...</div>
+                    </div>
                 </div>
             </div>
 
             <!-- MESSAGES AREA -->
             <div class="chat-content">
                 <div class="messages-container" id="messagesContainer">
-                    <div style="text-align: center; padding: 50px; color: #a0aec0;">
-                        💬 ยินดีต้อนรับสู่แชท<br>
-                        <small>เลือกห้องเพื่อเริ่มพูดคุย</small>
+                    <div class="text-center" style="padding: 50px; color: #a0aec0;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                        <div style="font-size: 18px; font-weight: 600;">ยินดีต้อนรับสู่แชท</div>
+                        <div style="font-size: 14px; margin-top: 8px;">เลือกห้องเพื่อเริ่มพูดคุย</div>
                     </div>
                 </div>
                 <div id="typingIndicator" class="typing-indicator"></div>
@@ -1060,44 +1438,45 @@
                 <!-- Input Area -->
                 <div class="message-input-area" id="messageInputArea" style="display: none;">
                     <div class="input-toolbar">
-                        <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()" title="อิโมจิ">😊</button>
-                        <button type="button" class="toolbar-btn" onclick="window.uploadImage()" title="รูปภาพ">📷</button>
-                        <button type="button" class="toolbar-btn" onclick="window.openMusicPlayer()" title="เพลง">🎵</button>
-                        <button type="button" class="toolbar-btn" onclick="window.toggleActivitiesPanel()" title="กิจกรรม">🎮</button>
-                        <button type="button" class="toolbar-btn" onclick="window.toggleMembersPanel()" title="สมาชิก">👥</button>
+                        <button type="button" class="toolbar-btn" onclick="window.openEmojiPicker()" title="อิโมจิ">
+                            <span>😊</span> อิโมจิ
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="window.uploadImage()" title="รูปภาพ">
+                            <span>📷</span> รูปภาพ
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="window.toggleMembersPanel()" title="สมาชิก">
+                            <span>👥</span> สมาชิก
+                        </button>
                         <button type="button" class="toolbar-btn voice-btn" onclick="window.showCreateVoiceRoomModal()" title="สร้างห้องเสียง">
-                            🎤 ห้องเสียง
+                            <span>🎤</span> ห้องเสียง
                         </button>
                     </div>
                     
                     <div class="input-wrapper">
-                        <textarea id="messageInput" placeholder="พิมพ์ข้อความ..." rows="1"></textarea>
-                        <button id="sendButton" class="btn-send">📤 ส่ง</button>
+                        <textarea id="messageInput" placeholder="พิมพ์ข้อความ... (Enter เพื่อส่ง, Shift+Enter ขึ้นบรรทัดใหม่)" rows="1"></textarea>
+                        <button id="sendButton" class="btn-send">
+                            <span>📤</span> ส่ง
+                        </button>
                     </div>
                     
                     <div id="imagePreview" class="image-preview" style="display: none;">
                         <img id="previewImg" src="" alt="Preview">
                         <button type="button" class="remove-preview" onclick="window.clearImagePreview()">✕</button>
                     </div>
+                    
+                    <div class="input-footer" style="display: flex; justify-content: flex-end; margin-top: 8px; color: var(--text-light); font-size: 12px;">
+                        <span class="character-count" id="charCount">0/500</span>
+                    </div>
                 </div>
             </div>
 
             <!-- MEMBERS PANEL -->
-            <div class="members-panel" id="membersPanel">
+            <div class="members-panel" id="membersPanel" style="display: none;">
                 <div class="members-header">
-                    <h3>👥 สมาชิกในห้อง</h3>
+                    <h3><span>👥</span> สมาชิกในห้อง</h3>
                     <button onclick="window.toggleMembersPanel()" class="btn-icon">✕</button>
                 </div>
                 <div class="members-list" id="membersList"></div>
-            </div>
-
-            <!-- ACTIVITIES PANEL -->
-            <div class="activities-panel" id="activitiesPanel">
-                <div class="activities-header">
-                    <h3>🎮 กิจกรรม</h3>
-                    <button onclick="window.toggleActivitiesPanel()" class="btn-icon">✕</button>
-                </div>
-                <div class="activities-list" id="activitiesList"></div>
             </div>
         </div>
     </div>
@@ -1108,7 +1487,9 @@
             <span class="voice-icon">🎤</span>
             <div>
                 <span id="currentVoiceRoomName" class="voice-title"></span>
-                <span id="voiceParticipantsCount" class="voice-participants">👥 0 คน</span>
+                <span id="voiceParticipantsCount" class="voice-participants">
+                    <span>👥</span> 0 คน
+                </span>
             </div>
         </div>
         <div class="voice-controls">
@@ -1138,14 +1519,15 @@
             <button onclick="window.toggleVoiceParticipantsPanel()" class="btn-icon">✕</button>
         </div>
         <div class="members-list" id="voiceParticipantsList" style="padding: 20px;">
-            <div style="text-align: center; padding: 40px 20px; color: #718096;">
-                ⏳ กำลังโหลด...
+            <div class="text-center p-4" style="color: #718096;">
+                <div class="loading-spinner" style="margin: 20px auto;"></div>
+                <div>⏳ กำลังโหลด...</div>
             </div>
         </div>
     </div>
 
     <!-- SIDEBAR OVERLAY -->
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="window.closeMobileSidebar()"></div>
 
     <!-- ========== MODAL: สร้างห้องเสียง ========== -->
     <div id="createVoiceRoomModal" class="modal">
@@ -1208,20 +1590,22 @@
                 </div>
                 
                 <div class="voice-feature-list">
-                    <h4 style="margin-bottom: 8px; font-size: 14px;">⚡ ฟีเจอร์ห้องเสียง</h4>
+                    <h4 style="display: flex; align-items: center; gap: 8px;">
+                        <span>⚡</span> ฟีเจอร์ห้องเสียง
+                    </h4>
                     <ul>
-                        <li>✓ สนทนาด้วยเสียงเรียลไทม์</li>
-                        <li>✓ ปรับคุณภาพเสียงได้</li>
-                        <li>✓ ระบบปิดเสียง / ปิดไมค์</li>
-                        <li>✓ แสดงสถานะกำลังพูด</li>
-                        <li>✓ รองรับสูงสุด 99 คน</li>
-                        <li>✓ ทำงานร่วมกับข้อความแชทได้</li>
+                        <li>สนทนาด้วยเสียงเรียลไทม์</li>
+                        <li>ปรับคุณภาพเสียงได้</li>
+                        <li>ระบบปิดเสียง / ปิดไมค์</li>
+                        <li>แสดงสถานะกำลังพูด</li>
+                        <li>รองรับสูงสุด 99 คน</li>
+                        <li>ทำงานร่วมกับข้อความแชทได้</li>
                     </ul>
                 </div>
                 
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="submit" class="btn btn-voice" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        🎤 สร้างห้องเสียง
+                    <button type="submit" class="btn btn-voice" style="flex: 1;">
+                        <span>🎤</span> สร้างห้องเสียง
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="window.closeCreateVoiceRoomModal()">ยกเลิก</button>
                 </div>
@@ -1232,8 +1616,8 @@
     <!-- ========== MODAL: เข้าร่วมห้องเสียงส่วนตัว ========== -->
     <div id="joinVoiceRoomModal" class="modal">
         <div class="modal-content">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-                <div style="width: 48px; height: 48px; background: var(--voice-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--voice-color) 0%, var(--voice-dark) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white;">
                     🔒
                 </div>
                 <div>
@@ -1248,7 +1632,9 @@
             </div>
             
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button onclick="window.confirmJoinVoiceRoom()" class="btn btn-voice" style="flex: 1;">🔓 เข้าร่วม</button>
+                <button onclick="window.confirmJoinVoiceRoom()" class="btn btn-voice" style="flex: 1;">
+                    <span>🔓</span> เข้าร่วม
+                </button>
                 <button onclick="window.closeJoinVoiceRoomModal()" class="btn btn-secondary">ยกเลิก</button>
             </div>
         </div>
@@ -1257,7 +1643,16 @@
     <!-- ========== MODAL: สร้างห้องแชท ========== -->
     <div id="createRoomModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 24px;">💬 สร้างห้องแชท</h2>
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white;">
+                    💬
+                </div>
+                <div>
+                    <h2 style="margin-bottom: 4px;">สร้างห้องแชท</h2>
+                    <p style="color: var(--text-light); font-size: 14px;">พูดคุยด้วยข้อความ</p>
+                </div>
+            </div>
+            
             <form id="createRoomForm">
                 <div class="form-group">
                     <label>ชื่อห้อง <span style="color: #e53e3e;">*</span></label>
@@ -1285,41 +1680,86 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">สร้างห้อง</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <span>✨</span> สร้างห้อง
+                    </button>
                     <button type="button" class="btn btn-secondary" onclick="window.closeCreateRoomModal()">ยกเลิก</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- ========== MODAL: เข้าร่วมห้องแชทส่วนตัว ========== -->
+    <div id="joinPrivateRoomModal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white;">
+                    🔒
+                </div>
+                <div>
+                    <h2 style="margin-bottom: 4px;">เข้าร่วมห้องส่วนตัว</h2>
+                    <p id="joinRoomName" style="color: var(--text-light); font-size: 14px;"></p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>รหัสผ่านห้อง</label>
+                <input type="password" id="joinRoomPassword" placeholder="กรอกรหัสผ่าน">
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="window.confirmJoinPrivateRoom()" class="btn btn-primary" style="flex: 1;">
+                    <span>🔓</span> เข้าร่วม
+                </button>
+                <button onclick="window.closeJoinPrivateModal()" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== MODAL: อิโมจิ ========== -->
     <div id="emojiPickerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-bottom: 16px;">😊 เลือกอิโมจิ</h3>
-            <div class="emoji-grid" id="emojiGrid"></div>
-            <div style="display: flex; gap: 12px; margin-top: 20px;">
-                <button onclick="window.closeEmojiPicker()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <span>😊</span> เลือกอิโมจิ
+                </h3>
+                <button onclick="window.closeEmojiPicker()" class="btn-icon" style="color: var(--text-dark);">✕</button>
             </div>
+            <div class="emoji-grid" id="emojiGrid"></div>
         </div>
     </div>
 
     <!-- ========== MODAL: ลบห้อง ========== -->
     <div id="deleteRoomModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 24px; color: #f56565;">⚠️ ลบห้อง</h2>
-            <p id="deleteRoomName" style="margin-bottom: 20px; font-weight: 600;"></p>
-            <p style="color: #718096; margin-bottom: 24px;">การดำเนินการนี้ไม่สามารถเรียกคืนได้!</p>
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-dark) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white;">
+                    ⚠️
+                </div>
+                <div>
+                    <h2 style="margin-bottom: 4px; color: var(--danger-color);">ลบห้อง</h2>
+                    <p id="deleteRoomName" style="color: var(--text-light); font-size: 14px; font-weight: 600;"></p>
+                </div>
+            </div>
+            
+            <p style="color: #718096; margin-bottom: 24px; padding: 16px; background: #fed7d7; border-radius: var(--radius-md);">
+                <strong>⚠️ คำเตือน:</strong> การดำเนินการนี้ไม่สามารถเรียกคืนได้!<br>
+                ข้อความและสมาชิกทั้งหมดจะถูกลบอย่างถาวร
+            </p>
+            
             <div style="display: flex; gap: 12px;">
-                <button onclick="window.confirmDeleteRoom()" class="btn" style="flex: 1; background: #f56565; color: white;">🗑️ ยืนยันการลบ</button>
-                <button onclick="window.closeDeleteRoomModal()" class="btn btn-secondary">ยกเลิก</button>
+                <button onclick="window.confirmDeleteRoom()" class="btn" style="flex: 1; background: var(--danger-color); color: white; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>🗑️</span> ยืนยันการลบ
+                </button>
+                <button onclick="window.closeDeleteRoomModal()" class="btn btn-secondary" style="flex: 1;">ยกเลิก</button>
             </div>
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" style="display: none;"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="supabase-client.js"></script>
-    
     <script>
         // ========== GLOBAL VARIABLES ==========
         window.currentUser = null;
@@ -1348,6 +1788,20 @@
         
         const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
 
+        // ========== TOAST NOTIFICATION ==========
+        window.showToast = function(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'flex';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        };
+
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -1368,7 +1822,7 @@
                 const lastRoomId = localStorage.getItem(STORAGE_KEY);
                 const initialRoomId = lastRoomId || PUBLIC_ROOM_ID;
                 
-                await selectRoom(initialRoomId);
+                await selectRoom(initialRoomId, 'chat');
                 setupEventListeners();
                 initMobileHandler();
 
@@ -1389,239 +1843,242 @@
                 }
 
                 console.log('✅ Chat initialized');
+                showToast('✅ เชื่อมต่อสำเร็จ', 'success');
+                
             } catch (error) {
                 console.error('❌ Init error:', error);
+                showToast('❌ ไม่สามารถเชื่อมต่อได้', 'error');
             }
         });
 
-// ========== LOAD ROOMS (แก้ไขแล้ว) ==========
-window.loadRooms = async function(filter = 'all') {
-    try {
-        // Load chat rooms
-        let chatQuery = supabaseClient.from('rooms')
-            .select(`
-                *,
-                owner:owner_id (
-                    username,
-                    display_name
-                ),
-                room_members (
-                    user_id,
-                    role
-                )
-            `)
-            .order('created_at', { ascending: false });
-        
-        // Load voice rooms - แก้ไขส่วน select
-        let voiceQuery = supabaseClient.from('voice_rooms')
-            .select(`
-                *,
-                owner:owner_id (
-                    username,
-                    display_name
-                ),
-                voice_room_members (
-                    user_id,
-                    role,
-                    is_muted,
-                    is_deafened
-                )
-            `)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-        
-        if (filter === 'chat') {
-            const { data: chatRooms, error } = await chatQuery;
-            if (error) console.error('Chat rooms error:', error);
-            displayRooms(chatRooms || [], 'chat');
-        } else if (filter === 'voice') {
-            const { data: voiceRooms, error } = await voiceQuery;
-            if (error) console.error('Voice rooms error:', error);
-            displayRooms(voiceRooms || [], 'voice');
-        } else {
-            const [chatResult, voiceResult] = await Promise.allSettled([
-                chatQuery,
-                voiceQuery
-            ]);
-            
-            const chatRooms = chatResult.status === 'fulfilled' ? chatResult.value.data || [] : [];
-            const voiceRooms = voiceResult.status === 'fulfilled' ? voiceResult.value.data || [] : [];
-            
-            const allRooms = [
-                ...chatRooms.map(r => ({ 
-                    ...r, 
-                    room_type_real: 'chat',
-                    member_count: r.room_members?.length || 0
-                })),
-                ...voiceRooms.map(v => ({ 
-                    ...v, 
-                    room_type_real: 'voice',
-                    member_count: v.voice_room_members?.length || 0
-                }))
-            ];
-            
-            displayRooms(allRooms.sort((a, b) => 
-                new Date(b.created_at) - new Date(a.created_at)
-            ));
-        }
-    } catch (error) {
-        console.error('❌ Error loading rooms:', error);
-        // แสดง error ใน UI
-        const roomList = document.getElementById('roomList');
-        if (roomList) {
-            roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #f56565;">⚠️ โหลดห้องไม่สำเร็จ<br><small>กรุณาลองใหม่อีกครั้ง</small></div>';
-        }
-    }
-};
-
-// ========== DISPLAY ROOMS (แก้ไขแล้ว) ==========
-window.displayRooms = function(rooms, filterType = 'all') {
-    const roomList = document.getElementById('roomList');
-    if (!roomList) return;
-    
-    if (!rooms || rooms.length === 0) {
-        roomList.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #a0aec0;">📭 ยังไม่มีห้อง<br><small>คลิก "สร้างห้อง" เพื่อเริ่มต้น</small></div>';
-        return;
-    }
-    
-    roomList.innerHTML = rooms.map(room => {
-        const isOwner = room.owner_id === window.currentUser?.id;
-        const isVoice = room.room_type_real === 'voice';
-        const memberCount = room.member_count || 0;
-        
-        // ตรวจสอบว่าห้องนี้เป็นห้องที่กำลังใช้งานอยู่หรือไม่
-        let isActive = false;
-        if (isVoice) {
-            isActive = window.currentVoiceRoom?.id === room.id;
-        } else {
-            isActive = window.currentRoomId === room.id;
-        }
-        
-        // ดึงข้อมูลเจ้าของห้อง
-        let ownerName = 'ไม่มีเจ้าของ';
-        if (room.owner) {
-            ownerName = room.owner.display_name || room.owner.username || 'ผู้ใช้';
-        }
-        
-        // ประเภทห้อง
-        let roomTypeText = 'สาธารณะ';
-        if (room.room_type === 'private') {
-            roomTypeText = 'ส่วนตัว';
-        } else if (isVoice) {
-            roomTypeText = 'ห้องเสียง';
-        }
-        
-        return `<div class="room-item ${isActive ? 'active' : ''} ${isVoice ? 'voice-room' : ''}" 
-                    onclick="window.selectRoom('${room.id}', '${isVoice ? 'voice' : 'chat'}')">
-            <div class="room-header">
-                <span class="room-name">
-                    ${isVoice ? '🎤' : (room.room_type === 'private' ? '🔒' : '💬')} 
-                    ${escapeHtml(room.name || 'ไม่มีชื่อ')}
-                    ${isVoice ? '<span class="voice-tag">VOICE</span>' : ''}
-                </span>
-                <span class="room-type-badge">
-                    ${roomTypeText}
-                </span>
-            </div>
-            <div class="room-meta">
-                <span>👤 ${escapeHtml(ownerName)}</span>
-                <span>👥 ${memberCount} คน</span>
-                ${isOwner ? '<span style="color: #48bb78;">👑 เจ้าของ</span>' : ''}
-            </div>
-            ${room.description ? `<small style="color: #718096;">${escapeHtml(room.description)}</small>` : ''}
-        </div>`;
-    }).join('');
-};
-
-    // ========== SELECT ROOM (แก้ไขแล้ว) ==========
-    window.selectRoom = async function(roomId, type = 'chat') {
-        window.closeMobileSidebar();
-        
-        try {
-            if (type === 'voice') {
-                // เช็คว่ามีห้องนี้หรือไม่
-                const { data: room, error } = await supabaseClient
-                    .from('voice_rooms')
-                    .select('*')
-                    .eq('id', roomId)
-                    .maybeSingle(); // ใช้ maybeSingle แทน single เพื่อไม่ให้ error ถ้าไม่มีข้อมูล
+        // ========== LOAD ROOMS ==========
+        window.loadRooms = async function(filter = 'all') {
+            try {
+                const roomList = document.getElementById('roomList');
+                if (!roomList) return;
                 
-                if (error) {
-                    console.error('Error fetching voice room:', error);
-                    alert('ไม่พบห้องเสียง');
-                    return;
-                }
+                let allRooms = [];
                 
-                if (!room) {
-                    alert('ไม่พบห้องเสียง');
-                    return;
-                }
-                
-                // Check if private room
-                if (room.room_type === 'private') {
-                    const { data: member } = await supabaseClient
-                        .from('voice_room_members')
-                        .select('*')
-                        .eq('room_id', roomId)
-                        .eq('user_id', window.currentUser.id)
-                        .maybeSingle();
+                // Load chat rooms
+                if (filter === 'all' || filter === 'chat') {
+                    const { data: chatRooms, error: chatError } = await supabaseClient
+                        .from('rooms')
+                        .select(`
+                            *,
+                            owner:owner_id (
+                                username,
+                                display_name
+                            ),
+                            room_members (
+                                user_id,
+                                role
+                            )
+                        `)
+                        .order('created_at', { ascending: false });
                     
-                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
-                        window.showJoinVoiceRoomModal(room);
-                        return;
+                    if (!chatError && chatRooms) {
+                        const chatRoomsWithType = chatRooms.map(r => ({
+                            ...r,
+                            room_type_real: 'chat',
+                            member_count: r.room_members?.length || 0,
+                            room_type_display: r.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'
+                        }));
+                        allRooms = [...allRooms, ...chatRoomsWithType];
                     }
                 }
                 
-                await window.joinVoiceRoom(room);
-            } else {
-                // Chat room
-                const { data: room, error } = await supabaseClient
-                    .from('rooms')
-                    .select('*')
-                    .eq('id', roomId)
-                    .maybeSingle();
-                
-                if (error) {
-                    console.error('Error fetching chat room:', error);
-                    alert('ไม่พบห้องแชท');
-                    return;
-                }
-                
-                if (!room) {
-                    alert('ไม่พบห้องแชท');
-                    return;
-                }
-                
-                if (room.room_type === 'private') {
-                    const { data: member } = await supabaseClient
-                        .from('room_members')
-                        .select('*')
-                        .eq('room_id', roomId)
-                        .eq('user_id', window.currentUser.id)
-                        .maybeSingle();
+                // Load voice rooms
+                if (filter === 'all' || filter === 'voice') {
+                    const { data: voiceRooms, error: voiceError } = await supabaseClient
+                        .from('voice_rooms')
+                        .select(`
+                            *,
+                            owner:owner_id (
+                                username,
+                                display_name
+                            ),
+                            voice_room_members (
+                                user_id,
+                                role,
+                                is_muted,
+                                is_deafened
+                            )
+                        `)
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false });
                     
-                    if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
-                        window.showJoinPrivateRoomModal(room);
-                        return;
+                    if (!voiceError && voiceRooms) {
+                        const voiceRoomsWithType = voiceRooms.map(v => ({
+                            ...v,
+                            room_type_real: 'voice',
+                            member_count: v.voice_room_members?.length || 0,
+                            room_type: v.room_type || 'public',
+                            room_type_display: v.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'
+                        }));
+                        allRooms = [...allRooms, ...voiceRoomsWithType];
                     }
                 }
                 
-                await window.joinChatRoom(room);
+                // Sort by created_at
+                allRooms.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                
+                if (filter === 'chat') {
+                    displayRooms(allRooms.filter(r => r.room_type_real === 'chat'));
+                } else if (filter === 'voice') {
+                    displayRooms(allRooms.filter(r => r.room_type_real === 'voice'));
+                } else {
+                    displayRooms(allRooms);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading rooms:', error);
+                const roomList = document.getElementById('roomList');
+                if (roomList) {
+                    roomList.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px; color: #f56565;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                            <div style="font-size: 16px; font-weight: 600;">โหลดห้องไม่สำเร็จ</div>
+                            <div style="font-size: 14px; margin-top: 8px; color: #718096;">กรุณาลองใหม่อีกครั้ง</div>
+                            <button onclick="window.loadRooms('${filter}')" class="btn btn-primary" style="margin-top: 20px;">
+                                <span>🔄</span> ลองใหม่
+                            </button>
+                        </div>
+                    `;
+                }
             }
-        } catch (error) {
-            console.error('❌ Error selecting room:', error);
-            alert('ไม่สามารถเลือกห้องได้: ' + error.message);
-        }
-    };
-        // ========== JOIN CHAT ROOM (แก้ไขแล้ว) ==========
+        };
+
+        // ========== DISPLAY ROOMS ==========
+        window.displayRooms = function(rooms) {
+            const roomList = document.getElementById('roomList');
+            if (!roomList) return;
+            
+            if (!rooms || rooms.length === 0) {
+                roomList.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #a0aec0;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                        <div style="font-size: 16px; font-weight: 600;">ยังไม่มีห้อง</div>
+                        <div style="font-size: 14px; margin-top: 8px;">คลิก "สร้างห้อง" เพื่อเริ่มต้น</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            roomList.innerHTML = rooms.map(room => {
+                const isOwner = room.owner_id === window.currentUser?.id;
+                const isVoice = room.room_type_real === 'voice';
+                const memberCount = room.member_count || 0;
+                
+                let isActive = false;
+                if (isVoice) {
+                    isActive = window.currentVoiceRoom?.id === room.id;
+                } else {
+                    isActive = window.currentRoomId === room.id;
+                }
+                
+                let ownerName = 'ไม่มีเจ้าของ';
+                if (room.owner) {
+                    ownerName = room.owner.display_name || room.owner.username || 'ผู้ใช้';
+                }
+                
+                let roomTypeText = room.room_type_display || 'สาธารณะ';
+                let roomIcon = isVoice ? '🎤' : (room.room_type === 'private' ? '🔒' : '💬');
+                
+                return `
+                    <div class="room-item ${isActive ? 'active' : ''} ${isVoice ? 'voice-room' : ''}" 
+                        onclick="window.selectRoom('${room.id}', '${isVoice ? 'voice' : 'chat'}')">
+                        <div class="room-header">
+                            <span class="room-name">
+                                <span>${roomIcon}</span>
+                                ${escapeHtml(room.name || 'ไม่มีชื่อ')}
+                                ${isVoice ? '<span class="voice-tag">VOICE</span>' : ''}
+                            </span>
+                            <span class="room-type-badge">${roomTypeText}</span>
+                        </div>
+                        <div class="room-meta">
+                            <span><span>👤</span> ${escapeHtml(ownerName)}</span>
+                            <span><span>👥</span> ${memberCount} คน</span>
+                            ${isOwner ? '<span style="color: #48bb78;"><span>👑</span> เจ้าของ</span>' : ''}
+                        </div>
+                        ${room.description ? `<small style="color: #718096;">${escapeHtml(room.description)}</small>` : ''}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // ========== SELECT ROOM ==========
+        window.selectRoom = async function(roomId, type = 'chat') {
+            window.closeMobileSidebar();
+            
+            try {
+                if (type === 'voice') {
+                    const { data: room, error } = await supabaseClient
+                        .from('voice_rooms')
+                        .select('*')
+                        .eq('id', roomId)
+                        .maybeSingle();
+                    
+                    if (error || !room) {
+                        showToast('❌ ไม่พบห้องเสียง', 'error');
+                        return;
+                    }
+                    
+                    if (room.room_type === 'private') {
+                        const { data: member } = await supabaseClient
+                            .from('voice_room_members')
+                            .select('*')
+                            .eq('room_id', roomId)
+                            .eq('user_id', window.currentUser.id)
+                            .maybeSingle();
+                        
+                        if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                            showJoinVoiceRoomModal(room);
+                            return;
+                        }
+                    }
+                    
+                    await joinVoiceRoom(room);
+                } else {
+                    const { data: room, error } = await supabaseClient
+                        .from('rooms')
+                        .select('*')
+                        .eq('id', roomId)
+                        .maybeSingle();
+                    
+                    if (error || !room) {
+                        showToast('❌ ไม่พบห้องแชท', 'error');
+                        return;
+                    }
+                    
+                    if (room.room_type === 'private') {
+                        const { data: member } = await supabaseClient
+                            .from('room_members')
+                            .select('*')
+                            .eq('room_id', roomId)
+                            .eq('user_id', window.currentUser.id)
+                            .maybeSingle();
+                        
+                        if (!member && room.owner_id !== window.currentUser.id && !window.isAdmin) {
+                            showJoinPrivateRoomModal(room);
+                            return;
+                        }
+                    }
+                    
+                    await joinChatRoom(room);
+                }
+            } catch (error) {
+                console.error('❌ Error selecting room:', error);
+                showToast('❌ ไม่สามารถเลือกห้องได้', 'error');
+            }
+        };
+
+        // ========== JOIN CHAT ROOM ==========
         window.joinChatRoom = async function(room) {
             try {
-                // Leave voice room if currently in one
                 if (window.currentVoiceRoom) {
                     await window.leaveVoiceRoom();
                 }
                 
-                // Add member if not already
                 const { data: existingMember } = await supabaseClient
                     .from('room_members')
                     .select('*')
@@ -1642,19 +2099,23 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
                 window.currentRoom = room;
                 window.currentRoomId = room.id;
-                window.currentVoiceRoom = null; // เคลียร์ห้องเสียง
+                window.currentVoiceRoom = null;
                 
                 localStorage.setItem(STORAGE_KEY, room.id);
                 
                 // Update UI
                 const titleEl = document.getElementById('currentRoomTitle');
                 if (titleEl) {
-                    titleEl.innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${escapeHtml(room.name)}`;
+                    titleEl.innerHTML = `
+                        <span>${room.room_type === 'private' ? '🔒' : '💬'}</span>
+                        ${escapeHtml(room.name)}
+                    `;
                 }
                 
                 const badgeEl = document.getElementById('currentRoomTypeBadge');
                 if (badgeEl) {
                     badgeEl.textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+                    badgeEl.style.display = 'inline-block';
                 }
                 
                 const voiceBadgeEl = document.getElementById('currentRoomVoiceBadge');
@@ -1667,10 +2128,18 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 if (roomActions) {
                     roomActions.innerHTML = '';
                     if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
-                        roomActions.innerHTML += `<button onclick="window.showDeleteRoomModal()" class="delete-room-btn">🗑️ ลบห้อง</button>`;
+                        roomActions.innerHTML += `
+                            <button onclick="window.showDeleteRoomModal()" class="delete-room-btn">
+                                <span>🗑️</span> ลบห้อง
+                            </button>
+                        `;
                     }
                     if (window.isAdmin && room.id !== PUBLIC_ROOM_ID) {
-                        roomActions.innerHTML += `<button onclick="window.adminDeleteRoom('${room.id}', '${escapeHtml(room.name)}')" class="admin-delete-room-btn">👑 ลบห้อง (แอดมิน)</button>`;
+                        roomActions.innerHTML += `
+                            <button onclick="window.adminDeleteRoom('${room.id}', '${escapeHtml(room.name)}')" class="admin-delete-room-btn">
+                                <span>👑</span> ลบห้อง (แอดมิน)
+                            </button>
+                        `;
                     }
                 }
                 
@@ -1686,91 +2155,25 @@ window.displayRooms = function(rooms, filterType = 'all') {
                     voiceBar.style.display = 'none';
                 }
                 
-                // Load messages and members
-                await window.loadMessages(room.id);
-                await window.loadRoomMembers(room.id);
-                window.setupMessageSubscription(room.id);
-                
-                // Reload room list
-                window.loadRooms();
-                
-            } catch (error) {
-                console.error('❌ Error joining chat room:', error);
-                alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
-            }
-        };
-        
-        // ========== HELPER: Escape HTML ==========
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        // ========== HELPER: Show join voice room modal ==========
-        window.showJoinVoiceRoomModal = function(room) {
-            const nameEl = document.getElementById('joinVoiceRoomName');
-            const modal = document.getElementById('joinVoiceRoomModal');
-            
-            if (nameEl) {
-                nameEl.textContent = `ห้อง: ${escapeHtml(room.name)}`;
-            }
-            
-            if (modal) {
-                modal.dataset.roomId = room.id;
-                modal.classList.add('active');
-            }
-        };
-        
-        // ========== HELPER: Show join private room modal ==========
-        window.showJoinPrivateRoomModal = function(room) {
-            const nameEl = document.getElementById('joinRoomName');
-            const modal = document.getElementById('joinPrivateRoomModal');
-            
-            if (nameEl) {
-                nameEl.textContent = `ห้อง: ${escapeHtml(room.name)}`;
-            }
-            
-            if (modal) {
-                modal.dataset.roomId = room.id;
-                modal.classList.add('active');
-            }
-        };     
-                window.currentRoom = room;
-                window.currentRoomId = room.id;
-                
-                localStorage.setItem(STORAGE_KEY, room.id);
-                
-                // Update UI
-                document.getElementById('currentRoomTitle').innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}`;
-                document.getElementById('currentRoomTypeBadge').textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
-                document.getElementById('currentRoomVoiceBadge').style.display = 'none';
-                
-                // Room actions
-                const roomActions = document.getElementById('roomActions');
-                roomActions.innerHTML = '';
-                if (room.owner_id === window.currentUser.id && room.id !== PUBLIC_ROOM_ID) {
-                    roomActions.innerHTML += `<button onclick="window.showDeleteRoomModal()" class="delete-room-btn">🗑️ ลบห้อง</button>`;
+                // Hide members panel
+                const membersPanel = document.getElementById('membersPanel');
+                if (membersPanel) {
+                    membersPanel.style.display = 'none';
                 }
-                if (window.isAdmin && room.id !== PUBLIC_ROOM_ID) {
-                    roomActions.innerHTML += `<button onclick="window.adminDeleteRoom('${room.id}', '${room.name}')" class="admin-delete-room-btn">👑 ลบห้อง (แอดมิน)</button>`;
-                }
-                
-                // Show chat input
-                document.getElementById('messageInputArea').style.display = 'block';
                 
                 // Load messages and members
                 await loadMessages(room.id);
                 await loadRoomMembers(room.id);
                 setupMessageSubscription(room.id);
                 
-                // Hide voice bar
-                document.getElementById('voiceBar').style.display = 'none';
-                
+                // Reload room list
                 loadRooms();
+                
+                showToast(`✅ เข้าร่วมห้อง "${room.name}"`, 'success');
+                
             } catch (error) {
                 console.error('❌ Error joining chat room:', error);
+                showToast('❌ ไม่สามารถเข้าร่วมห้องได้', 'error');
             }
         };
 
@@ -1809,17 +2212,22 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 const password = document.getElementById('voiceRoomPassword').value;
                 const confirmPassword = document.getElementById('voiceConfirmPassword').value;
                 
+                if (!name.trim()) {
+                    showToast('❌ กรุณากรอกชื่อห้อง', 'error');
+                    return;
+                }
+                
                 if (roomType === 'private') {
                     if (!password) {
-                        alert('❌ กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว');
+                        showToast('❌ กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว', 'error');
                         return;
                     }
                     if (password !== confirmPassword) {
-                        alert('❌ รหัสผ่านไม่ตรงกัน');
+                        showToast('❌ รหัสผ่านไม่ตรงกัน', 'error');
                         return;
                     }
                     if (password.length < 4) {
-                        alert('❌ รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
+                        showToast('❌ รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error');
                         return;
                     }
                 }
@@ -1827,8 +2235,8 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 const { data: room, error } = await supabaseClient
                     .from('voice_rooms')
                     .insert([{
-                        name,
-                        description,
+                        name: name.trim(),
+                        description: description.trim(),
                         room_type: roomType,
                         password: roomType === 'private' ? password : null,
                         owner_id: window.currentUser.id,
@@ -1842,7 +2250,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
                 if (error) throw error;
                 
-                // Add owner as member
                 await supabaseClient
                     .from('voice_room_members')
                     .insert([{
@@ -1854,27 +2261,28 @@ window.displayRooms = function(rooms, filterType = 'all') {
                         joined_at: new Date().toISOString()
                     }]);
                 
-                alert('✅ สร้างห้องเสียงสำเร็จ!');
+                showToast('✅ สร้างห้องเสียงสำเร็จ!', 'success');
                 window.closeCreateVoiceRoomModal();
-                
-                // Auto join voice room
                 await joinVoiceRoom(room);
+                await loadRooms();
                 
             } catch (error) {
                 console.error('❌ Error creating voice room:', error);
-                alert('เกิดข้อผิดพลาดในการสร้างห้องเสียง: ' + error.message);
+                showToast('❌ ไม่สามารถสร้างห้องเสียงได้', 'error');
             }
         };
 
         window.joinVoiceRoom = async function(room) {
             try {
-                // Leave current voice room if any
                 if (window.currentVoiceRoom) {
                     await window.leaveVoiceRoom();
                 }
                 
                 // Hide chat input
-                document.getElementById('messageInputArea').style.display = 'none';
+                const inputArea = document.getElementById('messageInputArea');
+                if (inputArea) {
+                    inputArea.style.display = 'none';
+                }
                 
                 // Request microphone access
                 try {
@@ -1886,7 +2294,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
                         }
                     };
                     
-                    // Adjust quality
                     if (room.voice_quality === 'low') {
                         constraints.audio.sampleRate = 8000;
                     } else if (room.voice_quality === 'medium') {
@@ -1900,11 +2307,11 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 } catch (micError) {
                     console.error('❌ Microphone error:', micError);
                     if (micError.name === 'NotAllowedError') {
-                        alert('❌ ไม่ได้รับอนุญาตให้ใช้งานไมโครโฟน กรุณาอนุญาตใน Settings');
+                        showToast('❌ ไม่ได้รับอนุญาตให้ใช้งานไมโครโฟน', 'error');
                     } else if (micError.name === 'NotFoundError') {
-                        alert('❌ ไม่พบไมโครโฟน กรุณาเชื่อมต่ออุปกรณ์เสียง');
+                        showToast('❌ ไม่พบไมโครโฟน', 'error');
                     } else {
-                        alert('❌ ไม่สามารถเข้าถึงไมโครโฟน: ' + micError.message);
+                        showToast('❌ ไม่สามารถเข้าถึงไมโครโฟน', 'error');
                     }
                     return;
                 }
@@ -1936,10 +2343,22 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 const voiceBar = document.getElementById('voiceBar');
                 const roomNameEl = document.getElementById('currentVoiceRoomName');
                 const voiceBadge = document.getElementById('currentRoomVoiceBadge');
+                const titleEl = document.getElementById('currentRoomTitle');
                 
                 if (voiceBar) voiceBar.style.display = 'flex';
                 if (roomNameEl) roomNameEl.textContent = `🎤 ${room.name}`;
-                if (voiceBadge) voiceBadge.style.display = 'inline-block';
+                if (voiceBadge) voiceBadge.style.display = 'inline-flex';
+                if (titleEl) {
+                    titleEl.innerHTML = `
+                        <span>🎤</span>
+                        ${escapeHtml(room.name)}
+                    `;
+                }
+                
+                const badgeEl = document.getElementById('currentRoomTypeBadge');
+                if (badgeEl) {
+                    badgeEl.style.display = 'none';
+                }
                 
                 // Reset mute states
                 window.isVoiceMuted = false;
@@ -1956,20 +2375,32 @@ window.displayRooms = function(rooms, filterType = 'all') {
                     deafenBtn.classList.remove('active');
                 }
                 
+                // Clear messages
+                const messagesContainer = document.getElementById('messagesContainer');
+                if (messagesContainer) {
+                    messagesContainer.innerHTML = `
+                        <div style="text-align: center; padding: 50px; color: #a0aec0;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🎤</div>
+                            <div style="font-size: 18px; font-weight: 600;">คุณอยู่ในห้องเสียง</div>
+                            <div style="font-size: 14px; margin-top: 8px;">${escapeHtml(room.description || 'พูดคุยด้วยเสียง')}</div>
+                        </div>
+                    `;
+                }
+                
                 // Load members
                 await loadVoiceRoomMembers(room.id);
                 
                 // Subscribe to updates
                 subscribeToVoiceRoom(room.id);
                 
-                // Start speaking simulation (for demo)
+                // Start speaking simulation
                 startSpeakingSimulation();
                 
-                alert(`✅ เข้าร่วมห้องเสียง "${room.name}" แล้ว`);
+                showToast(`✅ เข้าร่วมห้องเสียง "${room.name}"`, 'success');
                 
             } catch (error) {
                 console.error('❌ Error joining voice room:', error);
-                alert('ไม่สามารถเข้าร่วมห้องเสียงได้: ' + error.message);
+                showToast('❌ ไม่สามารถเข้าร่วมห้องเสียงได้', 'error');
             }
         };
 
@@ -1977,7 +2408,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
             if (!window.currentVoiceRoom) return;
             
             try {
-                // Stop microphone
                 if (window.localStream) {
                     window.localStream.getTracks().forEach(track => {
                         track.stop();
@@ -1985,7 +2415,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
                     window.localStream = null;
                 }
                 
-                // Remove from members
                 await supabaseClient
                     .from('voice_room_members')
                     .delete()
@@ -1993,9 +2422,13 @@ window.displayRooms = function(rooms, filterType = 'all') {
                     .eq('user_id', window.currentUser.id);
                 
                 // Hide UI
-                document.getElementById('voiceBar').style.display = 'none';
-                document.getElementById('currentRoomVoiceBadge').style.display = 'none';
-                document.getElementById('voiceParticipantsPanel').classList.remove('active');
+                const voiceBar = document.getElementById('voiceBar');
+                const voiceBadge = document.getElementById('currentRoomVoiceBadge');
+                const voicePanel = document.getElementById('voiceParticipantsPanel');
+                
+                if (voiceBar) voiceBar.style.display = 'none';
+                if (voiceBadge) voiceBadge.style.display = 'none';
+                if (voicePanel) voicePanel.classList.remove('active');
                 
                 // Unsubscribe
                 if (window.voiceSubscription) {
@@ -2018,13 +2451,11 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 window.isVoiceMuted = false;
                 window.isVoiceDeafened = false;
                 
-                // Switch back to public chat
-                await selectRoom(PUBLIC_ROOM_ID, 'chat');
-                
                 console.log('👋 Left voice room');
                 
             } catch (error) {
                 console.error('❌ Error leaving voice room:', error);
+                showToast('❌ ไม่สามารถออกจากห้องเสียงได้', 'error');
             }
         };
 
@@ -2050,10 +2481,9 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
                 displayVoiceRoomMembers(members);
                 
-                // Update count
                 const countEl = document.getElementById('voiceParticipantsCount');
                 if (countEl) {
-                    countEl.textContent = `👥 ${members?.length || 0} คน`;
+                    countEl.innerHTML = `<span>👥</span> ${members?.length || 0} คน`;
                 }
                 
             } catch (error) {
@@ -2066,7 +2496,12 @@ window.displayRooms = function(rooms, filterType = 'all') {
             if (!container) return;
             
             if (!members || members.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #718096;">👥 ยังไม่มีสมาชิก</div>';
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #718096;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+                        <div style="font-size: 16px; font-weight: 600;">ยังไม่มีสมาชิก</div>
+                    </div>
+                `;
                 return;
             }
             
@@ -2074,7 +2509,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 const profile = member.profiles;
                 const isCurrentUser = member.user_id === window.currentUser.id;
                 const isOwner = member.role === 'owner';
-                const isSpeaking = member.is_speaking || false;
+                const isSpeaking = Math.random() > 0.7;
                 
                 return `
                     <div class="voice-participant-item ${isSpeaking ? 'speaking' : ''}">
@@ -2116,7 +2551,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 )
                 .subscribe();
             
-            // Poll for speaking status (simulated)
             if (window.voiceParticipantsInterval) {
                 clearInterval(window.voiceParticipantsInterval);
             }
@@ -2125,12 +2559,11 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 if (window.currentVoiceRoom) {
                     loadVoiceRoomMembers(window.currentVoiceRoom.id);
                 }
-            }, 3000);
+            }, 5000);
             
             return window.voiceSubscription;
         };
 
-        // Simulate speaking activity (for demo)
         window.startSpeakingSimulation = function() {
             if (window.speakingInterval) {
                 clearInterval(window.speakingInterval);
@@ -2138,9 +2571,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
             
             window.speakingInterval = setInterval(() => {
                 if (window.currentVoiceRoom && window.localStream && !window.isVoiceMuted) {
-                    // Randomly simulate speaking
-                    if (Math.random() > 0.7) {
-                        // Update speaking status in UI only
+                    if (Math.random() > 0.8) {
                         const speakingMember = document.querySelector('.voice-participant-item');
                         if (speakingMember) {
                             speakingMember.classList.add('speaking');
@@ -2169,7 +2600,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 muteBtn.classList.toggle('active', window.isVoiceMuted);
             }
             
-            // Update database
             if (window.currentVoiceRoom) {
                 supabaseClient
                     .from('voice_room_members')
@@ -2180,6 +2610,8 @@ window.displayRooms = function(rooms, filterType = 'all') {
                         if (error) console.error('❌ Error updating mute status:', error);
                     });
             }
+            
+            showToast(window.isVoiceMuted ? '🔇 ปิดไมค์แล้ว' : '🎤 เปิดไมค์แล้ว', 'info');
         };
 
         window.toggleVoiceDeafen = function() {
@@ -2213,7 +2645,6 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 muteBtn.classList.toggle('active', window.isVoiceDeafened);
             }
             
-            // Update database
             if (window.currentVoiceRoom) {
                 supabaseClient
                     .from('voice_room_members')
@@ -2227,6 +2658,8 @@ window.displayRooms = function(rooms, filterType = 'all') {
                         if (error) console.error('❌ Error updating deafen status:', error);
                     });
             }
+            
+            showToast(window.isVoiceDeafened ? '🔇 ปิดเสียงทั้งหมด' : '🔊 เปิดเสียงแล้ว', 'info');
         };
 
         window.toggleVoiceParticipantsPanel = function() {
@@ -2243,7 +2676,11 @@ window.displayRooms = function(rooms, filterType = 'all') {
         window.showJoinVoiceRoomModal = function(room) {
             const nameEl = document.getElementById('joinVoiceRoomName');
             const modal = document.getElementById('joinVoiceRoomModal');
-            if (nameEl) nameEl.textContent = `ห้อง: ${room.name}`;
+            
+            if (nameEl) {
+                nameEl.textContent = `ห้อง: ${escapeHtml(room.name)}`;
+            }
+            
             if (modal) {
                 modal.dataset.roomId = room.id;
                 modal.classList.add('active');
@@ -2266,7 +2703,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
             const password = passwordInput.value;
             
             if (!password) {
-                alert('❌ กรุณากรอกรหัสผ่าน');
+                showToast('❌ กรุณากรอกรหัสผ่าน', 'error');
                 return;
             }
             
@@ -2280,7 +2717,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 if (error) throw error;
                 
                 if (room.password !== password) {
-                    alert('❌ รหัสผ่านไม่ถูกต้อง');
+                    showToast('❌ รหัสผ่านไม่ถูกต้อง', 'error');
                     return;
                 }
                 
@@ -2289,7 +2726,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
             } catch (error) {
                 console.error('❌ Error joining private voice room:', error);
-                alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
+                showToast('❌ ไม่สามารถเข้าร่วมห้องได้', 'error');
             }
         };
 
@@ -2312,7 +2749,13 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 window.messagesContainer.innerHTML = '';
                 
                 if (messages.length === 0) {
-                    window.messagesContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #a0aec0;">💬 ยังไม่มีข้อความ<br><small>เริ่มต้นแชทกันเลย!</small></div>';
+                    window.messagesContainer.innerHTML = `
+                        <div style="text-align: center; padding: 50px; color: #a0aec0;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                            <div style="font-size: 18px; font-weight: 600;">ยังไม่มีข้อความ</div>
+                            <div style="font-size: 14px; margin-top: 8px;">เริ่มต้นแชทกันเลย!</div>
+                        </div>
+                    `;
                 } else {
                     messages.forEach(msg => displayMessage(msg));
                 }
@@ -2321,6 +2764,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
             } catch (error) {
                 console.error('❌ Error loading messages:', error);
+                showToast('❌ ไม่สามารถโหลดข้อความได้', 'error');
             }
         };
 
@@ -2340,10 +2784,10 @@ window.displayRooms = function(rooms, filterType = 'all') {
                      onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
                 <div class="message-content">
                     <div class="message-header">
-                        <span class="message-author">${author}</span>
+                        <span class="message-author">${escapeHtml(author)}</span>
                         <span class="message-time">${formatTime(message.created_at)}</span>
                     </div>
-                    <div class="message-body">${linkify(message.message || '')}</div>
+                    <div class="message-body">${linkify(escapeHtml(message.message || ''))}</div>
                 </div>
             `;
             
@@ -2359,7 +2803,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
             if (!message) return;
             
             if (!window.currentRoomId) {
-                alert('❌ กรุณาเลือกห้องก่อนส่งข้อความ');
+                showToast('❌ กรุณาเลือกห้องก่อนส่งข้อความ', 'error');
                 return;
             }
             
@@ -2382,7 +2826,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
             } catch (error) {
                 console.error('❌ Error sending message:', error);
-                alert('ไม่สามารถส่งข้อความได้: ' + error.message);
+                showToast('❌ ไม่สามารถส่งข้อความได้', 'error');
             }
         };
 
@@ -2415,26 +2859,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
 
         // ========== IMAGE ==========
         window.uploadImage = function() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    window.selectedImageFile = file;
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const preview = document.getElementById('imagePreview');
-                        const img = document.getElementById('previewImg');
-                        if (preview && img) {
-                            img.src = e.target.result;
-                            preview.style.display = 'inline-block';
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            input.click();
+            showToast('📷 กำลังพัฒนา...', 'info');
         };
 
         window.clearImagePreview = function() {
@@ -2466,26 +2891,52 @@ window.displayRooms = function(rooms, filterType = 'all') {
             const container = document.getElementById('membersList');
             if (!container) return;
             
+            if (!members || members.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #718096;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+                        <div style="font-size: 16px; font-weight: 600;">ยังไม่มีสมาชิก</div>
+                    </div>
+                `;
+                return;
+            }
+            
             container.innerHTML = members.map(member => {
                 const profile = member.profiles;
                 const isCurrentUser = member.user_id === window.currentUser.id;
                 
-                return `<div class="member-item">
-                    <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=667eea&color=fff`}" 
-                         alt="${profile?.display_name}" 
-                         class="member-avatar">
-                    <div class="member-info">
-                        <div class="member-name">
-                            ${profile?.display_name || profile?.username}
-                            ${isCurrentUser ? ' (คุณ)' : ''}
-                            ${profile?.is_admin ? ' 👑' : ''}
-                        </div>
-                        <div class="member-role">
-                            ${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}
+                return `
+                    <div class="member-item">
+                        <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=667eea&color=fff`}" 
+                             alt="${profile?.display_name}" 
+                             class="member-avatar">
+                        <div class="member-info">
+                            <div class="member-name">
+                                ${escapeHtml(profile?.display_name || profile?.username)}
+                                ${isCurrentUser ? ' (คุณ)' : ''}
+                                ${profile?.is_admin ? ' 👑' : ''}
+                            </div>
+                            <div class="member-role">
+                                ${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}
+                            </div>
                         </div>
                     </div>
-                </div>`;
+                `;
             }).join('');
+        };
+
+        window.toggleMembersPanel = function() {
+            const panel = document.getElementById('membersPanel');
+            if (panel) {
+                if (panel.style.display === 'none' || panel.style.display === '') {
+                    panel.style.display = 'block';
+                    if (window.currentRoomId) {
+                        loadRoomMembers(window.currentRoomId);
+                    }
+                } else {
+                    panel.style.display = 'none';
+                }
+            }
         };
 
         // ========== ADMIN FUNCTIONS ==========
@@ -2505,7 +2956,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
                 const adminBtn = document.getElementById('adminModeBtn');
                 if (adminBtn) {
-                    adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
+                    adminBtn.style.display = window.isAdmin ? 'inline-flex' : 'none';
                 }
                 
                 return window.isAdmin;
@@ -2518,7 +2969,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
 
         window.toggleAdminMode = function() {
             if (!window.isAdmin) {
-                alert('❌ คุณไม่ใช่แอดมิน');
+                showToast('❌ คุณไม่ใช่แอดมิน', 'error');
                 return;
             }
             
@@ -2526,16 +2977,18 @@ window.displayRooms = function(rooms, filterType = 'all') {
             
             const adminBtn = document.getElementById('adminModeBtn');
             if (adminBtn) {
-                adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
+                adminBtn.innerHTML = window.isAdminMode ? 
+                    '<span>👑</span> แอดมิน (เปิด)' : 
+                    '<span>👑</span> แอดมิน (ปิด)';
                 adminBtn.classList.toggle('active', window.isAdminMode);
             }
             
-            alert(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน');
+            showToast(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน', 'info');
         };
 
         window.adminDeleteRoom = async function(roomId, roomName) {
             if (!window.isAdmin) {
-                alert('❌ เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้');
+                showToast('❌ เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้', 'error');
                 return;
             }
             
@@ -2549,7 +3002,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
                 if (error) throw error;
                 
-                alert('✅ ลบห้องสำเร็จ');
+                showToast('✅ ลบห้องสำเร็จ', 'success');
                 
                 if (window.currentRoomId === roomId) {
                     await selectRoom(PUBLIC_ROOM_ID, 'chat');
@@ -2559,7 +3012,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
             } catch (error) {
                 console.error('❌ Error deleting room:', error);
-                alert('ไม่สามารถลบห้องได้: ' + error.message);
+                showToast('❌ ไม่สามารถลบห้องได้', 'error');
             }
         };
 
@@ -2567,18 +3020,23 @@ window.displayRooms = function(rooms, filterType = 'all') {
         window.showDeleteRoomModal = function() {
             if (!window.currentRoom) return;
             
-            document.getElementById('deleteRoomName').innerHTML = 
-                `ต้องการลบห้อง: <strong>${window.currentRoom.name}</strong>?`;
-            document.getElementById('deleteRoomModal').classList.add('active');
+            const nameEl = document.getElementById('deleteRoomName');
+            if (nameEl) {
+                nameEl.innerHTML = `<strong>${escapeHtml(window.currentRoom.name)}</strong>`;
+            }
+            
+            const modal = document.getElementById('deleteRoomModal');
+            if (modal) modal.classList.add('active');
         };
 
         window.closeDeleteRoomModal = function() {
-            document.getElementById('deleteRoomModal').classList.remove('active');
+            const modal = document.getElementById('deleteRoomModal');
+            if (modal) modal.classList.remove('active');
         };
 
         window.confirmDeleteRoom = async function() {
             if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) {
-                alert('❌ ไม่สามารถลบห้องสาธารณะได้');
+                showToast('❌ ไม่สามารถลบห้องสาธารณะได้', 'error');
                 window.closeDeleteRoomModal();
                 return;
             }
@@ -2592,7 +3050,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
                 if (error) throw error;
                 
-                alert('✅ ลบห้องสำเร็จ');
+                showToast('✅ ลบห้องสำเร็จ', 'success');
                 window.closeDeleteRoomModal();
                 
                 if (localStorage.getItem(STORAGE_KEY) === window.currentRoomId) {
@@ -2604,7 +3062,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
             } catch (error) {
                 console.error('❌ Error deleting room:', error);
-                alert('ไม่สามารถลบห้องได้: ' + error.message);
+                showToast('❌ ไม่สามารถลบห้องได้', 'error');
                 window.closeDeleteRoomModal();
             }
         };
@@ -2642,17 +3100,22 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 const password = document.getElementById('roomPassword').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
                 
+                if (!name.trim()) {
+                    showToast('❌ กรุณากรอกชื่อห้อง', 'error');
+                    return;
+                }
+                
                 if (roomType === 'private') {
                     if (!password) {
-                        alert('❌ กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว');
+                        showToast('❌ กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว', 'error');
                         return;
                     }
                     if (password !== confirmPassword) {
-                        alert('❌ รหัสผ่านไม่ตรงกัน');
+                        showToast('❌ รหัสผ่านไม่ตรงกัน', 'error');
                         return;
                     }
                     if (password.length < 4) {
-                        alert('❌ รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
+                        showToast('❌ รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error');
                         return;
                     }
                 }
@@ -2660,8 +3123,8 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 const { data: room, error } = await supabaseClient
                     .from('rooms')
                     .insert([{
-                        name,
-                        description,
+                        name: name.trim(),
+                        description: description.trim(),
                         room_type: roomType,
                         password: roomType === 'private' ? password : null,
                         owner_id: window.currentUser.id,
@@ -2681,14 +3144,14 @@ window.displayRooms = function(rooms, filterType = 'all') {
                         joined_at: new Date().toISOString()
                     }]);
                 
-                alert('✅ สร้างห้องสำเร็จ!');
+                showToast('✅ สร้างห้องสำเร็จ!', 'success');
                 window.closeCreateRoomModal();
                 await loadRooms();
                 await selectRoom(room.id, 'chat');
                 
             } catch (error) {
                 console.error('❌ Error creating room:', error);
-                alert('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message);
+                showToast('❌ ไม่สามารถสร้างห้องได้', 'error');
             }
         };
 
@@ -2696,7 +3159,11 @@ window.displayRooms = function(rooms, filterType = 'all') {
         window.showJoinPrivateRoomModal = function(room) {
             const nameEl = document.getElementById('joinRoomName');
             const modal = document.getElementById('joinPrivateRoomModal');
-            if (nameEl) nameEl.textContent = `ห้อง: ${room.name}`;
+            
+            if (nameEl) {
+                nameEl.textContent = `ห้อง: ${escapeHtml(room.name)}`;
+            }
+            
             if (modal) {
                 modal.dataset.roomId = room.id;
                 modal.classList.add('active');
@@ -2719,7 +3186,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
             const password = passwordInput.value;
             
             if (!password) {
-                alert('❌ กรุณากรอกรหัสผ่าน');
+                showToast('❌ กรุณากรอกรหัสผ่าน', 'error');
                 return;
             }
             
@@ -2733,7 +3200,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 if (error) throw error;
                 
                 if (room.password !== password) {
-                    alert('❌ รหัสผ่านไม่ถูกต้อง');
+                    showToast('❌ รหัสผ่านไม่ถูกต้อง', 'error');
                     return;
                 }
                 
@@ -2761,7 +3228,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
                 
             } catch (error) {
                 console.error('❌ Error joining private room:', error);
-                alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
+                showToast('❌ ไม่สามารถเข้าร่วมห้องได้', 'error');
             }
         };
 
@@ -2792,14 +3259,7 @@ window.displayRooms = function(rooms, filterType = 'all') {
         window.filterRooms = function(filter, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
-            if (filter === 'chat') {
-                window.loadRooms('chat');
-            } else if (filter === 'voice') {
-                window.loadRooms('voice');
-            } else {
-                window.loadRooms('all');
-            }
+            loadRooms(filter);
         };
 
         // ========== UI CONTROLS ==========
@@ -2811,9 +3271,9 @@ window.displayRooms = function(rooms, filterType = 'all') {
             
             userProfile.innerHTML = `
                 <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" 
-                     alt="${username}" 
+                     alt="${escapeHtml(username)}" 
                      class="avatar">
-                <span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>
+                <span class="username">${escapeHtml(username)} ${window.isAdmin ? '👑' : ''}</span>
             `;
         };
 
@@ -2856,20 +3316,14 @@ window.displayRooms = function(rooms, filterType = 'all') {
             });
         };
 
-        // ========== PANEL CONTROLS ==========
-        window.toggleMembersPanel = function() {
-            const panel = document.getElementById('membersPanel');
-            if (panel) panel.classList.toggle('active');
-        };
-
+        // ========== ACTIVITIES PANEL ==========
         window.toggleActivitiesPanel = function() {
-            const panel = document.getElementById('activitiesPanel');
-            if (panel) panel.classList.toggle('active');
+            showToast('🎮 กำลังพัฒนา...', 'info');
         };
 
-        // ========== MUSIC PLAYER (SIMPLIFIED) ==========
+        // ========== MUSIC PLAYER ==========
         window.openMusicPlayer = function() {
-            alert('🎵 กำลังพัฒนา...');
+            showToast('🎵 กำลังพัฒนา...', 'info');
         };
 
         // ========== EVENT LISTENERS ==========
@@ -2904,6 +3358,13 @@ window.displayRooms = function(rooms, filterType = 'all') {
         }
 
         // ========== UTILITIES ==========
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         window.formatTime = function(timestamp) {
             if (!timestamp) return '';
             
@@ -2943,6 +3404,10 @@ window.displayRooms = function(rooms, filterType = 'all') {
         };
 
         window.logout = async function() {
+            if (window.currentVoiceRoom) {
+                await window.leaveVoiceRoom();
+            }
+            
             await supabaseClient.auth.signOut();
             window.location.href = 'index.html';
         };
@@ -2981,4 +3446,3 @@ window.displayRooms = function(rooms, filterType = 'all') {
     </script>
 </body>
 </html>
-
