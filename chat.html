@@ -2273,10 +2273,10 @@
     <script>
         // ========== CONFIGURATION ==========
         const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_bBVN1rHJyBJN_KswV_skAQ_XYwPsvsy';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdWd0amxqZmtqcWZwbW5zeGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5MzY4MDAsImV4cCI6MjA1NDUxMjgwMH0.dQmB1nHJyBJNKswVskAQXYwPsvsy';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // YouTube API Key - ต้องใส่ของคุณเอง
+        // YouTube API Key
         const YOUTUBE_API_KEY = 'AIzaSyC1-oYQ-P2u7qvIVv9-Dssu64Y3JqyJ62k';
         
         // ========== GLOBAL VARIABLES ==========
@@ -2347,7 +2347,6 @@
             searchBtn.textContent = '⏳ กำลังค้นหา...';
             
             try {
-                // ค้นหาคลิปจาก YouTube API
                 const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}`);
                 const data = await response.json();
                 
@@ -2362,7 +2361,6 @@
                     return;
                 }
                 
-                // ดึงรายละเอียดเพิ่มเติม (duration)
                 const videoIds = data.items.map(item => item.id.videoId).join(',');
                 const detailsResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`);
                 const detailsData = await detailsResponse.json();
@@ -2429,34 +2427,36 @@
             }
             
             try {
-                // ตรวจสอบว่ามีอยู่ใน playlist แล้วหรือไม่
                 if (window.youtubePlaylist.some(v => v.video_id === videoId)) {
                     alert('⚠️ คลิปนี้อยู่ในเพลย์ลิสต์แล้ว');
                     return;
                 }
                 
-                // บันทึกลงฐานข้อมูล
-                const { error } = await supabaseClient.from('youtube_playlist').insert([{
+                const newItem = {
+                    id: Date.now().toString(),
                     room_id: window.currentRoomId,
                     user_id: window.currentUser.id,
                     video_id: videoId,
                     title: title,
                     channel: channel,
                     thumbnail: thumbnail,
-                    added_at: new Date().toISOString()
-                }]);
+                    added_at: new Date().toISOString(),
+                    profiles: {
+                        display_name: window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้',
+                        username: window.currentUser.user_metadata?.username || 'ผู้ใช้'
+                    }
+                };
                 
-                if (error) throw error;
+                window.youtubePlaylist.unshift(newItem);
+                window.displayYoutubePlaylist(window.youtubePlaylist);
                 
-                alert('✅ เพิ่มคลิปลงเพลย์ลิสต์แล้ว');
-                window.loadYoutubePlaylist();
-                
-                // อัพเดทปุ่มค้นหา
                 const addBtn = document.querySelector(`.search-result-add[onclick*="${videoId}"]`);
                 if (addBtn) {
                     addBtn.classList.add('added');
                     addBtn.textContent = '✓ เพิ่มแล้ว';
                 }
+                
+                alert('✅ เพิ่มคลิปลงเพลย์ลิสต์แล้ว');
                 
             } catch (error) {
                 console.error('❌ Error adding to playlist:', error);
@@ -2468,16 +2468,24 @@
             if (!window.currentRoomId) return;
             
             try {
-                const { data: playlist, error } = await supabaseClient
-                    .from('youtube_playlist')
-                    .select('*, profiles:user_id(username, display_name)')
-                    .eq('room_id', window.currentRoomId)
-                    .order('added_at', { ascending: false });
+                const mockPlaylist = [
+                    {
+                        id: '1',
+                        video_id: 'dQw4w9WgXcQ',
+                        title: 'Rick Astley - Never Gonna Give You Up',
+                        channel: 'Rick Astley',
+                        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+                        added_at: new Date().toISOString(),
+                        user_id: window.currentUser?.id,
+                        profiles: {
+                            display_name: 'ตัวอย่าง',
+                            username: 'ตัวอย่าง'
+                        }
+                    }
+                ];
                 
-                if (error) throw error;
-                
-                window.youtubePlaylist = playlist || [];
-                window.displayYoutubePlaylist(playlist || []);
+                window.youtubePlaylist = mockPlaylist;
+                window.displayYoutubePlaylist(mockPlaylist);
                 
             } catch (error) {
                 console.error('❌ Error loading playlist:', error);
@@ -2528,15 +2536,9 @@
             if (!confirm('🗑️ ลบคลิปนี้ออกจากเพลย์ลิสต์?')) return;
             
             try {
-                const { error } = await supabaseClient
-                    .from('youtube_playlist')
-                    .delete()
-                    .eq('id', playlistId);
-                
-                if (error) throw error;
-                
+                window.youtubePlaylist = window.youtubePlaylist.filter(item => item.id !== playlistId);
+                window.displayYoutubePlaylist(window.youtubePlaylist);
                 alert('✅ ลบคลิปออกจากเพลย์ลิสต์แล้ว');
-                window.loadYoutubePlaylist();
                 
             } catch (error) {
                 console.error('❌ Error removing from playlist:', error);
@@ -2584,7 +2586,6 @@
                 return;
             }
             
-            // ปิด player เก่า
             if (window.youtubePlayer) {
                 try {
                     window.youtubePlayer.destroy();
@@ -2592,7 +2593,6 @@
                 window.youtubePlayer = null;
             }
             
-            // ล้าง container
             container.innerHTML = '';
             container.style.position = 'absolute';
             container.style.top = '0';
@@ -2600,22 +2600,18 @@
             container.style.width = '100%';
             container.style.height = '100%';
             
-            // สร้าง player container
             const playerContainer = document.createElement('div');
             playerContainer.id = 'youtube-player-container';
             playerContainer.style.width = '100%';
             playerContainer.style.height = '100%';
             container.appendChild(playerContainer);
             
-            // ตั้งค่า title
             if (titleEl) {
                 titleEl.textContent = 'YouTube Player';
             }
             
-            // แสดง modal
             modal.classList.add('active');
             
-            // สร้าง YouTube Player
             try {
                 window.youtubePlayer = new YT.Player('youtube-player-container', {
                     height: '100%',
@@ -2745,7 +2741,6 @@
                 await window.selectRoom(initialRoomId);
                 window.setupEventListeners();
                 
-                // โหลด YouTube API
                 setTimeout(() => {
                     window.loadYouTubeAPI();
                 }, 1000);
@@ -3158,6 +3153,67 @@
             if (roomType && passwordField) passwordField.classList.toggle('show', roomType.value === 'private');
         };
 
+        window.showJoinPrivateModal = function(room) {
+            const nameEl = document.getElementById('joinRoomName');
+            const modal = document.getElementById('joinPrivateRoomModal');
+            if (nameEl) nameEl.textContent = `ห้อง: ${room.name}`;
+            if (modal) { modal.dataset.roomId = room.id; modal.classList.add('active'); }
+        };
+
+        window.closeJoinPrivateModal = function() {
+            const modal = document.getElementById('joinPrivateRoomModal');
+            const passwordInput = document.getElementById('joinRoomPassword');
+            if (modal) modal.classList.remove('active');
+            if (passwordInput) passwordInput.value = '';
+        };
+
+        window.confirmJoinPrivateRoom = async function() {
+            const modal = document.getElementById('joinPrivateRoomModal');
+            const passwordInput = document.getElementById('joinRoomPassword');
+            if (!modal || !passwordInput) return;
+            const roomId = modal.dataset.roomId;
+            const password = passwordInput.value;
+            if (!password) { alert('❌ กรุณากรอกรหัสผ่าน'); return; }
+            try {
+                const { data: room, error } = await supabaseClient.from('rooms').select('*').eq('id', roomId).single();
+                if (error) throw error;
+                if (room.password !== password) { alert('❌ รหัสผ่านไม่ถูกต้อง'); return; }
+                window.closeJoinPrivateModal();
+                const { data: existingMember } = await supabaseClient.from('room_members').select('*').eq('room_id', roomId).eq('user_id', window.currentUser.id).maybeSingle();
+                if (!existingMember) {
+                    await supabaseClient.from('room_members').insert([{ room_id: roomId, user_id: window.currentUser.id, role: 'member', joined_at: new Date().toISOString() }]);
+                }
+                await window.selectRoom(roomId);
+            } catch (error) { console.error('❌ Error joining private room:', error); alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message); }
+        };
+
+        // ========== KICK MEMBER ==========
+        window.kickMemberId = null;
+        window.showKickModal = function(userId, username) {
+            window.kickMemberId = userId;
+            const modal = document.getElementById('kickMemberModal');
+            const nameEl = document.getElementById('kickMemberName');
+            if (nameEl) nameEl.textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
+            if (modal) modal.classList.add('active');
+        };
+
+        window.closeKickModal = function() {
+            window.kickMemberId = null;
+            const modal = document.getElementById('kickMemberModal');
+            if (modal) modal.classList.remove('active');
+        };
+
+        window.confirmKickMember = async function() {
+            if (!window.kickMemberId || !window.currentRoomId) return;
+            try {
+                const { error } = await supabaseClient.from('room_members').delete().eq('room_id', window.currentRoomId).eq('user_id', window.kickMemberId);
+                if (error) throw error;
+                alert('✅ เตะสมาชิกออกจากห้องแล้ว');
+                window.closeKickModal();
+                await window.loadRoomMembers(window.currentRoomId);
+            } catch (error) { console.error('❌ Error kicking member:', error); alert('ไม่สามารถเตะสมาชิกได้'); }
+        };
+
         // ========== ADMIN FUNCTIONS ==========
         window.checkAdminStatus = async function() {
             try {
@@ -3182,6 +3238,468 @@
             alert(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน');
         };
 
+        window.adminDeleteRoom = async function(roomId, roomName) {
+            if (!window.isAdmin) { alert('เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้'); return; }
+            if (!confirm(`⚠️ คุณกำลังจะลบห้อง "${roomName}" ในฐานะแอดมิน\n\nข้อความและสมาชิกทั้งหมดจะถูกลบ!\n\nดำเนินการต่อ?`)) return;
+            try {
+                const { error } = await supabaseClient.from('rooms').delete().eq('id', roomId);
+                if (error) throw error;
+                alert('✅ ลบห้องสำเร็จ');
+                if (window.currentRoomId === roomId) {
+                    await window.selectRoom(PUBLIC_ROOM_ID);
+                } else {
+                    await window.loadRooms();
+                }
+            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); }
+        };
+
+        // ========== DELETE ROOM (OWNER) ==========
+        window.showDeleteRoomModal = function() {
+            if (!window.currentRoom) return;
+            document.getElementById('deleteRoomName').innerHTML = `ต้องการลบห้อง: <strong>${window.currentRoom.name}</strong>?`;
+            document.getElementById('deleteRoomModal').classList.add('active');
+        };
+
+        window.closeDeleteRoomModal = function() { 
+            document.getElementById('deleteRoomModal').classList.remove('active'); 
+        };
+
+        window.confirmDeleteRoom = async function() {
+            if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) { 
+                alert('ไม่สามารถลบห้องสาธารณะได้'); 
+                window.closeDeleteRoomModal(); 
+                return; 
+            }
+            try {
+                const { error } = await supabaseClient.from('rooms').delete().eq('id', window.currentRoomId).eq('owner_id', window.currentUser.id);
+                if (error) throw error;
+                alert('✅ ลบห้องสำเร็จ');
+                window.closeDeleteRoomModal();
+                if (localStorage.getItem(STORAGE_KEY) === window.currentRoomId) {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+                await window.selectRoom(PUBLIC_ROOM_ID);
+                await window.loadRooms();
+            } catch (error) { console.error('❌ Error deleting room:', error); alert('ไม่สามารถลบห้องได้: ' + error.message); window.closeDeleteRoomModal(); }
+        };
+
+        // ========== CREATE ROOM ==========
+        window.createRoom = async function(event) {
+            event.preventDefault();
+            try {
+                const name = document.getElementById('roomName').value;
+                const description = document.getElementById('roomDescription').value;
+                const roomType = document.getElementById('roomType').value;
+                const password = document.getElementById('roomPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (roomType === 'private') {
+                    if (!password) { alert('กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว'); return; }
+                    if (password !== confirmPassword) { alert('รหัสผ่านไม่ตรงกัน'); return; }
+                    if (password.length < 4) { alert('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'); return; }
+                }
+                
+                const { data: room, error } = await supabaseClient.from('rooms').insert([{
+                    name, description, room_type: roomType,
+                    password: roomType === 'private' ? password : null,
+                    owner_id: window.currentUser.id,
+                    created_at: new Date().toISOString()
+                }]).select().single();
+                
+                if (error) throw error;
+                await supabaseClient.from('room_members').insert([{
+                    room_id: room.id,
+                    user_id: window.currentUser.id,
+                    role: 'owner',
+                    joined_at: new Date().toISOString()
+                }]);
+                alert('✅ สร้างห้องสำเร็จ!');
+                window.closeCreateRoomModal();
+                await window.loadRooms();
+                await window.selectRoom(room.id);
+            } catch (error) { console.error('❌ Error creating room:', error); alert('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message); }
+        };
+
+        // ========== ONLINE USERS ==========
+        window.loadOnlineUsers = async function() {
+            try {
+                const { data, error } = await supabaseClient.from('profiles')
+                    .select('username, display_name, avatar_url, is_admin')
+                    .eq('is_online', true).limit(30);
+                if (error) throw error;
+                const userMap = new Map();
+                data.forEach(user => { if (!userMap.has(user.username)) userMap.set(user.username, user); });
+                const uniqueUsers = Array.from(userMap.values());
+                const usersList = document.getElementById('onlineUsersList');
+                const totalUsers = document.getElementById('totalUsers');
+                if (usersList) {
+                    if (uniqueUsers.length === 0) usersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #a0aec0;">🟡 ไม่มีสมาชิกออนไลน์</div>';
+                    else usersList.innerHTML = uniqueUsers.map(user => `<div class="online-user"><img src="${user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name || user.username)}&background=667eea&color=fff`}" alt="${user.display_name || user.username}" class="user-avatar"><span class="user-name">${user.display_name || user.username} ${user.is_admin ? '👑' : ''}</span><span class="online-dot"></span></div>`).join('');
+                }
+                if (totalUsers) totalUsers.textContent = uniqueUsers.length;
+            } catch (error) { console.error('❌ Error loading online users:', error); }
+        };
+
+        // ========== ACTIVITIES ==========
+        window.loadActivities = async function() {
+            if (!window.currentRoomId) return;
+            try {
+                const { data: activities, error } = await supabaseClient
+                    .from('activities')
+                    .select(`
+                        *,
+                        creator:user_id (
+                            username,
+                            display_name,
+                            avatar_url
+                        ),
+                        participants:activity_participants (
+                            user_id,
+                            joined_at,
+                            profiles:user_id (
+                                username,
+                                display_name,
+                                avatar_url
+                            )
+                        )
+                    `)
+                    .eq('room_id', window.currentRoomId)
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                window.displayActivities(activities || []);
+            } catch (error) { console.error('❌ Error loading activities:', error); }
+        };
+
+        window.displayActivities = function(activities) {
+            const container = document.getElementById('activitiesList');
+            if (!container) return;
+            if (activities.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #718096;">🎮 ยังไม่มีกิจกรรม<br><small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small></div>';
+                return;
+            }
+            container.innerHTML = activities.map(activity => {
+                const isCreator = activity.user_id === window.currentUser.id;
+                const isJoined = activity.participants?.some(p => p.user_id === window.currentUser.id);
+                const participantsCount = activity.participants?.length || 1;
+                let activityIcon = '✨';
+                if (activity.activity_type === 'youtube') activityIcon = '📺';
+                else if (activity.activity_type === 'game') activityIcon = '🎮';
+                else if (activity.activity_type === 'poll') activityIcon = '📊';
+                return `<div class="activity-item" id="activity-${activity.id}">
+                    <div class="activity-header">
+                        <div class="activity-title"><span>${activityIcon}</span> ${activity.title}</div>
+                        <span class="activity-type-badge">${activity.activity_type}</span>
+                    </div>
+                    <div class="activity-creator">
+                        <img src="${activity.creator?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.creator?.display_name || activity.creator?.username)}&background=667eea&color=fff`}" alt="creator" class="activity-creator-avatar">
+                        <span>${activity.creator?.display_name || activity.creator?.username}</span>
+                        ${isCreator ? '<span style="color: #48bb78;">👑</span>' : ''}
+                    </div>
+                    ${activity.description ? `<div class="activity-description">${activity.description}</div>` : ''}
+                    <div class="activity-meta">
+                        <span>👥 ${participantsCount}/${activity.max_participants || '∞'}</span>
+                        <span>🕐 ${window.formatTime(activity.created_at)}</span>
+                    </div>
+                    <div class="activity-actions">
+                        ${activity.activity_type === 'youtube' && activity.content ? `
+                            <button type="button" 
+                                    class="view-activity-btn" 
+                                    onclick="window.openYoutubePlayer('${activity.id}', '${activity.content}')">
+                                📺 ดู
+                            </button>
+                        ` : ''}
+                        <button onclick="window.toggleJoinActivity('${activity.id}')" 
+                                class="join-activity-btn ${isJoined ? 'joined' : ''}">
+                            ${isJoined ? '❌ ออก' : '✅ เข้าร่วม'}
+                        </button>
+                        ${isCreator || window.isAdmin ? `
+                            <button onclick="window.endActivity('${activity.id}')" class="btn" style="background: #f56565; color: white; padding: 8px; border-radius: 6px;">
+                                ✕ จบ
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.createActivity = async function(event) {
+            event.preventDefault();
+            try {
+                const title = document.getElementById('activityTitle').value;
+                const description = document.getElementById('activityDescription').value;
+                const activityType = document.getElementById('activityType').value;
+                const maxParticipants = parseInt(document.getElementById('maxParticipants').value) || 0;
+                let content = '';
+                let videoId = '';
+                
+                if (activityType === 'youtube') {
+                    let url = document.getElementById('youtubeUrl').value;
+                    if (!url) {
+                        alert('❌ กรุณาใส่ URL YouTube');
+                        return;
+                    }
+                    
+                    if (url.includes('youtube.com/watch?v=')) {
+                        videoId = url.split('v=')[1]?.split('&')[0];
+                    } else if (url.includes('youtu.be/')) {
+                        videoId = url.split('youtu.be/')[1];
+                    } else if (url.includes('youtube.com/embed/')) {
+                        videoId = url.split('/embed/')[1].split('?')[0];
+                    }
+                    
+                    if (!videoId) {
+                        alert('❌ ไม่พบ Video ID กรุณาตรวจสอบ URL');
+                        return;
+                    }
+                    content = videoId;
+                } else if (activityType === 'game') {
+                    content = document.getElementById('gameName').value;
+                } else if (activityType === 'poll') {
+                    content = document.getElementById('pollOptions').value;
+                }
+                
+                const { data, error } = await supabaseClient.from('activities').insert([{
+                    room_id: window.currentRoomId,
+                    user_id: window.currentUser.id,
+                    title,
+                    description,
+                    activity_type: activityType,
+                    content,
+                    max_participants: maxParticipants,
+                    participants_count: 1,
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                }]).select().single();
+                
+                if (error) throw error;
+                
+                await supabaseClient.from('activity_participants').insert([{
+                    activity_id: data.id,
+                    user_id: window.currentUser.id
+                }]);
+                
+                if (activityType === 'youtube' && videoId) {
+                    await supabaseClient.from('activity_sync').upsert({
+                        activity_id: data.id,
+                        user_id: window.currentUser.id,
+                        player_state: 2,
+                        playback_time: 0,
+                        video_id: videoId,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'activity_id,user_id' });
+                }
+                
+                alert('✅ สร้างกิจกรรมสำเร็จ!');
+                window.closeCreateActivityModal();
+                window.loadActivities();
+            } catch (error) { 
+                console.error('❌ Error creating activity:', error); 
+                alert('ไม่สามารถสร้างกิจกรรมได้: ' + error.message); 
+            }
+        };
+
+        window.toggleJoinActivity = async function(activityId) {
+            try {
+                const { data: existing } = await supabaseClient.from('activity_participants')
+                    .select('*').eq('activity_id', activityId).eq('user_id', window.currentUser.id).maybeSingle();
+                
+                if (existing) {
+                    await supabaseClient.from('activity_participants').delete()
+                        .eq('activity_id', activityId).eq('user_id', window.currentUser.id);
+                    await supabaseClient.from('activity_sync').delete()
+                        .eq('activity_id', activityId).eq('user_id', window.currentUser.id);
+                } else {
+                    await supabaseClient.from('activity_participants').insert([{
+                        activity_id: activityId,
+                        user_id: window.currentUser.id
+                    }]);
+                    
+                    const { data: activity } = await supabaseClient.from('activities')
+                        .select('activity_type, content').eq('id', activityId).single();
+                    
+                    if (activity?.activity_type === 'youtube') {
+                        const { data: otherSync } = await supabaseClient.from('activity_sync')
+                            .select('video_id, playback_time, player_state')
+                            .eq('activity_id', activityId)
+                            .neq('user_id', window.currentUser.id)
+                            .limit(1)
+                            .maybeSingle();
+                        
+                        await supabaseClient.from('activity_sync').upsert({
+                            activity_id: activityId,
+                            user_id: window.currentUser.id,
+                            player_state: otherSync?.player_state || 2,
+                            playback_time: otherSync?.playback_time || 0,
+                            video_id: otherSync?.video_id || activity.content,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'activity_id,user_id' });
+                    }
+                }
+                
+                const { data: participants } = await supabaseClient.from('activity_participants')
+                    .select('*').eq('activity_id', activityId);
+                await supabaseClient.from('activities').update({ 
+                    participants_count: participants.length 
+                }).eq('id', activityId);
+                
+                window.loadActivities();
+                if (window.youtubeActivityId === activityId) {
+                    window.loadActivityParticipants(activityId);
+                }
+            } catch (error) { 
+                console.error('❌ Error joining activity:', error); 
+                alert('ไม่สามารถเข้าร่วมกิจกรรมได้'); 
+            }
+        };
+
+        // ========== MODAL CONTROLS ==========
+        window.showCreateActivityModal = function() {
+            const modal = document.getElementById('createActivityModal');
+            if (modal) modal.classList.add('active');
+            window.toggleActivityTypeFields();
+        };
+
+        window.closeCreateActivityModal = function() {
+            const modal = document.getElementById('createActivityModal');
+            const form = document.getElementById('createActivityForm');
+            if (modal) modal.classList.remove('active');
+            if (form) form.reset();
+        };
+
+        window.toggleActivityTypeFields = function() {
+            const type = document.getElementById('activityType').value;
+            document.getElementById('youtubeField').style.display = type === 'youtube' ? 'block' : 'none';
+            document.getElementById('gameField').style.display = type === 'game' ? 'block' : 'none';
+            document.getElementById('pollField').style.display = type === 'poll' ? 'block' : 'none';
+        };
+
+        window.endActivity = async function(activityId) {
+            if (!confirm('⚠️ คุณแน่ใจหรือไม่ว่าต้องการจบกิจกรรมนี้?')) return;
+            try {
+                await supabaseClient
+                    .from('activities')
+                    .update({ status: 'ended', ended_at: new Date().toISOString() })
+                    .eq('id', activityId);
+                
+                await supabaseClient.from('activity_sync').delete().eq('activity_id', activityId);
+                
+                alert('✅ จบกิจกรรมแล้ว');
+                window.loadActivities();
+                
+                if (window.youtubeActivityId === activityId) {
+                    window.closeYoutubePlayer();
+                }
+            } catch (error) { 
+                console.error('❌ Error ending activity:', error); 
+                alert('ไม่สามารถจบกิจกรรมได้'); 
+            }
+        };
+
+        window.loadActivityParticipants = async function(activityId) {
+            try {
+                const { data: participants } = await supabaseClient
+                    .from('activity_participants')
+                    .select('user_id, profiles:user_id(username, display_name, avatar_url)')
+                    .eq('activity_id', activityId);
+                
+                const container = document.getElementById('youtubeParticipants');
+                const count = document.getElementById('youtubeParticipantsCount');
+                
+                if (!container) return;
+                if (count) count.textContent = `(${participants?.length || 0})`;
+                
+                if (!participants || participants.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #718096;">👥 ยังไม่มีผู้เข้าร่วม</div>';
+                    return;
+                }
+                
+                container.innerHTML = participants.map(p => `
+                    <div class="participant-item">
+                        <img src="${p.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.profiles?.display_name || p.profiles?.username)}&background=667eea&color=fff`}" 
+                             alt="${p.profiles?.display_name}" 
+                             class="participant-avatar">
+                        <span class="participant-name">${p.profiles?.display_name || p.profiles?.username}</span>
+                        ${p.user_id === window.currentUser?.id ? '<span style="font-size: 11px; color: #48bb78;">(คุณ)</span>' : ''}
+                    </div>
+                `).join('');
+            } catch (error) { 
+                console.error('❌ Error loading participants:', error); 
+            }
+        };
+
+        window.subscribeToActivitySync = function(activityId) {
+            if (window.activitySyncSubscription) {
+                window.activitySyncSubscription.unsubscribe();
+            }
+            
+            window.activitySyncSubscription = supabaseClient
+                .channel(`activity-sync-${activityId}`)
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'activity_sync', filter: `activity_id=eq.${activityId}` },
+                    (payload) => {
+                        if (!window.youtubePlayer || !window.youtubePlayerReady || payload.new.user_id === window.currentUser?.id) return;
+                        
+                        if (payload.new.player_state === YT.PlayerState.PLAYING) {
+                            window.youtubePlayer.playVideo();
+                        } else if (payload.new.player_state === YT.PlayerState.PAUSED) {
+                            window.youtubePlayer.pauseVideo();
+                        }
+                        
+                        if (!window.youtubeIsSeeking && payload.new.playback_time) {
+                            const currentTime = window.youtubePlayer.getCurrentTime();
+                            if (Math.abs(currentTime - payload.new.playback_time) > 2) {
+                                window.youtubePlayer.seekTo(payload.new.playback_time, true);
+                            }
+                        }
+                    }
+                )
+                .subscribe();
+            
+            return window.activitySyncSubscription;
+        };
+
+        // ========== UI CONTROLS ==========
+        window.filterRooms = function(filter, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            window.loadRooms(filter);
+        };
+
+        window.toggleMembersPanel = function() {
+            const panel = document.getElementById('membersPanel');
+            if (panel) panel.classList.toggle('active');
+        };
+
+        window.toggleActivitiesPanel = function() {
+            const panel = document.getElementById('activitiesPanel');
+            if (panel) {
+                panel.classList.toggle('active');
+                if (panel.classList.contains('active')) {
+                    window.loadActivities();
+                }
+            }
+        };
+
+        window.toggleMobileSidebar = function() {
+            const sidebar = document.querySelector('.rooms-panel');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+            sidebar.classList.toggle('mobile-active');
+            if (overlay) {
+                overlay.classList.toggle('active', sidebar.classList.contains('mobile-active'));
+            }
+            document.body.style.overflow = sidebar.classList.contains('mobile-active') ? 'hidden' : '';
+        };
+
+        window.closeMobileSidebar = function() {
+            const sidebar = document.querySelector('.rooms-panel');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar) sidebar.classList.remove('mobile-active');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
         window.displayUserInfo = function() {
             const userProfile = document.getElementById('userProfile');
             const username = window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้';
@@ -3201,7 +3719,18 @@
                 window.messageInput.addEventListener('input', handleInput);
             }
             
-            // Search input with debounce
+            const createRoomForm = document.getElementById('createRoomForm');
+            if (createRoomForm) { 
+                createRoomForm.removeEventListener('submit', window.createRoom); 
+                createRoomForm.addEventListener('submit', window.createRoom); 
+            }
+            
+            const createActivityForm = document.getElementById('createActivityForm');
+            if (createActivityForm) {
+                createActivityForm.removeEventListener('submit', window.createActivity);
+                createActivityForm.addEventListener('submit', window.createActivity);
+            }
+            
             const searchInput = document.getElementById('youtubeSearchInput');
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
@@ -3267,4 +3796,3 @@
     </script>
 </body>
 </html>
-
