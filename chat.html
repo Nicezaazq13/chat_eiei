@@ -1130,8 +1130,8 @@
             background: var(--bg-white);
             padding: 30px;
             border-radius: var(--radius-lg);
-            width: 600px;
-            max-width: 90%;
+            width: 800px;
+            max-width: 95%;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: var(--shadow-lg);
@@ -1149,42 +1149,31 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 20px;
         }
 
-        .playlist-tabs {
+        .playlist-layout {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            gap: 20px;
+            min-height: 500px;
         }
 
-        .playlist-tab {
+        /* ค้นหาคลิป (ฝั่งซ้าย) */
+        .search-section {
             flex: 1;
-            padding: 10px;
-            background: var(--bg-light);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
-            font-weight: 500;
+            border-right: 1px solid var(--border-color);
+            padding-right: 20px;
         }
 
-        .playlist-tab:hover {
-            background: var(--border-color);
-        }
-
-        .playlist-tab.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+        .search-section h4 {
+            margin-bottom: 15px;
+            color: var(--text-dark);
         }
 
         .playlist-search {
             display: flex;
             gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .playlist-search input {
@@ -1202,7 +1191,7 @@
         }
 
         .playlist-search button {
-            padding: 12px 24px;
+            padding: 12px 20px;
             background: var(--primary-color);
             color: white;
             border: none;
@@ -1210,6 +1199,7 @@
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
+            white-space: nowrap;
         }
 
         .playlist-search button:hover {
@@ -1224,14 +1214,12 @@
         .search-results {
             max-height: 400px;
             overflow-y: auto;
-            margin-bottom: 20px;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
         }
 
         .search-result-item {
             display: flex;
-            align-items: center;
             gap: 12px;
             padding: 12px;
             border-bottom: 1px solid var(--border-color);
@@ -1281,15 +1269,16 @@
         }
 
         .search-result-add {
-            padding: 8px 16px;
+            padding: 6px 12px;
             background: var(--primary-color);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
+            height: fit-content;
         }
 
         .search-result-add:hover {
@@ -1304,6 +1293,28 @@
             background: var(--danger-color);
         }
 
+        /* เพลย์ลิสต์ (ฝั่งขวา) */
+        .playlist-section {
+            flex: 1;
+            padding-left: 20px;
+        }
+
+        .playlist-section h4 {
+            margin-bottom: 15px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .playlist-count {
+            font-size: 13px;
+            color: var(--text-light);
+            background: var(--bg-light);
+            padding: 4px 10px;
+            border-radius: var(--radius-xl);
+        }
+
         .playlist-items {
             max-height: 400px;
             overflow-y: auto;
@@ -1313,7 +1324,6 @@
 
         .playlist-item {
             display: flex;
-            align-items: center;
             gap: 12px;
             padding: 12px;
             border-bottom: 1px solid var(--border-color);
@@ -1329,8 +1339,8 @@
         }
 
         .playlist-item-thumbnail {
-            width: 120px;
-            height: 68px;
+            width: 100px;
+            height: 56px;
             border-radius: var(--radius-sm);
             object-fit: cover;
             cursor: pointer;
@@ -1345,37 +1355,37 @@
         .playlist-item-title {
             font-weight: 600;
             margin-bottom: 4px;
-            font-size: 14px;
+            font-size: 13px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .playlist-item-channel {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-light);
             margin-bottom: 2px;
         }
 
         .playlist-item-added-by {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-light);
         }
 
         .playlist-item-controls {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            align-items: center;
         }
 
         .playlist-item-play {
-            padding: 8px 16px;
+            padding: 4px 8px;
             background: var(--secondary-color);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 13px;
+            font-size: 11px;
             cursor: pointer;
-            white-space: nowrap;
         }
 
         .playlist-item-play:hover {
@@ -1383,14 +1393,13 @@
         }
 
         .playlist-item-remove {
-            padding: 8px 16px;
+            padding: 4px 8px;
             background: var(--danger-color);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 13px;
+            font-size: 11px;
             cursor: pointer;
-            white-space: nowrap;
         }
 
         .playlist-item-remove:hover {
@@ -1804,31 +1813,26 @@
                 min-width: 100px;
             }
 
-            .modal-content {
-                padding: 20px;
+            .playlist-layout {
+                flex-direction: column;
             }
 
-            .search-result-item,
-            .playlist-item {
-                flex-wrap: wrap;
+            .search-section {
+                border-right: none;
+                padding-right: 0;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 20px;
+            }
+
+            .playlist-section {
+                padding-left: 0;
+                padding-top: 20px;
             }
 
             .search-result-thumbnail,
             .playlist-item-thumbnail {
-                width: 100%;
-                height: auto;
-                aspect-ratio: 16/9;
-            }
-
-            .search-result-info,
-            .playlist-item-info {
-                width: 100%;
-            }
-
-            .search-result-add,
-            .playlist-item-play,
-            .playlist-item-remove {
-                width: 100%;
+                width: 80px;
+                height: 45px;
             }
         }
 
@@ -2155,39 +2159,43 @@
     <div id="youtubePlaylistModal" class="modal">
         <div class="modal-content">
             <div class="youtube-playlist-header">
-                <h3>📺 YouTube Playlist</h3>
+                <h3>📺 จัดการเพลย์ลิสต์ YouTube</h3>
                 <button onclick="window.closeYoutubePlaylist()" class="btn-icon" style="font-size: 24px;">✕</button>
             </div>
             
-            <div class="playlist-tabs">
-                <button class="playlist-tab active" onclick="window.switchPlaylistTab('search', this)">ค้นหาคลิป</button>
-                <button class="playlist-tab" onclick="window.switchPlaylistTab('playlist', this)">เพลย์ลิสต์</button>
-            </div>
-            
-            <!-- แท็บค้นหา -->
-            <div id="searchTab" class="playlist-tab-content">
-                <div class="playlist-search">
-                    <input type="text" id="youtubeSearchInput" placeholder="พิมพ์ชื่อคลิปที่ต้องการค้นหา...">
-                    <button id="youtubeSearchBtn" onclick="window.searchYoutube()">🔍 ค้นหา</button>
+            <div class="playlist-layout">
+                <!-- ฝั่งซ้าย: ค้นหาคลิป -->
+                <div class="search-section">
+                    <h4>🔍 ค้นหาคลิป</h4>
+                    <div class="playlist-search">
+                        <input type="text" id="youtubeSearchInput" placeholder="พิมพ์ชื่อคลิปที่ต้องการค้นหา...">
+                        <button id="youtubeSearchBtn" onclick="window.searchYoutube()">ค้นหา</button>
+                    </div>
+                    
+                    <div id="searchResults" class="search-results">
+                        <div style="text-align: center; padding: 40px; color: #718096;">
+                            🔍 พิมพ์คำค้นหาเพื่อหาคลิป YouTube
+                        </div>
+                    </div>
                 </div>
                 
-                <div id="searchResults" class="search-results">
-                    <div style="text-align: center; padding: 40px; color: #718096;">
-                        🔍 พิมพ์คำค้นหาเพื่อหาคลิป YouTube
+                <!-- ฝั่งขวา: เพลย์ลิสต์ -->
+                <div class="playlist-section">
+                    <h4>
+                        📋 เพลย์ลิสต์ของห้อง
+                        <span class="playlist-count" id="playlistCount">0 คลิป</span>
+                    </h4>
+                    
+                    <div id="playlistItems" class="playlist-items">
+                        <div style="text-align: center; padding: 40px; color: #718096;">
+                            📋 ยังไม่มีคลิปในเพลย์ลิสต์<br>
+                            <small>ค้นหาและเพิ่มคลิปจากฝั่งซ้าย</small>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- แท็บเพลย์ลิสต์ -->
-            <div id="playlistTab" class="playlist-tab-content" style="display: none;">
-                <div id="playlistItems" class="playlist-items">
-                    <div style="text-align: center; padding: 40px; color: #718096;">
-                        📋 ยังไม่มีคลิปในเพลย์ลิสต์
-                    </div>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <div style="display: flex; gap: 12px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                 <button onclick="window.closeYoutubePlaylist()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
             </div>
         </div>
@@ -2327,18 +2335,6 @@
             if (modal) modal.classList.remove('active');
         };
 
-        window.switchPlaylistTab = function(tab, btn) {
-            document.querySelectorAll('.playlist-tab').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            document.getElementById('searchTab').style.display = tab === 'search' ? 'block' : 'none';
-            document.getElementById('playlistTab').style.display = tab === 'playlist' ? 'block' : 'none';
-            
-            if (tab === 'playlist') {
-                window.loadYoutubePlaylist();
-            }
-        };
-
         window.searchYoutube = async function() {
             const query = document.getElementById('youtubeSearchInput').value.trim();
             if (!query) {
@@ -2406,7 +2402,7 @@
                 document.getElementById('searchResults').innerHTML = `<div style="text-align: center; padding: 40px; color: #f56565;">❌ เกิดข้อผิดพลาด: ${error.message}</div>`;
             } finally {
                 searchBtn.disabled = false;
-                searchBtn.textContent = '🔍 ค้นหา';
+                searchBtn.textContent = 'ค้นหา';
             }
         };
 
@@ -2490,10 +2486,16 @@
 
         window.displayYoutubePlaylist = function(playlist) {
             const container = document.getElementById('playlistItems');
+            const countEl = document.getElementById('playlistCount');
+            
             if (!container) return;
             
+            if (countEl) {
+                countEl.textContent = `${playlist.length} คลิป`;
+            }
+            
             if (playlist.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">📋 ยังไม่มีคลิปในเพลย์ลิสต์</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">📋 ยังไม่มีคลิปในเพลย์ลิสต์<br><small>ค้นหาและเพิ่มคลิปจากฝั่งซ้าย</small></div>';
                 return;
             }
             
