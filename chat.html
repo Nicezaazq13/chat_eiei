@@ -1758,8 +1758,31 @@
 
     <!-- Toast Notification -->
     <div id="toast" class="toast" style="display: none;"></div>
-
+     <!-- ========== SCRIPTS - แก้ไขลำดับและชื่อฟังก์ชัน ========== -->
+    
+    <!-- 1. โหลด Supabase library (ครั้งเดียว) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 2. โหลด Config -->
+    <script src="config.js"></script>
+    
+    <!-- 3. โหลด Supabase Client -->
+    <script src="supabase-client.js"></script>
+    
+    <!-- 4. ตรวจสอบการเชื่อมต่อ -->
+    <script>
+        (function() {
+            if (typeof supabaseClient === 'undefined') {
+                console.error('❌ Supabase client not initialized!');
+                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; color: #f56565;">⚠️ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่</div>';
+                return;
+            }
+            console.log('✅ Supabase client ready');
+            console.log('🔑 Project:', SUPABASE_CONFIG?.url);
+        })();
+    </script>
+    
+    <!-- 5. Main Application Code -->
     <script>
         // ========== GLOBAL VARIABLES ==========
         window.currentUser = null;
@@ -1791,12 +1814,13 @@
         // ========== TOAST NOTIFICATION ==========
         window.showToast = function(message, type = 'success') {
             const toast = document.getElementById('toast');
-            if (!toast) return;
-            
+            if (!toast) {
+                alert(message);
+                return;
+            }
             toast.textContent = message;
             toast.className = `toast ${type}`;
             toast.style.display = 'flex';
-            
             setTimeout(() => {
                 toast.style.display = 'none';
             }, 3000);
@@ -1805,33 +1829,51 @@
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                window.messagesContainer = document.getElementById('messagesContainer');
-                window.messageInput = document.getElementById('messageInput');
-                window.sendButton = document.getElementById('sendButton');
-
-                window.currentUser = await checkUser();
+                console.log('🚀 Initializing chat...');
+                
+                // ตรวจสอบ Supabase client
+                if (typeof supabaseClient === 'undefined') {
+                    throw new Error('Supabase client not initialized');
+                }
+                
+                // ตรวจสอบ current user - ใช้ getCurrentUser() จาก supabase-client.js
+                window.currentUser = await window.getCurrentUser();
+                console.log('👤 Current user:', window.currentUser?.email || 'Not logged in');
+                
                 if (!window.currentUser) {
+                    console.log('⏭️ No user found, redirecting to login...');
                     window.location.href = 'login.html';
                     return;
                 }
 
+                // ตั้งค่า elements
+                window.messagesContainer = document.getElementById('messagesContainer');
+                window.messageInput = document.getElementById('messageInput');
+                window.sendButton = document.getElementById('sendButton');
+                
+                if (!window.messagesContainer || !window.messageInput || !window.sendButton) {
+                    console.warn('⚠️ Some UI elements not found');
+                }
+
+                // ตรวจสอบสถานะแอดมิน
                 await checkAdminStatus();
+                
+                // แสดงข้อมูลผู้ใช้
                 displayUserInfo();
+                
+                // โหลดห้อง
                 await loadRooms();
                 
+                // เลือกห้องล่าสุด
                 const lastRoomId = localStorage.getItem(STORAGE_KEY);
                 const initialRoomId = lastRoomId || PUBLIC_ROOM_ID;
-                
                 await selectRoom(initialRoomId, 'chat');
+                
+                // ตั้งค่า event listeners
                 setupEventListeners();
                 initMobileHandler();
 
-                const overlay = document.getElementById('sidebarOverlay');
-                if (overlay) {
-                    overlay.addEventListener('click', window.closeMobileSidebar);
-                }
-
-                // Setup form listeners
+                // ตั้งค่า form listeners
                 const voiceForm = document.getElementById('createVoiceRoomForm');
                 if (voiceForm) {
                     voiceForm.addEventListener('submit', window.createVoiceRoom);
@@ -1842,14 +1884,69 @@
                     roomForm.addEventListener('submit', window.createRoom);
                 }
 
-                console.log('✅ Chat initialized');
+                // ตั้งค่า sidebar overlay
+                const overlay = document.getElementById('sidebarOverlay');
+                if (overlay) {
+                    overlay.addEventListener('click', window.closeMobileSidebar);
+                }
+
+                console.log('✅ Chat initialized successfully');
                 showToast('✅ เชื่อมต่อสำเร็จ', 'success');
                 
             } catch (error) {
                 console.error('❌ Init error:', error);
-                showToast('❌ ไม่สามารถเชื่อมต่อได้', 'error');
+                showToast('❌ ไม่สามารถเชื่อมต่อได้: ' + error.message, 'error');
             }
         });
+
+        // ========== CHECK ADMIN STATUS ==========
+        window.checkAdminStatus = async function() {
+            try {
+                if (!window.currentUser) return false;
+                
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', window.currentUser.id)
+                    .single();
+                
+                if (error) {
+                    console.error('Admin check error:', error);
+                    return false;
+                }
+                
+                window.isAdmin = data?.is_admin || false;
+                
+                const adminBtn = document.getElementById('adminModeBtn');
+                if (adminBtn) {
+                    adminBtn.style.display = window.isAdmin ? 'inline-flex' : 'none';
+                }
+                
+                return window.isAdmin;
+                
+            } catch (error) {
+                console.error('❌ Error checking admin status:', error);
+                return false;
+            }
+        };
+
+        // ========== DISPLAY USER INFO ==========
+        window.displayUserInfo = function() {
+            const userProfile = document.getElementById('userProfile');
+            if (!userProfile || !window.currentUser) return;
+            
+            const username = window.currentUser.user_metadata?.display_name || 
+                            window.currentUser.user_metadata?.username || 
+                            window.currentUser.email?.split('@')[0] || 
+                            'ผู้ใช้';
+            
+            userProfile.innerHTML = `
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" 
+                     alt="${escapeHtml(username)}" 
+                     class="avatar">
+                <span class="username">${escapeHtml(username)} ${window.isAdmin ? '👑' : ''}</span>
+            `;
+        };
 
         // ========== LOAD ROOMS ==========
         window.loadRooms = async function(filter = 'all') {
@@ -1857,78 +1954,95 @@
                 const roomList = document.getElementById('roomList');
                 if (!roomList) return;
                 
+                // แสดง loading
+                roomList.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #a0aec0;">
+                        <div class="loading-spinner" style="margin: 20px auto;"></div>
+                        <div>⏳ กำลังโหลดห้อง...</div>
+                    </div>
+                `;
+                
                 let allRooms = [];
                 
                 // Load chat rooms
                 if (filter === 'all' || filter === 'chat') {
-                    const { data: chatRooms, error: chatError } = await supabaseClient
-                        .from('rooms')
-                        .select(`
-                            *,
-                            owner:owner_id (
-                                username,
-                                display_name
-                            ),
-                            room_members (
-                                user_id,
-                                role
-                            )
-                        `)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!chatError && chatRooms) {
-                        const chatRoomsWithType = chatRooms.map(r => ({
-                            ...r,
-                            room_type_real: 'chat',
-                            member_count: r.room_members?.length || 0,
-                            room_type_display: r.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'
-                        }));
-                        allRooms = [...allRooms, ...chatRoomsWithType];
+                    try {
+                        const { data: chatRooms, error: chatError } = await supabaseClient
+                            .from('rooms')
+                            .select(`
+                                *,
+                                owner:owner_id (
+                                    username,
+                                    display_name
+                                ),
+                                room_members (
+                                    user_id,
+                                    role
+                                )
+                            `)
+                            .order('created_at', { ascending: false });
+                        
+                        if (!chatError && chatRooms) {
+                            const chatRoomsWithType = chatRooms.map(r => ({
+                                ...r,
+                                room_type_real: 'chat',
+                                member_count: r.room_members?.length || 0,
+                                room_type_display: r.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'
+                            }));
+                            allRooms = [...allRooms, ...chatRoomsWithType];
+                        }
+                    } catch (e) {
+                        console.error('Error loading chat rooms:', e);
                     }
                 }
                 
                 // Load voice rooms
                 if (filter === 'all' || filter === 'voice') {
-                    const { data: voiceRooms, error: voiceError } = await supabaseClient
-                        .from('voice_rooms')
-                        .select(`
-                            *,
-                            owner:owner_id (
-                                username,
-                                display_name
-                            ),
-                            voice_room_members (
-                                user_id,
-                                role,
-                                is_muted,
-                                is_deafened
-                            )
-                        `)
-                        .eq('is_active', true)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!voiceError && voiceRooms) {
-                        const voiceRoomsWithType = voiceRooms.map(v => ({
-                            ...v,
-                            room_type_real: 'voice',
-                            member_count: v.voice_room_members?.length || 0,
-                            room_type: v.room_type || 'public',
-                            room_type_display: v.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'
-                        }));
-                        allRooms = [...allRooms, ...voiceRoomsWithType];
+                    try {
+                        const { data: voiceRooms, error: voiceError } = await supabaseClient
+                            .from('voice_rooms')
+                            .select(`
+                                *,
+                                owner:owner_id (
+                                    username,
+                                    display_name
+                                ),
+                                voice_room_members (
+                                    user_id,
+                                    role,
+                                    is_muted,
+                                    is_deafened
+                                )
+                            `)
+                            .eq('is_active', true)
+                            .order('created_at', { ascending: false });
+                        
+                        if (!voiceError && voiceRooms) {
+                            const voiceRoomsWithType = voiceRooms.map(v => ({
+                                ...v,
+                                room_type_real: 'voice',
+                                member_count: v.voice_room_members?.length || 0,
+                                room_type: v.room_type || 'public',
+                                room_type_display: v.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ'
+                            }));
+                            allRooms = [...allRooms, ...voiceRoomsWithType];
+                        }
+                    } catch (e) {
+                        console.error('Error loading voice rooms:', e);
                     }
                 }
                 
                 // Sort by created_at
                 allRooms.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 
+                let filteredRooms = allRooms;
                 if (filter === 'chat') {
-                    displayRooms(allRooms.filter(r => r.room_type_real === 'chat'));
+                    filteredRooms = allRooms.filter(r => r.room_type_real === 'chat');
                 } else if (filter === 'voice') {
-                    displayRooms(allRooms.filter(r => r.room_type_real === 'voice'));
-                } else {
-                    displayRooms(allRooms);
+                    filteredRooms = allRooms.filter(r => r.room_type_real === 'voice');
                 }
+                
+                displayRooms(filteredRooms);
                 
             } catch (error) {
                 console.error('❌ Error loading rooms:', error);
@@ -1938,7 +2052,7 @@
                         <div style="text-align: center; padding: 40px 20px; color: #f56565;">
                             <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
                             <div style="font-size: 16px; font-weight: 600;">โหลดห้องไม่สำเร็จ</div>
-                            <div style="font-size: 14px; margin-top: 8px; color: #718096;">กรุณาลองใหม่อีกครั้ง</div>
+                            <div style="font-size: 14px; margin-top: 8px;">${escapeHtml(error.message || 'กรุณาลองใหม่')}</div>
                             <button onclick="window.loadRooms('${filter}')" class="btn btn-primary" style="margin-top: 20px;">
                                 <span>🔄</span> ลองใหม่
                             </button>
@@ -2011,6 +2125,11 @@
             window.closeMobileSidebar();
             
             try {
+                if (!window.currentUser) {
+                    showToast('❌ กรุณาเข้าสู่ระบบ', 'error');
+                    return;
+                }
+                
                 if (type === 'voice') {
                     const { data: room, error } = await supabaseClient
                         .from('voice_rooms')
@@ -2068,7 +2187,7 @@
                 }
             } catch (error) {
                 console.error('❌ Error selecting room:', error);
-                showToast('❌ ไม่สามารถเลือกห้องได้', 'error');
+                showToast('❌ ไม่สามารถเลือกห้องได้: ' + error.message, 'error');
             }
         };
 
@@ -2079,6 +2198,7 @@
                     await window.leaveVoiceRoom();
                 }
                 
+                // Add member if not already
                 const { data: existingMember } = await supabaseClient
                     .from('room_members')
                     .select('*')
@@ -2173,7 +2293,7 @@
                 
             } catch (error) {
                 console.error('❌ Error joining chat room:', error);
-                showToast('❌ ไม่สามารถเข้าร่วมห้องได้', 'error');
+                showToast('❌ ไม่สามารถเข้าร่วมห้องได้: ' + error.message, 'error');
             }
         };
 
@@ -2204,6 +2324,11 @@
             event.preventDefault();
             
             try {
+                if (!window.currentUser) {
+                    showToast('❌ กรุณาเข้าสู่ระบบ', 'error');
+                    return;
+                }
+                
                 const name = document.getElementById('voiceRoomName').value;
                 const description = document.getElementById('voiceRoomDescription').value;
                 const roomType = document.getElementById('voiceRoomType').value;
@@ -2232,43 +2357,61 @@
                     }
                 }
                 
-                const { data: room, error } = await supabaseClient
-                    .from('voice_rooms')
-                    .insert([{
-                        name: name.trim(),
-                        description: description.trim(),
-                        room_type: roomType,
-                        password: roomType === 'private' ? password : null,
-                        owner_id: window.currentUser.id,
-                        voice_quality: voiceQuality,
-                        max_users: maxUsers,
-                        is_active: true,
-                        created_at: new Date().toISOString()
-                    }])
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                await supabaseClient
-                    .from('voice_room_members')
-                    .insert([{
-                        room_id: room.id,
-                        user_id: window.currentUser.id,
-                        role: 'owner',
-                        is_muted: false,
-                        is_deafened: false,
-                        joined_at: new Date().toISOString()
-                    }]);
-                
-                showToast('✅ สร้างห้องเสียงสำเร็จ!', 'success');
-                window.closeCreateVoiceRoomModal();
-                await joinVoiceRoom(room);
-                await loadRooms();
+                // ตรวจสอบว่ามีตาราง voice_rooms หรือไม่
+                try {
+                    const { data: room, error } = await supabaseClient
+                        .from('voice_rooms')
+                        .insert([{
+                            name: name.trim(),
+                            description: description.trim(),
+                            room_type: roomType,
+                            password: roomType === 'private' ? password : null,
+                            owner_id: window.currentUser.id,
+                            voice_quality: voiceQuality,
+                            max_users: maxUsers,
+                            is_active: true,
+                            created_at: new Date().toISOString()
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (error) {
+                        if (error.code === 'PGRST205' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+                            showToast('❌ ยังไม่ได้สร้างตาราง voice_rooms ในฐานข้อมูล', 'error');
+                            console.error('Table not found. Please run SQL to create voice_rooms table');
+                            return;
+                        }
+                        throw error;
+                    }
+                    
+                    await supabaseClient
+                        .from('voice_room_members')
+                        .insert([{
+                            room_id: room.id,
+                            user_id: window.currentUser.id,
+                            role: 'owner',
+                            is_muted: false,
+                            is_deafened: false,
+                            joined_at: new Date().toISOString()
+                        }]);
+                    
+                    showToast('✅ สร้างห้องเสียงสำเร็จ!', 'success');
+                    window.closeCreateVoiceRoomModal();
+                    await joinVoiceRoom(room);
+                    await loadRooms();
+                    
+                } catch (dbError) {
+                    if (dbError.code === 'PGRST205' || dbError.message?.includes('relation') || dbError.message?.includes('does not exist')) {
+                        showToast('❌ ยังไม่ได้สร้างตาราง voice_rooms', 'error');
+                        console.error('Please run SQL to create voice_rooms table');
+                    } else {
+                        throw dbError;
+                    }
+                }
                 
             } catch (error) {
                 console.error('❌ Error creating voice room:', error);
-                showToast('❌ ไม่สามารถสร้างห้องเสียงได้', 'error');
+                showToast('❌ ไม่สามารถสร้างห้องเสียงได้: ' + error.message, 'error');
             }
         };
 
@@ -2307,34 +2450,40 @@
                 } catch (micError) {
                     console.error('❌ Microphone error:', micError);
                     if (micError.name === 'NotAllowedError') {
-                        showToast('❌ ไม่ได้รับอนุญาตให้ใช้งานไมโครโฟน', 'error');
+                        showToast('❌ ไม่ได้รับอนุญาตให้ใช้งานไมโครโฟน กรุณาอนุญาตใน Settings', 'error');
                     } else if (micError.name === 'NotFoundError') {
-                        showToast('❌ ไม่พบไมโครโฟน', 'error');
+                        showToast('❌ ไม่พบไมโครโฟน กรุณาเชื่อมต่ออุปกรณ์เสียง', 'error');
                     } else {
-                        showToast('❌ ไม่สามารถเข้าถึงไมโครโฟน', 'error');
+                        showToast('❌ ไม่สามารถเข้าถึงไมโครโฟน: ' + micError.message, 'error');
                     }
                     return;
                 }
                 
                 // Add member to room
-                const { data: existingMember } = await supabaseClient
-                    .from('voice_room_members')
-                    .select('*')
-                    .eq('room_id', room.id)
-                    .eq('user_id', window.currentUser.id)
-                    .maybeSingle();
-                
-                if (!existingMember) {
-                    await supabaseClient
+                try {
+                    const { data: existingMember } = await supabaseClient
                         .from('voice_room_members')
-                        .insert([{
-                            room_id: room.id,
-                            user_id: window.currentUser.id,
-                            role: room.owner_id === window.currentUser.id ? 'owner' : 'member',
-                            is_muted: false,
-                            is_deafened: false,
-                            joined_at: new Date().toISOString()
-                        }]);
+                        .select('*')
+                        .eq('room_id', room.id)
+                        .eq('user_id', window.currentUser.id)
+                        .maybeSingle();
+                    
+                    if (!existingMember) {
+                        await supabaseClient
+                            .from('voice_room_members')
+                            .insert([{
+                                room_id: room.id,
+                                user_id: window.currentUser.id,
+                                role: room.owner_id === window.currentUser.id ? 'owner' : 'member',
+                                is_muted: false,
+                                is_deafened: false,
+                                joined_at: new Date().toISOString()
+                            }]);
+                    }
+                } catch (dbError) {
+                    console.error('Voice room members table error:', dbError);
+                    // ถ้ายังไม่มีตาราง ก็ให้เข้าได้เฉพาะฟีเจอร์ UI
+                    showToast('⚠️ ระบบเสียงยังไม่สมบูรณ์ (เฉพาะ UI)', 'warning');
                 }
                 
                 window.currentVoiceRoom = room;
@@ -2383,15 +2532,24 @@
                             <div style="font-size: 48px; margin-bottom: 16px;">🎤</div>
                             <div style="font-size: 18px; font-weight: 600;">คุณอยู่ในห้องเสียง</div>
                             <div style="font-size: 14px; margin-top: 8px;">${escapeHtml(room.description || 'พูดคุยด้วยเสียง')}</div>
+                            <div style="font-size: 12px; margin-top: 16px; color: #8b5cf6;">🎤 กำลังสนทนาด้วยเสียง...</div>
                         </div>
                     `;
                 }
                 
                 // Load members
-                await loadVoiceRoomMembers(room.id);
+                try {
+                    await loadVoiceRoomMembers(room.id);
+                } catch (e) {
+                    console.log('Voice members not available');
+                }
                 
                 // Subscribe to updates
-                subscribeToVoiceRoom(room.id);
+                try {
+                    subscribeToVoiceRoom(room.id);
+                } catch (e) {
+                    console.log('Voice subscription not available');
+                }
                 
                 // Start speaking simulation
                 startSpeakingSimulation();
@@ -2400,7 +2558,7 @@
                 
             } catch (error) {
                 console.error('❌ Error joining voice room:', error);
-                showToast('❌ ไม่สามารถเข้าร่วมห้องเสียงได้', 'error');
+                showToast('❌ ไม่สามารถเข้าร่วมห้องเสียงได้: ' + error.message, 'error');
             }
         };
 
@@ -2408,6 +2566,7 @@
             if (!window.currentVoiceRoom) return;
             
             try {
+                // Stop microphone
                 if (window.localStream) {
                     window.localStream.getTracks().forEach(track => {
                         track.stop();
@@ -2415,11 +2574,16 @@
                     window.localStream = null;
                 }
                 
-                await supabaseClient
-                    .from('voice_room_members')
-                    .delete()
-                    .eq('room_id', window.currentVoiceRoom.id)
-                    .eq('user_id', window.currentUser.id);
+                // Remove from members (ถ้ามีตาราง)
+                try {
+                    await supabaseClient
+                        .from('voice_room_members')
+                        .delete()
+                        .eq('room_id', window.currentVoiceRoom.id)
+                        .eq('user_id', window.currentUser.id);
+                } catch (e) {
+                    console.log('Voice room members table not available');
+                }
                 
                 // Hide UI
                 const voiceBar = document.getElementById('voiceBar');
@@ -2477,7 +2641,14 @@
                     `)
                     .eq('room_id', roomId);
                 
-                if (error) throw error;
+                if (error) {
+                    if (error.code === 'PGRST205' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+                        // ไม่มีตาราง ให้แสดง UI แบบจำลอง
+                        displayVoiceRoomMembersDemo();
+                        return;
+                    }
+                    throw error;
+                }
                 
                 displayVoiceRoomMembers(members);
                 
@@ -2488,6 +2659,63 @@
                 
             } catch (error) {
                 console.error('❌ Error loading voice members:', error);
+                displayVoiceRoomMembersDemo();
+            }
+        };
+
+        // แสดงสมาชิกจำลอง (เมื่อยังไม่มีตาราง)
+        window.displayVoiceRoomMembersDemo = function() {
+            const container = document.getElementById('voiceParticipantsList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #718096; margin-bottom: 16px;">
+                    <span style="background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 999px; font-size: 12px;">⚡ โหมดสาธิต</span>
+                </div>
+                <div class="voice-participant-item speaking">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(window.currentUser?.user_metadata?.display_name || 'คุณ')}&background=8b5cf6&color=fff" 
+                         alt="คุณ" 
+                         class="voice-participant-avatar owner">
+                    <div class="voice-participant-info">
+                        <div class="voice-participant-name">
+                            ${escapeHtml(window.currentUser?.user_metadata?.display_name || 'คุณ')} (คุณ) 👑
+                        </div>
+                        <div class="voice-participant-status">
+                            <span class="speaking-indicator"></span> กำลังพูด
+                        </div>
+                    </div>
+                </div>
+                <div class="voice-participant-item">
+                    <img src="https://ui-avatars.com/api/?name=สมาชิก1&background=8b5cf6&color=fff" 
+                         alt="สมาชิก" 
+                         class="voice-participant-avatar">
+                    <div class="voice-participant-info">
+                        <div class="voice-participant-name">
+                            สมาชิกตัวอย่าง 1
+                        </div>
+                        <div class="voice-participant-status">
+                            🟢 ออนไลน์
+                        </div>
+                    </div>
+                </div>
+                <div class="voice-participant-item">
+                    <img src="https://ui-avatars.com/api/?name=สมาชิก2&background=8b5cf6&color=fff" 
+                         alt="สมาชิก" 
+                         class="voice-participant-avatar">
+                    <div class="voice-participant-info">
+                        <div class="voice-participant-name">
+                            สมาชิกตัวอย่าง 2
+                        </div>
+                        <div class="voice-participant-status">
+                            🟢 ออนไลน์
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const countEl = document.getElementById('voiceParticipantsCount');
+            if (countEl) {
+                countEl.innerHTML = `<span>👥</span> 3 คน`;
             }
         };
 
@@ -2496,12 +2724,7 @@
             if (!container) return;
             
             if (!members || members.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: #718096;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
-                        <div style="font-size: 16px; font-weight: 600;">ยังไม่มีสมาชิก</div>
-                    </div>
-                `;
+                displayVoiceRoomMembersDemo();
                 return;
             }
             
@@ -2539,27 +2762,21 @@
                 window.voiceSubscription.unsubscribe();
             }
             
-            window.voiceSubscription = supabaseClient
-                .channel(`voice-room-${roomId}`)
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'voice_room_members', filter: `room_id=eq.${roomId}` },
-                    () => {
-                        if (window.currentVoiceRoom) {
-                            loadVoiceRoomMembers(roomId);
+            try {
+                window.voiceSubscription = supabaseClient
+                    .channel(`voice-room-${roomId}`)
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'voice_room_members', filter: `room_id=eq.${roomId}` },
+                        () => {
+                            if (window.currentVoiceRoom) {
+                                loadVoiceRoomMembers(roomId);
+                            }
                         }
-                    }
-                )
-                .subscribe();
-            
-            if (window.voiceParticipantsInterval) {
-                clearInterval(window.voiceParticipantsInterval);
+                    )
+                    .subscribe();
+            } catch (e) {
+                console.log('Voice subscription not available');
             }
-            
-            window.voiceParticipantsInterval = setInterval(() => {
-                if (window.currentVoiceRoom) {
-                    loadVoiceRoomMembers(window.currentVoiceRoom.id);
-                }
-            }, 5000);
             
             return window.voiceSubscription;
         };
@@ -2571,22 +2788,23 @@
             
             window.speakingInterval = setInterval(() => {
                 if (window.currentVoiceRoom && window.localStream && !window.isVoiceMuted) {
-                    if (Math.random() > 0.8) {
-                        const speakingMember = document.querySelector('.voice-participant-item');
-                        if (speakingMember) {
-                            speakingMember.classList.add('speaking');
-                            setTimeout(() => {
-                                speakingMember.classList.remove('speaking');
-                            }, 2000);
-                        }
+                    const speakingMember = document.querySelector('.voice-participant-item');
+                    if (speakingMember) {
+                        speakingMember.classList.add('speaking');
+                        setTimeout(() => {
+                            speakingMember.classList.remove('speaking');
+                        }, 2000);
                     }
                 }
-            }, 3000);
+            }, 4000);
         };
 
         // ========== VOICE CONTROLS ==========
         window.toggleVoiceMute = function() {
-            if (!window.localStream) return;
+            if (!window.localStream) {
+                showToast('🎤 ยังไม่ได้เชื่อมต่อไมโครโฟน', 'info');
+                return;
+            }
             
             window.isVoiceMuted = !window.isVoiceMuted;
             const audioTracks = window.localStream.getAudioTracks();
@@ -2600,6 +2818,7 @@
                 muteBtn.classList.toggle('active', window.isVoiceMuted);
             }
             
+            // Update database (ถ้ามีตาราง)
             if (window.currentVoiceRoom) {
                 supabaseClient
                     .from('voice_room_members')
@@ -2645,6 +2864,7 @@
                 muteBtn.classList.toggle('active', window.isVoiceDeafened);
             }
             
+            // Update database (ถ้ามีตาราง)
             if (window.currentVoiceRoom) {
                 supabaseClient
                     .from('voice_room_members')
@@ -2807,6 +3027,11 @@
                 return;
             }
             
+            if (!window.currentUser) {
+                showToast('❌ กรุณาเข้าสู่ระบบ', 'error');
+                return;
+            }
+            
             try {
                 const { error } = await supabaseClient
                     .from('messages')
@@ -2826,7 +3051,7 @@
                 
             } catch (error) {
                 console.error('❌ Error sending message:', error);
-                showToast('❌ ไม่สามารถส่งข้อความได้', 'error');
+                showToast('❌ ไม่สามารถส่งข้อความได้: ' + error.message, 'error');
             }
         };
 
@@ -2940,33 +3165,6 @@
         };
 
         // ========== ADMIN FUNCTIONS ==========
-        window.checkAdminStatus = async function() {
-            try {
-                if (!window.currentUser) return false;
-                
-                const { data, error } = await supabaseClient
-                    .from('profiles')
-                    .select('is_admin')
-                    .eq('id', window.currentUser.id)
-                    .single();
-                
-                if (error) throw error;
-                
-                window.isAdmin = data?.is_admin || false;
-                
-                const adminBtn = document.getElementById('adminModeBtn');
-                if (adminBtn) {
-                    adminBtn.style.display = window.isAdmin ? 'inline-flex' : 'none';
-                }
-                
-                return window.isAdmin;
-                
-            } catch (error) {
-                console.error('❌ Error checking admin status:', error);
-                return false;
-            }
-        };
-
         window.toggleAdminMode = function() {
             if (!window.isAdmin) {
                 showToast('❌ คุณไม่ใช่แอดมิน', 'error');
@@ -3094,6 +3292,11 @@
             event.preventDefault();
             
             try {
+                if (!window.currentUser) {
+                    showToast('❌ กรุณาเข้าสู่ระบบ', 'error');
+                    return;
+                }
+                
                 const name = document.getElementById('roomName').value;
                 const description = document.getElementById('roomDescription').value;
                 const roomType = document.getElementById('roomType').value;
@@ -3151,7 +3354,7 @@
                 
             } catch (error) {
                 console.error('❌ Error creating room:', error);
-                showToast('❌ ไม่สามารถสร้างห้องได้', 'error');
+                showToast('❌ ไม่สามารถสร้างห้องได้: ' + error.message, 'error');
             }
         };
 
@@ -3263,18 +3466,12 @@
         };
 
         // ========== UI CONTROLS ==========
-        window.displayUserInfo = function() {
-            const userProfile = document.getElementById('userProfile');
-            const username = window.currentUser.user_metadata?.display_name || 
-                            window.currentUser.user_metadata?.username || 
-                            'ผู้ใช้';
-            
-            userProfile.innerHTML = `
-                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" 
-                     alt="${escapeHtml(username)}" 
-                     class="avatar">
-                <span class="username">${escapeHtml(username)} ${window.isAdmin ? '👑' : ''}</span>
-            `;
+        window.toggleActivitiesPanel = function() {
+            showToast('🎮 กำลังพัฒนา...', 'info');
+        };
+
+        window.openMusicPlayer = function() {
+            showToast('🎵 กำลังพัฒนา...', 'info');
         };
 
         // ========== MOBILE SIDEBAR ==========
@@ -3314,16 +3511,6 @@
                     document.body.classList.remove('keyboard-open');
                 }
             });
-        };
-
-        // ========== ACTIVITIES PANEL ==========
-        window.toggleActivitiesPanel = function() {
-            showToast('🎮 กำลังพัฒนา...', 'info');
-        };
-
-        // ========== MUSIC PLAYER ==========
-        window.openMusicPlayer = function() {
-            showToast('🎵 กำลังพัฒนา...', 'info');
         };
 
         // ========== EVENT LISTENERS ==========
@@ -3403,13 +3590,31 @@
             }
         };
 
+        // ========== LOGOUT - ใช้ฟังก์ชันจาก supabase-client.js ==========
         window.logout = async function() {
-            if (window.currentVoiceRoom) {
-                await window.leaveVoiceRoom();
+            try {
+                if (window.currentVoiceRoom) {
+                    await window.leaveVoiceRoom();
+                }
+                
+                // ใช้ฟังก์ชัน logout จาก supabase-client.js
+                const result = await window.logout(); // เรียกฟังก์ชันที่ export มาจาก supabase-client.js
+                
+                if (result && result.success !== false) {
+                    window.location.href = 'login.html';
+                } else {
+                    // ถ้า logout ไม่สำเร็จ ให้ signOut โดยตรง
+                    await supabaseClient.auth.signOut();
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('❌ Logout error:', error);
+                // Fallback
+                try {
+                    await supabaseClient.auth.signOut();
+                } catch (e) {}
+                window.location.href = 'login.html';
             }
-            
-            await supabaseClient.auth.signOut();
-            window.location.href = 'index.html';
         };
 
         // ========== CLEANUP ==========
@@ -3434,15 +3639,14 @@
                 window.localStream.getTracks().forEach(track => track.stop());
             }
             
-            if (window.currentVoiceRoom) {
+            if (window.currentVoiceRoom && window.currentUser) {
                 supabaseClient
                     .from('voice_room_members')
                     .delete()
                     .eq('room_id', window.currentVoiceRoom.id)
                     .eq('user_id', window.currentUser.id)
-                    .then();
+                    .then(() => {}, () => {});
             }
         });
     </script>
-</body>
 </html>
