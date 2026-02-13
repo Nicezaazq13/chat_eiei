@@ -1561,9 +1561,121 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-light);
         }
+        .view-activity-btn {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .activity-item {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .activity-actions {
+            position: relative;
+            z-index: 5;
+        }
+        
+        /* ป้องกัน event bubbling */
+        .activity-item * {
+            pointer-events: auto;
+        }
+        
+        /* แก้ไข z-index ของ modal */
+        #youtubePlayerModal {
+            z-index: 9999 !important;
+        }
+        
+        /* ทำให้แน่ใจว่าปุ่มอยู่เหนือสิ่งอื่น */
+        .join-activity-btn, .view-activity-btn {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            opacity: 1 !important;
+        }
+    <!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ChatApp - ห้องแชท</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ========== CSS เดิมทั้งหมดคงไว้ ========== */
+        /* (ใส่ CSS ทั้งหมดตามที่มีในไฟล์เดิม) */
+        
+        /* เพิ่ม CSS สำหรับปุ่มและ z-index */
+        .view-activity-btn {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 100;
+            background: var(--bg-white);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .view-activity-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .join-activity-btn {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 100;
+        }
+        
+        .activity-item {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .activity-actions {
+            position: relative;
+            z-index: 50;
+            pointer-events: auto !important;
+        }
+        
+        .activity-actions button {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        
+        /* แก้ไข z-index ของ modal */
+        #youtubePlayerModal {
+            z-index: 9999 !important;
+        }
+        
+        #youtubePlayerModal .modal-content {
+            z-index: 10000;
+            position: relative;
+        }
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 10001;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <!-- Debug info (ซ่อนไว้) -->
+    <div id="debugInfo" class="debug-info"></div>
+
     <div class="chat-container">
         <!-- ========== HEADER ========== -->
         <div class="chat-header">
@@ -1870,8 +1982,8 @@
     </div>
 
     <!-- ========== YOUTUBE PLAYER MODAL ========== -->
-    <div id="youtubePlayerModal" class="modal" style="z-index: 2200;">
-        <div class="modal-content">
+    <div id="youtubePlayerModal" class="modal" style="z-index: 9999;">
+        <div class="modal-content" style="max-width: 900px; width: 90%; padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3 style="display: flex; align-items: center; gap: 8px;">
                     <span>📺</span> <span id="youtubeActivityTitle">YouTube Player</span>
@@ -1879,15 +1991,15 @@
                 <button onclick="window.closeYoutubePlayer()" class="btn-icon" style="font-size: 24px;">✕</button>
             </div>
             
-            <div id="youtubePlayerContainer">
-                <div id="youtube-player"></div>
+            <div id="youtubePlayerContainer" style="position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <div id="youtube-player" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
             </div>
             
-            <div class="youtube-controls">
-                <button onclick="window.syncPlayPause()" id="syncPlayPauseBtn" class="btn btn-primary">▶️ เล่น</button>
-                <button onclick="window.syncSeek(-10)" class="btn btn-secondary">⏪ -10</button>
-                <button onclick="window.syncSeek(10)" class="btn btn-secondary">⏩ +10</button>
-                <button onclick="window.syncRestart()" class="btn btn-secondary">🔄 เริ่มใหม่</button>
+            <div class="youtube-controls" style="display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+                <button onclick="window.syncPlayPause()" id="syncPlayPauseBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px;">⏸️ หยุด</button>
+                <button onclick="window.syncSeek(-10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">⏪ -10</button>
+                <button onclick="window.syncSeek(10)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">⏩ +10</button>
+                <button onclick="window.syncRestart()" class="btn btn-secondary" style="display: flex; align-items: center; gap: 4px;">🔄 เริ่มใหม่</button>
             </div>
             
             <div id="youtubePlayerState" style="color: var(--text-light); font-size: 14px; text-align: center;">
@@ -1976,6 +2088,7 @@
         window.youtubePlayerReady = false;
         window.youtubeApiReady = false;
         window.youtubeActivityId = null;
+        window.youtubeLoadAttempts = 0;
         
         // YouTube Playlist Variables
         window.youtubePlaylist = [];
@@ -1985,6 +2098,19 @@
         const STORAGE_KEY = 'chat_last_room_id';
         
         const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
+
+        // ========== DEBUG FUNCTION ==========
+        window.debug = function(msg) {
+            console.log('🔍 DEBUG:', msg);
+            const debugEl = document.getElementById('debugInfo');
+            if (debugEl) {
+                debugEl.innerHTML = msg + '<br>' + debugEl.innerHTML;
+                debugEl.style.display = 'block';
+                setTimeout(() => {
+                    debugEl.style.display = 'none';
+                }, 3000);
+            }
+        };
 
         // ========== CHECK USER ==========
         window.checkUser = async function() {
@@ -2276,9 +2402,11 @@
         window.loadYouTubeAPI = function() {
             if (window.YT && window.YT.Player) {
                 window.youtubeApiReady = true;
+                console.log('✅ YouTube API already loaded');
                 return;
             }
             
+            console.log('📦 Loading YouTube API...');
             const tag = document.createElement('script');
             tag.src = 'https://www.youtube.com/iframe_api';
             const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -2288,9 +2416,31 @@
         window.onYouTubeIframeAPIReady = function() {
             window.youtubeApiReady = true;
             console.log('✅ YouTube API Ready');
+            window.debug('YouTube API พร้อมใช้งาน');
+        };
+
+        window.openYoutubePlayerFromActivity = function(videoId, activityId) {
+            console.log('🎬 Opening YouTube player from activity:', videoId, activityId);
+            window.debug('กำลังเปิด YouTube: ' + videoId);
+            
+            if (!videoId) {
+                alert('❌ ไม่พบ Video ID');
+                return;
+            }
+            
+            // เรียกใช้ฟังก์ชันเปิด YouTube Player
+            window.openYoutubePlayer(videoId);
+            
+            // ถ้ามี activityId ให้เก็บไว้
+            if (activityId) {
+                window.youtubeActivityId = activityId;
+            }
         };
 
         window.openYoutubePlayer = function(videoId) {
+            console.log('🎬 Opening YouTube player with videoId:', videoId);
+            window.debug('เปิด YouTube Player: ' + videoId);
+            
             if (!videoId) {
                 alert('❌ ไม่มี Video ID');
                 return;
@@ -2300,28 +2450,57 @@
             const container = document.getElementById('youtube-player');
             const titleEl = document.getElementById('youtubeActivityTitle');
             
-            if (!modal || !container) return;
-            
-            if (!window.youtubeApiReady) {
-                window.loadYouTubeAPI();
-                alert('⏳ กำลังโหลด YouTube Player กรุณารอสักครู่...');
-                setTimeout(() => window.openYoutubePlayer(videoId), 1000);
+            if (!modal) {
+                console.error('❌ Modal not found');
+                alert('ไม่พบ Modal YouTube Player');
                 return;
             }
             
+            if (!container) {
+                console.error('❌ Container not found');
+                alert('ไม่พบ Container YouTube Player');
+                return;
+            }
+            
+            // ถ้ายังไม่พร้อม ให้โหลด API
+            if (!window.youtubeApiReady) {
+                window.loadYouTubeAPI();
+                
+                window.youtubeLoadAttempts++;
+                if (window.youtubeLoadAttempts > 3) {
+                    alert('❌ ไม่สามารถโหลด YouTube Player ได้ กรุณาลองใหม่');
+                    window.youtubeLoadAttempts = 0;
+                    return;
+                }
+                
+                alert('⏳ กำลังโหลด YouTube Player กรุณารอสักครู่...');
+                
+                // ลองใหม่อีกครั้งหลังจาก 2 วินาที
+                setTimeout(() => {
+                    if (window.youtubeApiReady) {
+                        window.openYoutubePlayer(videoId);
+                    } else {
+                        window.openYoutubePlayer(videoId); // ลองอีกครั้ง
+                    }
+                }, 2000);
+                return;
+            }
+            
+            // รีเซ็ตค่านับลอง
+            window.youtubeLoadAttempts = 0;
+            
+            // ทำลาย player เก่าถ้ามี
             if (window.youtubePlayer) {
                 try {
                     window.youtubePlayer.destroy();
-                } catch (e) {}
+                } catch (e) {
+                    console.log('Error destroying old player:', e);
+                }
                 window.youtubePlayer = null;
             }
             
+            // เตรียม container
             container.innerHTML = '';
-            container.style.position = 'absolute';
-            container.style.top = '0';
-            container.style.left = '0';
-            container.style.width = '100%';
-            container.style.height = '100%';
             
             const playerContainer = document.createElement('div');
             playerContainer.id = 'youtube-player-container';
@@ -2333,9 +2512,14 @@
                 titleEl.textContent = 'YouTube Player';
             }
             
+            // แสดง modal
+            modal.style.display = 'flex';
             modal.classList.add('active');
             
+            // สร้าง player ใหม่
             try {
+                console.log('🎬 Creating new YT.Player with videoId:', videoId);
+                
                 window.youtubePlayer = new YT.Player('youtube-player-container', {
                     height: '100%',
                     width: '100%',
@@ -2349,20 +2533,58 @@
                         'playsinline': 1
                     },
                     events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange,
-                        'onError': onPlayerError
+                        'onReady': function(event) {
+                            console.log('✅ YouTube Player ready');
+                            window.youtubePlayerReady = true;
+                            const btn = document.getElementById('syncPlayPauseBtn');
+                            if (btn) btn.innerHTML = '⏸️ หยุด';
+                            window.debug('YouTube Player พร้อมใช้งาน');
+                        },
+                        'onStateChange': function(event) {
+                            const state = event.data;
+                            const btn = document.getElementById('syncPlayPauseBtn');
+                            const stateEl = document.getElementById('youtubePlayerState');
+                            
+                            if (btn) {
+                                if (state === YT.PlayerState.PLAYING) {
+                                    btn.innerHTML = '⏸️ หยุด';
+                                    if (stateEl) stateEl.textContent = '▶️ กำลังเล่น';
+                                } else if (state === YT.PlayerState.PAUSED) {
+                                    btn.innerHTML = '▶️ เล่น';
+                                    if (stateEl) stateEl.textContent = '⏸️ หยุด';
+                                } else if (state === YT.PlayerState.ENDED) {
+                                    btn.innerHTML = '▶️ เล่นใหม่';
+                                    if (stateEl) stateEl.textContent = '⏹️ จบแล้ว';
+                                }
+                            }
+                        },
+                        'onError': function(event) {
+                            console.error('❌ YouTube error:', event.data);
+                            let msg = 'ไม่สามารถเล่นวิดีโอนี้ได้';
+                            if (event.data === 2) msg = '❌ Video ID ไม่ถูกต้อง';
+                            if (event.data === 5) msg = '❌ ไม่สามารถเล่น HTML5 player ได้';
+                            if (event.data === 100) msg = '❌ วิดีโอไม่พบหรือถูกลบ';
+                            if (event.data === 101 || event.data === 150) msg = '❌ ไม่ได้รับอนุญาตให้เล่น';
+                            alert(msg);
+                            window.debug('YouTube Error: ' + msg);
+                        }
                     }
                 });
+                
+                console.log('✅ YouTube Player created successfully');
+                window.debug('สร้าง YouTube Player สำเร็จ');
+                
             } catch (e) {
-                console.error('❌ Error:', e);
-                alert('ไม่สามารถสร้าง YouTube Player ได้');
+                console.error('❌ Error creating YouTube player:', e);
+                alert('ไม่สามารถสร้าง YouTube Player ได้: ' + e.message);
+                window.debug('Error: ' + e.message);
             }
         };
 
         window.closeYoutubePlayer = function() {
             const modal = document.getElementById('youtubePlayerModal');
             if (modal) {
+                modal.style.display = 'none';
                 modal.classList.remove('active');
             }
             
@@ -2377,53 +2599,25 @@
             if (container) {
                 container.innerHTML = '';
             }
-        };
-
-        function onPlayerReady(event) {
-            window.youtubePlayerReady = true;
-            const btn = document.getElementById('syncPlayPauseBtn');
-            if (btn) btn.innerHTML = '⏸️ หยุด';
-        }
-
-        function onPlayerStateChange(event) {
-            const state = event.data;
-            const btn = document.getElementById('syncPlayPauseBtn');
-            const stateEl = document.getElementById('youtubePlayerState');
             
-            if (btn) {
-                if (state === YT.PlayerState.PLAYING) {
-                    btn.innerHTML = '⏸️ หยุด';
-                    if (stateEl) stateEl.textContent = '▶️ กำลังเล่น';
-                } else if (state === YT.PlayerState.PAUSED) {
-                    btn.innerHTML = '▶️ เล่น';
-                    if (stateEl) stateEl.textContent = '⏸️ หยุด';
-                } else if (state === YT.PlayerState.ENDED) {
-                    btn.innerHTML = '▶️ เล่นใหม่';
-                    if (stateEl) stateEl.textContent = '⏹️ จบแล้ว';
-                }
-            }
-        }
-
-        function onPlayerError(event) {
-            console.error('❌ YouTube error:', event.data);
-            let msg = 'ไม่สามารถเล่นวิดีโอนี้ได้';
-            if (event.data === 2) msg = '❌ Video ID ไม่ถูกต้อง';
-            if (event.data === 5) msg = '❌ ไม่สามารถเล่น HTML5 player ได้';
-            if (event.data === 100) msg = '❌ วิดีโอไม่พบหรือถูกลบ';
-            if (event.data === 101 || event.data === 150) msg = '❌ ไม่ได้รับอนุญาตให้เล่น';
-            alert(msg);
-        }
+            window.youtubePlayerReady = false;
+            window.debug('ปิด YouTube Player');
+        };
 
         window.syncPlayPause = function() {
             if (!window.youtubePlayer || !window.youtubePlayerReady) {
                 alert('Player ยังไม่พร้อม');
                 return;
             }
-            const state = window.youtubePlayer.getPlayerState();
-            if (state === YT.PlayerState.PLAYING) {
-                window.youtubePlayer.pauseVideo();
-            } else {
-                window.youtubePlayer.playVideo();
+            try {
+                const state = window.youtubePlayer.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                    window.youtubePlayer.pauseVideo();
+                } else {
+                    window.youtubePlayer.playVideo();
+                }
+            } catch (e) {
+                console.error('Error toggling play/pause:', e);
             }
         };
 
@@ -2432,13 +2626,19 @@
             try {
                 const time = window.youtubePlayer.getCurrentTime();
                 window.youtubePlayer.seekTo(time + seconds, true);
-            } catch (e) {}
+            } catch (e) {
+                console.error('Error seeking:', e);
+            }
         };
 
         window.syncRestart = function() {
             if (!window.youtubePlayer || !window.youtubePlayerReady) return;
-            window.youtubePlayer.seekTo(0, true);
-            window.youtubePlayer.playVideo();
+            try {
+                window.youtubePlayer.seekTo(0, true);
+                window.youtubePlayer.playVideo();
+            } catch (e) {
+                console.error('Error restarting:', e);
+            }
         };
 
         // ========== INITIALIZATION ==========
@@ -2470,11 +2670,14 @@
                 await window.selectRoom(initialRoomId);
                 window.setupEventListeners();
                 
+                // โหลด YouTube API
                 setTimeout(() => {
                     window.loadYouTubeAPI();
                 }, 1000);
 
                 console.log('✅ Chat initialized');
+                window.debug('แอพพลิเคชันพร้อมใช้งาน');
+                
             } catch (error) {
                 console.error('❌ Init error:', error);
                 window.location.href = 'login.html';
@@ -3118,6 +3321,7 @@
                 container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #718096;">🎮 ยังไม่มีกิจกรรม<br><small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small></div>';
                 return;
             }
+            
             container.innerHTML = activities.map(activity => {
                 const isCreator = activity.user_id === window.currentUser.id;
                 const isJoined = activity.participants?.some(p => p.user_id === window.currentUser.id);
@@ -3126,7 +3330,10 @@
                 if (activity.activity_type === 'youtube') activityIcon = '📺';
                 else if (activity.activity_type === 'game') activityIcon = '🎮';
                 else if (activity.activity_type === 'poll') activityIcon = '📊';
-                return `<div class="activity-item" id="activity-${activity.id}">
+                
+                const videoId = activity.content || '';
+                
+                return `<div class="activity-item" id="activity-${activity.id}" data-activity-id="${activity.id}">
                     <div class="activity-header">
                         <div class="activity-title"><span>${activityIcon}</span> ${activity.title}</div>
                         <span class="activity-type-badge">${activity.activity_type}</span>
@@ -3141,26 +3348,67 @@
                         <span>👥 ${participantsCount}/${activity.max_participants || '∞'}</span>
                         <span>🕐 ${window.formatTime(activity.created_at)}</span>
                     </div>
-                    <div class="activity-actions">
-                        ${activity.activity_type === 'youtube' && activity.content ? `
+                    <div class="activity-actions" onclick="event.stopPropagation()">
+                        ${activity.activity_type === 'youtube' && videoId ? `
                             <button type="button" 
                                     class="view-activity-btn" 
-                                    onclick="window.openYoutubePlayer('${activity.content}')">
+                                    data-video-id="${videoId}"
+                                    data-activity-id="${activity.id}"
+                                    onclick="event.stopPropagation(); window.openYoutubePlayerFromActivity('${videoId}', '${activity.id}'); return false;">
                                 📺 ดู
                             </button>
                         ` : ''}
-                        <button onclick="window.toggleJoinActivity('${activity.id}')" 
-                                class="join-activity-btn ${isJoined ? 'joined' : ''}">
+                        <button type="button"
+                                class="join-activity-btn ${isJoined ? 'joined' : ''}"
+                                data-activity-id="${activity.id}"
+                                onclick="event.stopPropagation(); window.toggleJoinActivity('${activity.id}'); return false;">
                             ${isJoined ? '❌ ออก' : '✅ เข้าร่วม'}
                         </button>
                         ${isCreator || window.isAdmin ? `
-                            <button onclick="window.endActivity('${activity.id}')" class="btn" style="background: #f56565; color: white; padding: 8px; border-radius: 6px;">
+                            <button type="button"
+                                    class="btn" 
+                                    style="background: #f56565; color: white; padding: 8px; border-radius: 6px;"
+                                    data-activity-id="${activity.id}"
+                                    onclick="event.stopPropagation(); window.endActivity('${activity.id}'); return false;">
                                 ✕ จบ
                             </button>
                         ` : ''}
                     </div>
                 </div>`;
             }).join('');
+            
+            // ผูก event listeners เพิ่มเติมเพื่อความแน่ใจ
+            setTimeout(() => {
+                document.querySelectorAll('.view-activity-btn').forEach(btn => {
+                    btn.removeEventListener('click', window.handleViewActivityClick);
+                    btn.addEventListener('click', window.handleViewActivityClick);
+                });
+                
+                document.querySelectorAll('.join-activity-btn').forEach(btn => {
+                    btn.removeEventListener('click', window.handleJoinActivityClick);
+                    btn.addEventListener('click', window.handleJoinActivityClick);
+                });
+            }, 100);
+        };
+
+        window.handleViewActivityClick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const videoId = this.dataset.videoId;
+            const activityId = this.dataset.activityId;
+            console.log('View activity clicked:', videoId, activityId);
+            if (videoId) {
+                window.openYoutubePlayerFromActivity(videoId, activityId);
+            }
+        };
+
+        window.handleJoinActivityClick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const activityId = this.dataset.activityId;
+            if (activityId) {
+                window.toggleJoinActivity(activityId);
+            }
         };
 
         window.createActivity = async function(event) {
@@ -3519,7 +3767,13 @@
                 } catch (e) {}
             }
         });
+
+        // ทดสอบฟังก์ชันเมื่อโหลดเสร็จ
+        setTimeout(() => {
+            console.log('Testing YouTube functions:');
+            console.log('openYoutubePlayer function exists:', typeof window.openYoutubePlayer === 'function');
+            console.log('openYoutubePlayerFromActivity exists:', typeof window.openYoutubePlayerFromActivity === 'function');
+        }, 2000);
     </script>
 </body>
 </html>
-
