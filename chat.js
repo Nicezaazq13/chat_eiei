@@ -1,5 +1,7 @@
+// ========== script.js ==========
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
+// ✅ ใช้ API Key จริง (อันนี้คือ key จริง)
 const SUPABASE_ANON_KEY = 'sb_publishable_bBVN1rHJyBJN_KswV_skAQ_XYwPsvsy';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -39,8 +41,12 @@ window.youtubeLoadAttempts = 0;
 // YouTube Playlist Variables - โหลดจาก localStorage ทันที
 const savedRoomId = localStorage.getItem('chat_last_room_id');
 if (savedRoomId) {
-    const savedPlaylist = localStorage.getItem(`youtube_playlist_${savedRoomId}`);
-    window.youtubePlaylist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
+    try {
+        const savedPlaylist = localStorage.getItem(`youtube_playlist_${savedRoomId}`);
+        window.youtubePlaylist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
+    } catch (e) {
+        window.youtubePlaylist = [];
+    }
 } else {
     window.youtubePlaylist = [];
 }
@@ -889,8 +895,14 @@ window.loadActivities = async function() {
         return;
     }
     
+    const container = document.getElementById('activitiesList');
+    if (!container) return;
+    
+    // แสดงสถานะกำลังโหลด
+    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">⏳ กำลังโหลดกิจกรรม...</div>';
+    
     try {
-        console.log('Loading activities for room:', window.currentRoomId);
+        console.log('📥 Loading activities for room:', window.currentRoomId);
         
         const { data: activities, error } = await supabaseClient
             .from('activities')
@@ -903,18 +915,22 @@ window.loadActivities = async function() {
             console.error('❌ Error loading activities:', error);
             
             if (error.code === '42P01') {
-                document.getElementById('activitiesList').innerHTML = 
+                container.innerHTML = 
                     '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
                     '❌ ยังไม่มีตาราง activities ในฐานข้อมูล<br>' +
                     '<small>กรุณาสร้างตารางก่อน</small></div>';
+            } else {
+                container.innerHTML = 
+                    '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
+                    '❌ ' + error.message + '</div>';
             }
             return;
         }
         
-        console.log('Activities loaded:', activities);
+        console.log(`📊 Loaded ${activities?.length || 0} activities`);
         
         if (!activities || activities.length === 0) {
-            document.getElementById('activitiesList').innerHTML = 
+            container.innerHTML = 
                 '<div style="text-align: center; padding: 40px 20px; color: #718096;">' +
                 '🎮 ยังไม่มีกิจกรรม<br>' +
                 '<small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small></div>';
@@ -935,7 +951,7 @@ window.loadActivities = async function() {
             
             return {
                 ...activity,
-                creator: creator || { display_name: 'ผู้ใช้', username: 'user' },
+                creator: creator || { display_name: 'ผู้ใช้', username: 'user', avatar_url: null },
                 participants: participants || []
             };
         }));
@@ -944,12 +960,17 @@ window.loadActivities = async function() {
         
     } catch (error) { 
         console.error('❌ Error loading activities:', error); 
+        container.innerHTML = 
+            '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
+            '❌ เกิดข้อผิดพลาด: ' + error.message + '</div>';
     }
 };
 
 window.displayActivities = function(activities) {
     const container = document.getElementById('activitiesList');
     if (!container) return;
+    
+    console.log('🎯 Displaying activities:', activities.length);
     
     if (activities.length === 0) {
         container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #718096;">🎮 ยังไม่มีกิจกรรม<br><small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small></div>';
@@ -1011,6 +1032,8 @@ window.displayActivities = function(activities) {
             </div>
         </div>`;
     }).join('');
+    
+    console.log('✅ Activities displayed');
 };
 
 window.createActivity = async function(event) {
@@ -1112,7 +1135,9 @@ window.createActivity = async function(event) {
         
         alert('✅ สร้างกิจกรรมสำเร็จ!');
         window.closeCreateActivityModal();
-        window.loadActivities();
+        
+        // ✅ โหลดกิจกรรมใหม่ทันที
+        await window.loadActivities();
         
     } catch (error) { 
         console.error('❌ Error creating activity:', error); 
@@ -1160,7 +1185,8 @@ window.toggleJoinActivity = async function(activityId) {
             .update({ participants_count: participants.length })
             .eq('id', activityId);
         
-        window.loadActivities();
+        // ✅ โหลดกิจกรรมใหม่ทันที
+        await window.loadActivities();
         
     } catch (error) { 
         console.error('❌ Error joining activity:', error); 
@@ -1181,7 +1207,9 @@ window.endActivity = async function(activityId) {
             .eq('id', activityId);
         
         alert('✅ จบกิจกรรมแล้ว');
-        window.loadActivities();
+        
+        // ✅ โหลดกิจกรรมใหม่ทันที
+        await window.loadActivities();
         
     } catch (error) { 
         console.error('❌ Error ending activity:', error); 
@@ -1730,6 +1758,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initialRoomId = lastRoomId || PUBLIC_ROOM_ID;
         
         await window.selectRoom(initialRoomId);
+        
+        // ✅ โหลดกิจกรรมทันที
+        setTimeout(() => {
+            window.loadActivities();
+        }, 500);
+        
         window.setupEventListeners();
         
         setTimeout(() => {
@@ -1805,6 +1839,9 @@ window.selectRoom = async function(roomId) {
         
         await window.loadMessages(room.id);
         await window.loadYoutubePlaylist();
+        
+        // ✅ โหลดกิจกรรมทุกครั้งที่เปลี่ยนห้อง
+        await window.loadActivities();
         
         window.loadRooms();
     } catch (error) {
