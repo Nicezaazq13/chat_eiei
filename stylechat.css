@@ -642,7 +642,21 @@ body {
     background: var(--bg-light);
     transition: all 0.2s;
 }
+.members-header .btn-icon {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-light);
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
 
+.members-header .btn-icon:hover {
+    background: var(--bg-light);
+    color: var(--danger-color);
+}
 .member-item:hover {
     background: #e2e8f0;
 }
