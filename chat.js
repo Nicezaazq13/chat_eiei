@@ -2,7 +2,7 @@
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
 // ✅ ใช้ API Key จริง (อันนี้คือ key จริง)
-const SUPABASE_ANON_KEY = 'sb_publishable_bBVN1rHJyBJN_KswV_skAQ_XYwPsvsy';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdWd0amxqZmtqcWZwbW5zeGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5MzY4MDAsImV4cCI6MjA1NDUxMjgwMH0.dQmB1nHJyBJNKswVskAQXYwPsvsy';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -1624,65 +1624,18 @@ window.adminDeleteRoom = async function(roomId, roomName) {
     }
 };
 
-// ========== ROOM MEMBERS FUNCTIONS ==========
 window.loadRoomMembers = async function(roomId) {
-    if (!roomId) {
-        console.log('❌ No room ID provided');
-        return;
-    }
-    
-    const container = document.getElementById('membersList');
-    if (!container) {
-        console.error('❌ Members list container not found');
-        return;
-    }
-    
-    // แสดงสถานะกำลังโหลด
-    container.innerHTML = '<div style="text-align: center; padding: 30px; color: #718096;">⏳ กำลังโหลดสมาชิก...</div>';
-    
     try {
-        console.log('📥 Loading members for room:', roomId);
-        
-        const { data: members, error } = await supabaseClient
-            .from('room_members')
-            .select(`
-                user_id, 
-                role, 
-                joined_at,
-                profiles:user_id (
-                    username, 
-                    display_name, 
-                    avatar_url, 
-                    is_admin
-                )
-            `)
+        const { data: members, error } = await supabaseClient.from('room_members')
+            .select('user_id, role, joined_at, profiles:user_id(username, display_name, avatar_url, is_admin)')
             .eq('room_id', roomId);
             
-        if (error) {
-            console.error('❌ Error loading members:', error);
-            
-            if (error.code === '42P01') {
-                container.innerHTML = '<div style="text-align: center; padding: 30px; color: #f56565;">❌ ยังไม่มีตาราง room_members<br><small>กรุณาสร้างตารางก่อน</small></div>';
-            } else if (error.message.includes('Invalid API key')) {
-                container.innerHTML = '<div style="text-align: center; padding: 30px; color: #f56565;">❌ API Key ไม่ถูกต้อง<br><small>กรุณาตรวจสอบการตั้งค่า</small></div>';
-            } else {
-                container.innerHTML = `<div style="text-align: center; padding: 30px; color: #f56565;">❌ ${error.message}</div>`;
-            }
-            return;
-        }
-        
-        console.log(`📊 Loaded ${members?.length || 0} members`);
-        
-        if (!members || members.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 30px; color: #718096;">👥 ยังไม่มีสมาชิกในห้องนี้</div>';
-            return;
-        }
+        if (error) throw error;
         
         window.displayRoomMembers(members);
         
     } catch (error) {
         console.error('❌ Error loading members:', error);
-        container.innerHTML = '<div style="text-align: center; padding: 30px; color: #f56565;">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
     }
 };
 
@@ -1690,132 +1643,24 @@ window.displayRoomMembers = function(members) {
     const container = document.getElementById('membersList');
     if (!container) return;
     
-    const isOwner = window.currentRoom?.owner_id === window.currentUser?.id;
-    const isAdmin = window.isAdmin || false;
+    const isOwner = window.currentRoom?.owner_id === window.currentUser.id;
     
-    // เรียงลำดับ: เจ้าของห้องมาก่อน, แล้วแอดมิน, แล้วตามด้วยวันที่เข้าร่วม
-    const sortedMembers = [...members].sort((a, b) => {
-        // เจ้าของห้องมาก่อน
-        if (a.role === 'owner') return -1;
-        if (b.role === 'owner') return 1;
+    container.innerHTML = members.map(member => {
+        const profile = member.profiles;
+        const isCurrentUser = member.user_id === window.currentUser.id;
+        const canKick = (isOwner || window.isAdmin) && !isCurrentUser && member.role !== 'owner';
         
-        // แอดมินมาก่อน
-        if (a.profiles?.is_admin && !b.profiles?.is_admin) return -1;
-        if (!a.profiles?.is_admin && b.profiles?.is_admin) return 1;
-        
-        // เรียงตามวันที่เข้าร่วม (ใหม่ไปเก่า)
-        return new Date(b.joined_at) - new Date(a.joined_at);
-    });
-    
-    container.innerHTML = sortedMembers.map(member => {
-        const profile = member.profiles || {};
-        const isCurrentUser = member.user_id === window.currentUser?.id;
-        const canKick = (isOwner || isAdmin) && !isCurrentUser && member.role !== 'owner';
-        
-        // จัดรูปแบบวันที่
-        const joinedDate = member.joined_at ? new Date(member.joined_at).toLocaleDateString('th-TH', {
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        }) : '';
-        
-        // สร้าง avatar URL
-        const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.display_name || profile.username || 'User')}&background=667eea&color=fff&size=100`;
-        
-        // กำหนด role badge
-        let roleBadge = '';
-        if (member.role === 'owner') {
-            roleBadge = '👑 เจ้าของห้อง';
-        } else if (profile.is_admin) {
-            roleBadge = '👑 แอดมิน';
-        } else {
-            roleBadge = '👤 สมาชิก';
-        }
-        
-        return `<div class="member-item" data-user-id="${member.user_id}">
-            <img src="${avatarUrl}" 
-                 alt="${profile.display_name || profile.username}" 
-                 class="member-avatar"
-                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(profile.display_name || profile.username || 'User')}&background=667eea&color=fff'">
+        return `<div class="member-item">
+            <img src="${profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username)}&background=667eea&color=fff`}" alt="${profile?.display_name}" class="member-avatar">
             <div class="member-info">
-                <div class="member-name">
-                    ${profile.display_name || profile.username || 'ผู้ใช้'}
-                    ${isCurrentUser ? '<span style="color: #48bb78; font-size: 11px; margin-left: 4px;">(คุณ)</span>' : ''}
-                </div>
-                <div class="member-role" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                    <span>${roleBadge}</span>
-                    <span style="font-size: 10px; color: #a0aec0;">เข้าร่วม ${joinedDate}</span>
-                </div>
+                <div class="member-name">${profile?.display_name || profile?.username}${isCurrentUser ? ' (คุณ)' : ''}${profile?.is_admin ? ' 👑' : ''}</div>
+                <div class="member-role">${member.role === 'owner' ? '👑 เจ้าของห้อง' : '👤 สมาชิก'}</div>
             </div>
-            ${canKick ? `
-                <button class="kick-btn" 
-                        onclick="window.showKickModal('${member.user_id}', '${profile.display_name || profile.username || 'ผู้ใช้'}')"
-                        title="เตะสมาชิกออกจากห้อง">
-                    เตะออก
-                </button>
-            ` : ''}
+            ${canKick ? `<button class="kick-btn" onclick="window.showKickModal('${member.user_id}', '${profile?.display_name || profile?.username}')">เตะออก</button>` : ''}
         </div>`;
     }).join('');
-    
-    console.log('✅ Members displayed:', sortedMembers.length);
 };
 
-// ========== KICK MODAL FUNCTIONS ==========
-window.kickMemberId = null;
-
-window.showKickModal = function(userId, username) {
-    window.kickMemberId = userId;
-    const modal = document.getElementById('kickMemberModal');
-    const nameEl = document.getElementById('kickMemberName');
-    
-    if (nameEl) {
-        nameEl.textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
-    }
-    
-    if (modal) {
-        modal.classList.add('active');
-    }
-};
-
-window.closeKickModal = function() {
-    window.kickMemberId = null;
-    const modal = document.getElementById('kickMemberModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-};
-
-window.confirmKickMember = async function() {
-    if (!window.kickMemberId || !window.currentRoomId) {
-        alert('❌ ไม่พบข้อมูลสมาชิกหรือห้อง');
-        window.closeKickModal();
-        return;
-    }
-    
-    try {
-        console.log('👢 Kicking member:', window.kickMemberId);
-        
-        const { error } = await supabaseClient
-            .from('room_members')
-            .delete()
-            .eq('room_id', window.currentRoomId)
-            .eq('user_id', window.kickMemberId);
-        
-        if (error) throw error;
-        
-        alert('✅ เตะสมาชิกออกจากห้องแล้ว');
-        window.closeKickModal();
-        
-        // โหลดสมาชิกใหม่
-        await window.loadRoomMembers(window.currentRoomId);
-        
-    } catch (error) {
-        console.error('❌ Error kicking member:', error);
-        alert('ไม่สามารถเตะสมาชิกได้: ' + error.message);
-        window.closeKickModal();
-    }
-};
 // ========== DELETE MESSAGES ==========
 window.deleteSelectedMessages = async function() {
     if (window.selectedMessages.size === 0) return;
@@ -2245,25 +2090,9 @@ window.filterRooms = function(filter, btn) {
 };
 
 window.toggleMembersPanel = function() {
-    const panel = document.getElementById('membersPanel');
-    if (!panel) return;
-    
-    // ถ้ากำลังเปิดอยู่ ให้ปิด
-    if (panel.classList.contains('active')) {
-        panel.classList.remove('active');
-        console.log('👥 Members panel closed');
-    } else {
-        // ถ้าปิดอยู่ ให้เปิดและโหลดข้อมูล
-        panel.classList.add('active');
-        console.log('👥 Members panel opened, loading members...');
-        
-        // โหลดข้อมูลสมาชิกเมื่อเปิด panel
-        if (window.currentRoomId) {
-            window.loadRoomMembers(window.currentRoomId);
-        } else {
-            document.getElementById('membersList').innerHTML = 
-                '<div style="text-align: center; padding: 20px; color: #718096;">❌ ไม่ได้เลือกห้อง</div>';
-        }
+    document.getElementById('membersPanel')?.classList.toggle('active');
+    if (document.getElementById('membersPanel').classList.contains('active')) {
+        window.loadRoomMembers(window.currentRoomId);
     }
 };
 
@@ -2390,6 +2219,3 @@ document.addEventListener('DOMContentLoaded', function() {
         // ไม่ปิด YouTube Player เมื่อคลิกพื้นหลัง
     });
 });
-
-
-
