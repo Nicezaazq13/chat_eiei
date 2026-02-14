@@ -1438,192 +1438,6 @@ window.removeMusic = async function(musicId) {
     }
 };
 
-// ========== ROOM FUNCTIONS ==========
-window.createRoom = async function(event) {
-    event.preventDefault();
-    
-    try {
-        const name = document.getElementById('roomName').value;
-        const description = document.getElementById('roomDescription').value;
-        const roomType = document.getElementById('roomType').value;
-        const password = document.getElementById('roomPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        if (roomType === 'private') {
-            if (!password) {
-                alert('❌ กรุณาตั้งรหัสผ่านสำหรับห้องส่วนตัว');
-                return;
-            }
-            if (password !== confirmPassword) {
-                alert('❌ รหัสผ่านไม่ตรงกัน');
-                return;
-            }
-            if (password.length < 4) {
-                alert('❌ รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
-                return;
-            }
-        }
-        
-        const { data: room, error } = await supabaseClient.from('rooms').insert([{
-            name,
-            description,
-            room_type: roomType,
-            password: roomType === 'private' ? password : null,
-            owner_id: window.currentUser.id,
-            created_at: new Date().toISOString()
-        }]).select().single();
-        
-        if (error) throw error;
-        
-        await supabaseClient.from('room_members').insert([{
-            room_id: room.id,
-            user_id: window.currentUser.id,
-            role: 'owner',
-            joined_at: new Date().toISOString()
-        }]);
-        
-        alert('✅ สร้างห้องสำเร็จ!');
-        window.closeCreateRoomModal();
-        await window.loadRooms();
-        await window.selectRoom(room.id);
-        
-    } catch (error) {
-        console.error('❌ Error creating room:', error);
-        alert('ไม่สามารถสร้างห้องได้: ' + error.message);
-    }
-};
-
-window.confirmJoinPrivateRoom = async function() {
-    const modal = document.getElementById('joinPrivateRoomModal');
-    const passwordInput = document.getElementById('joinRoomPassword');
-    
-    if (!modal || !passwordInput) return;
-    
-    const roomId = modal.dataset.roomId;
-    const password = passwordInput.value;
-    
-    if (!password) {
-        alert('❌ กรุณากรอกรหัสผ่าน');
-        return;
-    }
-    
-    try {
-        const { data: room, error } = await supabaseClient.from('rooms').select('*').eq('id', roomId).single();
-        if (error) throw error;
-        
-        if (room.password !== password) {
-            alert('❌ รหัสผ่านไม่ถูกต้อง');
-            return;
-        }
-        
-        window.closeJoinPrivateModal();
-        
-        const { data: existingMember } = await supabaseClient.from('room_members').select('*').eq('room_id', roomId).eq('user_id', window.currentUser.id).maybeSingle();
-        
-        if (!existingMember) {
-            await supabaseClient.from('room_members').insert([{
-                room_id: roomId,
-                user_id: window.currentUser.id,
-                role: 'member',
-                joined_at: new Date().toISOString()
-            }]);
-        }
-        
-        await window.selectRoom(roomId);
-        
-    } catch (error) {
-        console.error('❌ Error joining private room:', error);
-        alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
-    }
-};
-
-window.confirmKickMember = async function() {
-    if (!window.kickMemberId || !window.currentRoomId) return;
-    
-    try {
-        const { error } = await supabaseClient.from('room_members').delete().eq('room_id', window.currentRoomId).eq('user_id', window.kickMemberId);
-        if (error) throw error;
-        
-        alert('✅ เตะสมาชิกออกจากห้องแล้ว');
-        window.closeKickModal();
-        await window.loadRoomMembers(window.currentRoomId);
-        
-    } catch (error) {
-        console.error('❌ Error kicking member:', error);
-        alert('ไม่สามารถเตะสมาชิกได้: ' + error.message);
-    }
-};
-
-window.confirmDeleteRoom = async function() {
-    if (!window.currentRoomId || window.currentRoomId === PUBLIC_ROOM_ID) { 
-        alert('ไม่สามารถลบห้องสาธารณะได้'); 
-        window.closeDeleteRoomModal(); 
-        return; 
-    }
-    
-    try {
-        const { error } = await supabaseClient.from('rooms').delete().eq('id', window.currentRoomId).eq('owner_id', window.currentUser.id);
-        if (error) throw error;
-        
-        alert('✅ ลบห้องสำเร็จ');
-        window.closeDeleteRoomModal();
-        
-        if (localStorage.getItem(STORAGE_KEY) === window.currentRoomId) {
-            localStorage.removeItem(STORAGE_KEY);
-        }
-        
-        await window.selectRoom(PUBLIC_ROOM_ID);
-        await window.loadRooms();
-        
-    } catch (error) {
-        console.error('❌ Error deleting room:', error);
-        alert('ไม่สามารถลบห้องได้: ' + error.message);
-        window.closeDeleteRoomModal();
-    }
-};
-
-window.toggleAdminMode = function() {
-    if (!window.isAdmin) { 
-        alert('คุณไม่ใช่แอดมิน'); 
-        return; 
-    }
-    window.isAdminMode = !window.isAdminMode;
-    
-    const adminBtn = document.getElementById('adminModeBtn');
-    if (adminBtn) {
-        adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
-        adminBtn.classList.toggle('active', window.isAdminMode);
-    }
-    
-    alert(window.isAdminMode ? '✅ โหมดแอดมินเปิดใช้งาน' : '❌ โหมดแอดมินปิดใช้งาน');
-};
-
-window.adminDeleteRoom = async function(roomId, roomName) {
-    if (!window.isAdmin) { 
-        alert('เฉพาะแอดมินเท่านั้นที่ลบห้องนี้ได้'); 
-        return; 
-    }
-    
-    if (!confirm(`⚠️ คุณกำลังจะลบห้อง "${roomName}" ในฐานะแอดมิน\n\nข้อความและสมาชิกทั้งหมดจะถูกลบ!\n\nดำเนินการต่อ?`)) return;
-    
-    try {
-        const { error } = await supabaseClient.from('rooms').delete().eq('id', roomId);
-        if (error) throw error;
-        
-        alert('✅ ลบห้องสำเร็จ');
-        
-        if (window.currentRoomId === roomId) {
-            await window.selectRoom(PUBLIC_ROOM_ID);
-        } else {
-            await window.loadRooms();
-        }
-        
-    } catch (error) {
-        console.error('❌ Error deleting room:', error);
-        alert('ไม่สามารถลบห้องได้: ' + error.message);
-    }
-};
-
 // ========== ROOM MEMBERS FUNCTIONS ==========
 window.loadRoomMembers = async function(roomId) {
     if (!roomId) {
@@ -1643,13 +1457,27 @@ window.loadRoomMembers = async function(roomId) {
     try {
         console.log('📥 Loading members for room:', roomId);
         
+        // ดึง owner_id ของห้องมาด้วย
+        const { data: roomData, error: roomError } = await supabaseClient
+            .from('rooms')
+            .select('owner_id')
+            .eq('id', roomId)
+            .single();
+        
+        if (roomError) {
+            console.error('❌ Error loading room owner:', roomError);
+        }
+        
+        const roomOwnerId = roomData?.owner_id;
+        
+        // แก้ไขการ query โดยระบุ foreign key ให้ชัดเจน
         const { data: members, error } = await supabaseClient
             .from('room_members')
             .select(`
                 user_id, 
                 role, 
                 joined_at,
-                profiles:user_id (
+                profiles!inner (
                     username, 
                     display_name, 
                     avatar_url, 
@@ -1678,7 +1506,8 @@ window.loadRoomMembers = async function(roomId) {
             return;
         }
         
-        window.displayRoomMembers(members);
+        // ส่ง roomOwnerId ไปด้วย
+        window.displayRoomMembers(members, roomOwnerId);
         
     } catch (error) {
         console.error('❌ Error loading members:', error);
@@ -1686,31 +1515,48 @@ window.loadRoomMembers = async function(roomId) {
     }
 };
 
-window.displayRoomMembers = function(members) {
+window.displayRoomMembers = function(members, roomOwnerId) {
     const container = document.getElementById('membersList');
     if (!container) return;
     
-    const isOwner = window.currentRoom?.owner_id === window.currentUser?.id;
+    // เช็คว่าเป็นเจ้าของห้องหรือไม่
+    const isOwner = window.currentUser?.id === roomOwnerId;
     const isAdmin = window.isAdmin || false;
     
+    // แปลงข้อมูล members ให้อยู่ในรูปแบบที่ใช้งานง่าย
+    const processedMembers = members.map(member => {
+        // ดึงข้อมูล profile จาก member.profiles
+        const profile = member.profiles || {};
+        
+        return {
+            user_id: member.user_id,
+            role: member.role || 'member',
+            joined_at: member.joined_at,
+            username: profile.username || 'ผู้ใช้',
+            display_name: profile.display_name || profile.username || 'ผู้ใช้',
+            avatar_url: profile.avatar_url,
+            is_admin: profile.is_admin || false
+        };
+    });
+    
     // เรียงลำดับ: เจ้าของห้องมาก่อน, แล้วแอดมิน, แล้วตามด้วยวันที่เข้าร่วม
-    const sortedMembers = [...members].sort((a, b) => {
+    const sortedMembers = [...processedMembers].sort((a, b) => {
         // เจ้าของห้องมาก่อน
-        if (a.role === 'owner') return -1;
-        if (b.role === 'owner') return 1;
+        if (a.user_id === roomOwnerId) return -1;
+        if (b.user_id === roomOwnerId) return 1;
         
         // แอดมินมาก่อน
-        if (a.profiles?.is_admin && !b.profiles?.is_admin) return -1;
-        if (!a.profiles?.is_admin && b.profiles?.is_admin) return 1;
+        if (a.is_admin && !b.is_admin) return -1;
+        if (!a.is_admin && b.is_admin) return 1;
         
         // เรียงตามวันที่เข้าร่วม (ใหม่ไปเก่า)
         return new Date(b.joined_at) - new Date(a.joined_at);
     });
     
     container.innerHTML = sortedMembers.map(member => {
-        const profile = member.profiles || {};
         const isCurrentUser = member.user_id === window.currentUser?.id;
-        const canKick = (isOwner || isAdmin) && !isCurrentUser && member.role !== 'owner';
+        const isOwnerUser = member.user_id === roomOwnerId;
+        const canKick = (isOwner || isAdmin) && !isCurrentUser && !isOwnerUser;
         
         // จัดรูปแบบวันที่
         const joinedDate = member.joined_at ? new Date(member.joined_at).toLocaleDateString('th-TH', {
@@ -1721,13 +1567,13 @@ window.displayRoomMembers = function(members) {
         }) : '';
         
         // สร้าง avatar URL
-        const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.display_name || profile.username || 'User')}&background=667eea&color=fff&size=100`;
+        const avatarUrl = member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.display_name)}&background=667eea&color=fff&size=100`;
         
         // กำหนด role badge
         let roleBadge = '';
-        if (member.role === 'owner') {
+        if (isOwnerUser) {
             roleBadge = '👑 เจ้าของห้อง';
-        } else if (profile.is_admin) {
+        } else if (member.is_admin) {
             roleBadge = '👑 แอดมิน';
         } else {
             roleBadge = '👤 สมาชิก';
@@ -1735,22 +1581,22 @@ window.displayRoomMembers = function(members) {
         
         return `<div class="member-item" data-user-id="${member.user_id}">
             <img src="${avatarUrl}" 
-                 alt="${profile.display_name || profile.username}" 
+                 alt="${member.display_name}" 
                  class="member-avatar"
-                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(profile.display_name || profile.username || 'User')}&background=667eea&color=fff'">
+                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(member.display_name)}&background=667eea&color=fff&size=100'">
             <div class="member-info">
                 <div class="member-name">
-                    ${profile.display_name || profile.username || 'ผู้ใช้'}
+                    ${member.display_name}
                     ${isCurrentUser ? '<span style="color: #48bb78; font-size: 11px; margin-left: 4px;">(คุณ)</span>' : ''}
                 </div>
                 <div class="member-role" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
                     <span>${roleBadge}</span>
-                    <span style="font-size: 10px; color: #a0aec0;">เข้าร่วม ${joinedDate}</span>
+                    <span style="font-size: 10px; color: #a0aec0;">📅 ${joinedDate}</span>
                 </div>
             </div>
             ${canKick ? `
                 <button class="kick-btn" 
-                        onclick="window.showKickModal('${member.user_id}', '${profile.display_name || profile.username || 'ผู้ใช้'}')"
+                        onclick="window.showKickModal('${member.user_id}', '${member.display_name}')"
                         title="เตะสมาชิกออกจากห้อง">
                     เตะออก
                 </button>
@@ -1759,62 +1605,6 @@ window.displayRoomMembers = function(members) {
     }).join('');
     
     console.log('✅ Members displayed:', sortedMembers.length);
-};
-
-// ========== KICK MODAL FUNCTIONS ==========
-window.kickMemberId = null;
-
-window.showKickModal = function(userId, username) {
-    window.kickMemberId = userId;
-    const modal = document.getElementById('kickMemberModal');
-    const nameEl = document.getElementById('kickMemberName');
-    
-    if (nameEl) {
-        nameEl.textContent = `ต้องการเตะ "${username}" ออกจากห้อง?`;
-    }
-    
-    if (modal) {
-        modal.classList.add('active');
-    }
-};
-
-window.closeKickModal = function() {
-    window.kickMemberId = null;
-    const modal = document.getElementById('kickMemberModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-};
-
-window.confirmKickMember = async function() {
-    if (!window.kickMemberId || !window.currentRoomId) {
-        alert('❌ ไม่พบข้อมูลสมาชิกหรือห้อง');
-        window.closeKickModal();
-        return;
-    }
-    
-    try {
-        console.log('👢 Kicking member:', window.kickMemberId);
-        
-        const { error } = await supabaseClient
-            .from('room_members')
-            .delete()
-            .eq('room_id', window.currentRoomId)
-            .eq('user_id', window.kickMemberId);
-        
-        if (error) throw error;
-        
-        alert('✅ เตะสมาชิกออกจากห้องแล้ว');
-        window.closeKickModal();
-        
-        // โหลดสมาชิกใหม่
-        await window.loadRoomMembers(window.currentRoomId);
-        
-    } catch (error) {
-        console.error('❌ Error kicking member:', error);
-        alert('ไม่สามารถเตะสมาชิกได้: ' + error.message);
-        window.closeKickModal();
-    }
 };
 // ========== DELETE MESSAGES ==========
 window.deleteSelectedMessages = async function() {
@@ -2390,6 +2180,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // ไม่ปิด YouTube Player เมื่อคลิกพื้นหลัง
     });
 });
+
 
 
 
