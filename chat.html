@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ChatApp - ห้องแชท</title>
-    <link rel="stylesheet" href="stylechat.css">
     <style>
         /* ========== GLOBAL VARIABLES ========== */
         :root {
@@ -845,18 +844,6 @@
             transform: translateY(-2px);
         }
 
-        .activity-status {
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: var(--radius-xl);
-            background: #48bb78;
-            color: white;
-        }
-
-        .activity-status.ended {
-            background: #a0aec0;
-        }
-
         .participants-list {
             display: flex;
             flex-wrap: wrap;
@@ -885,60 +872,6 @@
             color: var(--text-light);
             text-align: center;
             word-break: break-word;
-        }
-
-        .read-by-container {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            margin-top: 8px;
-            padding-top: 4px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .own-message .read-by-container {
-            justify-content: flex-start;
-            flex-direction: row-reverse;
-        }
-
-        .read-icon {
-            font-size: 12px;
-            color: var(--secondary-color);
-            margin-right: 6px;
-            font-weight: 600;
-        }
-
-        .read-by-avatar {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 4px;
-            border: 2px solid var(--bg-white);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .read-by-avatar:hover {
-            transform: scale(1.2);
-            z-index: 10;
-        }
-
-        .read-by-more {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--border-color);
-            color: var(--text-light);
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .read-by-more:hover {
-            background: #cbd5e0;
         }
 
         .music-playlist {
@@ -1109,7 +1042,7 @@
             background: rgba(0,0,0,0.5);
             align-items: center;
             justify-content: center;
-            z-index: 2000;
+            z-index: 10000;
         }
 
         .modal.active {
@@ -1127,7 +1060,36 @@
             box-shadow: var(--shadow-lg);
         }
 
+        #youtubePlayerModal {
+            z-index: 9000;
+        }
+
+        #youtubePlayerModal .modal-content {
+            max-width: 1000px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            z-index: 9001;
+        }
+
+        #addToPlaylistModal {
+            z-index: 11000 !important;
+        }
+
+        #addToPlaylistModal .modal-content {
+            position: relative;
+            z-index: 11001;
+            max-width: 400px;
+        }
+
+        #youtubePlaylistModal {
+            z-index: 11000 !important;
+        }
+
         #youtubePlaylistModal .modal-content {
+            position: relative;
+            z-index: 11001;
             width: 800px;
             max-width: 95%;
             padding: 20px;
@@ -1138,13 +1100,6 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 20px;
-        }
-
-        .youtube-playlist-header h3 {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 20px;
         }
 
         .playlist-layout {
@@ -1313,13 +1268,6 @@
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
-        }
-
-        #youtubePlayerModal .modal-content {
-            max-width: 1000px;
-            width: 95%;
-            max-height: 90vh;
-            overflow-y: auto;
         }
 
         #youtubePlayerContainer {
@@ -1804,11 +1752,10 @@
     </style>
 </head>
 <body>
-    <!-- Debug info -->
     <div id="debugInfo" class="debug-info"></div>
 
     <div class="chat-container">
-        <!-- ========== HEADER ========== -->
+        <!-- Header -->
         <div class="chat-header">
             <div class="chat-header-left">
                 <button class="mobile-menu-btn" onclick="window.toggleMobileSidebar()">☰</button>
@@ -1826,9 +1773,9 @@
             </div>
         </div>
 
-        <!-- ========== MAIN CHAT AREA ========== -->
+        <!-- Main Area -->
         <div class="chat-main">
-            <!-- ROOMS PANEL (ซ้าย) -->
+            <!-- Rooms Panel -->
             <div class="rooms-panel">
                 <div class="rooms-header">
                     <button class="create-room-btn" onclick="window.showCreateRoomModal()">+ สร้างห้องใหม่</button>
@@ -1843,7 +1790,7 @@
                 </div>
             </div>
 
-            <!-- MESSAGES AREA (กลาง) -->
+            <!-- Messages Area -->
             <div class="chat-content">
                 <div class="messages-container" id="messagesContainer"></div>
                 <div id="deleteSelectedBtn" class="delete-selected-btn" style="display: none;" onclick="window.deleteSelectedMessages()">🗑️ ลบ 0 ข้อความ</div>
@@ -1875,7 +1822,7 @@
                 </div>
             </div>
 
-            <!-- MEMBERS PANEL (ขวา) -->
+            <!-- Members Panel -->
             <div class="members-panel" id="membersPanel">
                 <div class="members-header">
                     <h3>👥 สมาชิกในห้อง</h3>
@@ -1884,7 +1831,7 @@
                 <div class="members-list" id="membersList"></div>
             </div>
 
-            <!-- ACTIVITIES PANEL (กิจกรรม) -->
+            <!-- Activities Panel -->
             <div class="activities-panel" id="activitiesPanel">
                 <div class="activities-header">
                     <h3>🎮 กิจกรรมในห้อง</h3>
@@ -1907,15 +1854,12 @@
         </div>
     </div>
 
-    <!-- SIDEBAR OVERLAY -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-    <!-- ========== MODAL: อิโมจิ ========== -->
+    <!-- Modals -->
     <div id="emojiPickerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <span>😊</span> เลือกอิโมจิ
-            </h3>
+            <h3 style="margin-bottom: 16px;">😊 เลือกอิโมจิ</h3>
             <div class="emoji-grid" id="emojiGrid"></div>
             <div style="display: flex; gap: 12px; margin-top: 20px;">
                 <button onclick="window.closeEmojiPicker()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
@@ -1923,7 +1867,6 @@
         </div>
     </div>
 
-    <!-- ========== MODAL: สร้างห้อง ========== -->
     <div id="createRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">📝 สร้างห้องใหม่</h2>
@@ -1939,8 +1882,8 @@
                 <div class="form-group">
                     <label>ประเภทห้อง</label>
                     <select id="roomType" onchange="window.togglePasswordField()">
-                        <option value="public">🌍 สาธารณะ - ทุกคนเข้าได้</option>
-                        <option value="private">🔒 ส่วนตัว - ต้องใช้รหัสผ่าน</option>
+                        <option value="public">🌍 สาธารณะ</option>
+                        <option value="private">🔒 ส่วนตัว</option>
                     </select>
                 </div>
                 <div id="passwordField" class="password-field">
@@ -1961,7 +1904,6 @@
         </div>
     </div>
 
-    <!-- ========== MODAL: เข้าร่วมห้องส่วนตัว ========== -->
     <div id="joinPrivateRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">🔐 เข้าร่วมห้องส่วนตัว</h2>
@@ -1977,7 +1919,6 @@
         </div>
     </div>
 
-    <!-- ========== MODAL: เตะสมาชิก ========== -->
     <div id="kickMemberModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">⚠️ เตะสมาชิก</h2>
@@ -1990,7 +1931,6 @@
         </div>
     </div>
 
-    <!-- ========== MODAL: ลบห้อง ========== -->
     <div id="deleteRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px; color: #f56565;">⚠️ ลบห้อง</h2>
@@ -2003,12 +1943,9 @@
         </div>
     </div>
 
-    <!-- ========== MODAL: สร้างกิจกรรม ========== -->
     <div id="createActivityModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-                <span>🎮</span> สร้างกิจกรรมใหม่
-            </h3>
+            <h3 style="margin-bottom: 20px;">🎮 สร้างกิจกรรมใหม่</h3>
             
             <form id="createActivityForm">
                 <div class="form-group">
@@ -2066,7 +2003,6 @@
         </div>
     </div>
 
-    <!-- ========== YOUTUBE PLAYLIST MODAL ========== -->
     <div id="youtubePlaylistModal" class="modal">
         <div class="modal-content">
             <div class="youtube-playlist-header">
@@ -2075,7 +2011,6 @@
             </div>
             
             <div class="playlist-layout">
-                <!-- ฝั่งซ้าย: ค้นหาคลิป -->
                 <div class="search-section">
                     <h4>🔍 ค้นหาคลิป</h4>
                     <div class="playlist-search">
@@ -2090,7 +2025,6 @@
                     </div>
                 </div>
                 
-                <!-- ฝั่งขวา: เพลย์ลิสต์ -->
                 <div class="playlist-section">
                     <h4>
                         📋 เพลย์ลิสต์ของห้อง
@@ -2112,7 +2046,6 @@
         </div>
     </div>
 
-    <!-- ========== YOUTUBE PLAYER MODAL ========== -->
     <div id="youtubePlayerModal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
@@ -2120,9 +2053,7 @@
                     <span>📺</span> <span id="youtubeActivityTitle">YouTube Player</span>
                 </h3>
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="window.showAddToPlaylistModal()" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px;">
-                        📋 เพิ่มลงเพลย์ลิสต์
-                    </button>
+                    <button onclick="window.showAddToPlaylistModal()" class="btn btn-primary">📋 เพิ่มลงเพลย์ลิสต์</button>
                     <button onclick="window.closeYoutubePlayer()" class="btn-icon" style="font-size: 24px;">✕</button>
                 </div>
             </div>
@@ -2136,14 +2067,13 @@
                 <button onclick="window.syncSeek(-10)" class="btn btn-secondary">⏪ -10</button>
                 <button onclick="window.syncSeek(10)" class="btn btn-secondary">⏩ +10</button>
                 <button onclick="window.syncRestart()" class="btn btn-secondary">🔄 เริ่มใหม่</button>
-                <button onclick="window.playNextInPlaylist()" id="nextVideoBtn" class="btn btn-secondary">⏭️ ถัดไป</button>
+                <button onclick="window.playNextInPlaylist()" class="btn btn-secondary">⏭️ ถัดไป</button>
             </div>
             
             <div id="youtubePlayerState" style="color: var(--text-light); font-size: 14px; text-align: center; margin-bottom: 20px;">
                 ⏸️ หยุด
             </div>
             
-            <!-- ส่วนแสดงเพลย์ลิสต์ใน YouTube Player -->
             <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h4 style="display: flex; align-items: center; gap: 8px;">
@@ -2165,7 +2095,6 @@
         </div>
     </div>
 
-    <!-- ========== ADD TO PLAYLIST MODAL ========== -->
     <div id="addToPlaylistModal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -2204,12 +2133,9 @@
         </div>
     </div>
 
-    <!-- ========== MUSIC PLAYER MODAL ========== -->
     <div id="musicPlayerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <span>🎵</span> เครื่องเล่นเพลง
-            </h3>
+            <h3 style="margin-bottom: 16px;">🎵 เครื่องเล่นเพลง</h3>
             <div class="form-group">
                 <label>URL เพลง (MP3 เท่านั้น)</label>
                 <input type="text" id="musicUrlInput" placeholder="https://example.com/song.mp3">
@@ -2220,9 +2146,7 @@
             </button>
             
             <div class="music-playlist">
-                <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                    📋 เพลย์ลิสต์เพลง
-                </h4>
+                <h4 style="margin-bottom: 12px;">📋 เพลย์ลิสต์เพลง</h4>
                 <div id="musicPlaylistItems" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
             
@@ -2232,7 +2156,6 @@
         </div>
     </div>
 
-    <!-- ========== MUSIC BAR ========== -->
     <div id="currentMusicBar" class="music-bar" style="display: none;">
         <div class="music-info">
             <span class="music-icon">🎵</span>
@@ -2247,5 +2170,3 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="chat.js"></script>
-</body>
-</html>
