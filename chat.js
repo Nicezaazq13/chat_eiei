@@ -143,178 +143,6 @@ window.setupSessionManager = function() {
     }, 60000);
 };
 
-// ========== ADMIN MODE FUNCTIONS ==========
-window.toggleAdminMode = function() {
-    if (!window.isAdmin) {
-        alert('❌ คุณไม่มีสิทธิ์ใช้งานโหมดแอดมิน');
-        return;
-    }
-    
-    window.isAdminMode = !window.isAdminMode;
-    
-    const adminBtn = document.getElementById('adminModeBtn');
-    if (adminBtn) {
-        adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
-        adminBtn.style.background = window.isAdminMode ? 'var(--danger-color)' : '';
-    }
-    
-    console.log(`Admin mode: ${window.isAdminMode ? 'ON' : 'OFF'}`);
-    window.debug(`โหมดแอดมิน: ${window.isAdminMode ? 'เปิด' : 'ปิด'}`);
-    
-    if (!window.isAdminMode) {
-        window.clearSelectedMessages();
-    }
-};
-
-// ========== CREATE ROOM FUNCTION ==========
-window.createRoom = async function(event) {
-    event.preventDefault();
-    
-    try {
-        const name = document.getElementById('roomName').value.trim();
-        const description = document.getElementById('roomDescription').value.trim();
-        const roomType = document.getElementById('roomType').value;
-        const password = document.getElementById('roomPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        if (!name) {
-            alert('❌ กรุณากรอกชื่อห้อง');
-            return;
-        }
-        
-        if (roomType === 'private') {
-            if (!password) {
-                alert('❌ กรุณากรอกรหัสผ่านสำหรับห้องส่วนตัว');
-                return;
-            }
-            if (password !== confirmPassword) {
-                alert('❌ รหัสผ่านไม่ตรงกัน');
-                return;
-            }
-        }
-        
-        const { data, error } = await supabaseClient.from('rooms').insert([{
-            name: name,
-            description: description,
-            room_type: roomType,
-            password: roomType === 'private' ? password : null,
-            owner_id: window.currentUser.id,
-            created_at: new Date().toISOString()
-        }]).select().single();
-        
-        if (error) throw error;
-        
-        // เพิ่มผู้สร้างเป็นสมาชิก
-        await supabaseClient.from('room_members').insert([{
-            room_id: data.id,
-            user_id: window.currentUser.id,
-            role: 'owner',
-            joined_at: new Date().toISOString()
-        }]);
-        
-        alert('✅ สร้างห้องสำเร็จ');
-        window.closeCreateRoomModal();
-        window.loadRooms();
-        
-    } catch (error) {
-        console.error('❌ Error creating room:', error);
-        alert('ไม่สามารถสร้างห้องได้: ' + error.message);
-    }
-};
-
-// ========== JOIN PRIVATE ROOM ==========
-window.confirmJoinPrivateRoom = async function() {
-    const modal = document.getElementById('joinPrivateRoomModal');
-    const roomId = modal.dataset.roomId;
-    const password = document.getElementById('joinRoomPassword').value;
-    
-    if (!password) {
-        alert('❌ กรุณากรอกรหัสผ่าน');
-        return;
-    }
-    
-    try {
-        const { data: room, error } = await supabaseClient
-            .from('rooms')
-            .select('*')
-            .eq('id', roomId)
-            .single();
-        
-        if (error) throw error;
-        
-        if (room.password !== password) {
-            alert('❌ รหัสผ่านไม่ถูกต้อง');
-            return;
-        }
-        
-        // เพิ่มผู้ใช้เข้า room_members
-        await supabaseClient.from('room_members').insert([{
-            room_id: roomId,
-            user_id: window.currentUser.id,
-            role: 'member',
-            joined_at: new Date().toISOString()
-        }]);
-        
-        alert('✅ เข้าร่วมห้องสำเร็จ');
-        window.closeJoinPrivateModal();
-        window.selectRoom(roomId);
-        
-    } catch (error) {
-        console.error('❌ Error joining room:', error);
-        alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
-    }
-};
-
-// ========== DELETE ROOM ==========
-window.confirmDeleteRoom = async function() {
-    if (!window.currentRoom) return;
-    
-    try {
-        const { error } = await supabaseClient
-            .from('rooms')
-            .delete()
-            .eq('id', window.currentRoom.id);
-        
-        if (error) throw error;
-        
-        alert('✅ ลบห้องสำเร็จ');
-        window.closeDeleteRoomModal();
-        
-        // กลับไปห้องสาธารณะ
-        await window.selectRoom(PUBLIC_ROOM_ID);
-        window.loadRooms();
-        
-    } catch (error) {
-        console.error('❌ Error deleting room:', error);
-        alert('ไม่สามารถลบห้องได้: ' + error.message);
-    }
-};
-
-// ========== KICK MEMBER ==========
-window.confirmKickMember = async function() {
-    if (!window.kickMemberId || !window.currentRoomId) return;
-    
-    try {
-        const { error } = await supabaseClient
-            .from('room_members')
-            .delete()
-            .eq('room_id', window.currentRoomId)
-            .eq('user_id', window.kickMemberId);
-        
-        if (error) throw error;
-        
-        alert('✅ เตะสมาชิกออกจากห้องแล้ว');
-        window.closeKickModal();
-        
-        // โหลดสมาชิกใหม่
-        await window.loadRoomMembers(window.currentRoomId);
-        
-    } catch (error) {
-        console.error('❌ Error kicking member:', error);
-        alert('ไม่สามารถเตะสมาชิกได้: ' + error.message);
-    }
-};
-
 // ========== YOUTUBE API ==========
 window.loadYouTubeAPI = function() {
     if (window.YT && window.YT.Player) {
@@ -1899,6 +1727,178 @@ window.closeDeleteRoomModal = function() {
     document.getElementById('deleteRoomModal').classList.remove('active'); 
 };
 
+// ========== ADMIN MODE FUNCTIONS ==========
+window.toggleAdminMode = function() {
+    if (!window.isAdmin) {
+        alert('❌ คุณไม่มีสิทธิ์ใช้งานโหมดแอดมิน');
+        return;
+    }
+    
+    window.isAdminMode = !window.isAdminMode;
+    
+    const adminBtn = document.getElementById('adminModeBtn');
+    if (adminBtn) {
+        adminBtn.innerHTML = window.isAdminMode ? '👑 แอดมิน (เปิด)' : '👑 แอดมิน (ปิด)';
+        adminBtn.style.background = window.isAdminMode ? '#f56565' : '';
+    }
+    
+    console.log(`Admin mode: ${window.isAdminMode ? 'ON' : 'OFF'}`);
+    window.debug(`โหมดแอดมิน: ${window.isAdminMode ? 'เปิด' : 'ปิด'}`);
+    
+    if (!window.isAdminMode) {
+        window.clearSelectedMessages();
+    }
+};
+
+// ========== CREATE ROOM FUNCTIONS ==========
+window.createRoom = async function(event) {
+    event.preventDefault();
+    
+    try {
+        const name = document.getElementById('roomName').value.trim();
+        const description = document.getElementById('roomDescription').value.trim();
+        const roomType = document.getElementById('roomType').value;
+        const password = document.getElementById('roomPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (!name) {
+            alert('❌ กรุณากรอกชื่อห้อง');
+            return;
+        }
+        
+        if (roomType === 'private') {
+            if (!password) {
+                alert('❌ กรุณากรอกรหัสผ่านสำหรับห้องส่วนตัว');
+                return;
+            }
+            if (password !== confirmPassword) {
+                alert('❌ รหัสผ่านไม่ตรงกัน');
+                return;
+            }
+        }
+        
+        const { data, error } = await supabaseClient.from('rooms').insert([{
+            name: name,
+            description: description,
+            room_type: roomType,
+            password: roomType === 'private' ? password : null,
+            owner_id: window.currentUser.id,
+            created_at: new Date().toISOString()
+        }]).select().single();
+        
+        if (error) throw error;
+        
+        // เพิ่มผู้สร้างเป็นสมาชิก
+        await supabaseClient.from('room_members').insert([{
+            room_id: data.id,
+            user_id: window.currentUser.id,
+            role: 'owner',
+            joined_at: new Date().toISOString()
+        }]);
+        
+        alert('✅ สร้างห้องสำเร็จ');
+        window.closeCreateRoomModal();
+        window.loadRooms();
+        
+    } catch (error) {
+        console.error('❌ Error creating room:', error);
+        alert('ไม่สามารถสร้างห้องได้: ' + error.message);
+    }
+};
+
+// ========== JOIN PRIVATE ROOM ==========
+window.confirmJoinPrivateRoom = async function() {
+    const modal = document.getElementById('joinPrivateRoomModal');
+    const roomId = modal.dataset.roomId;
+    const password = document.getElementById('joinRoomPassword').value;
+    
+    if (!password) {
+        alert('❌ กรุณากรอกรหัสผ่าน');
+        return;
+    }
+    
+    try {
+        const { data: room, error } = await supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('id', roomId)
+            .single();
+        
+        if (error) throw error;
+        
+        if (room.password !== password) {
+            alert('❌ รหัสผ่านไม่ถูกต้อง');
+            return;
+        }
+        
+        // เพิ่มผู้ใช้เข้า room_members
+        await supabaseClient.from('room_members').insert([{
+            room_id: roomId,
+            user_id: window.currentUser.id,
+            role: 'member',
+            joined_at: new Date().toISOString()
+        }]);
+        
+        alert('✅ เข้าร่วมห้องสำเร็จ');
+        window.closeJoinPrivateModal();
+        window.selectRoom(roomId);
+        
+    } catch (error) {
+        console.error('❌ Error joining room:', error);
+        alert('ไม่สามารถเข้าร่วมห้องได้: ' + error.message);
+    }
+};
+
+// ========== DELETE ROOM ==========
+window.confirmDeleteRoom = async function() {
+    if (!window.currentRoom) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('rooms')
+            .delete()
+            .eq('id', window.currentRoom.id);
+        
+        if (error) throw error;
+        
+        alert('✅ ลบห้องสำเร็จ');
+        window.closeDeleteRoomModal();
+        
+        // กลับไปห้องสาธารณะ
+        await window.selectRoom(PUBLIC_ROOM_ID);
+        window.loadRooms();
+        
+    } catch (error) {
+        console.error('❌ Error deleting room:', error);
+        alert('ไม่สามารถลบห้องได้: ' + error.message);
+    }
+};
+
+// ========== KICK MEMBER ==========
+window.confirmKickMember = async function() {
+    if (!window.kickMemberId || !window.currentRoomId) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('room_members')
+            .delete()
+            .eq('room_id', window.currentRoomId)
+            .eq('user_id', window.kickMemberId);
+        
+        if (error) throw error;
+        
+        alert('✅ เตะสมาชิกออกจากห้องแล้ว');
+        window.closeKickModal();
+        
+        // โหลดสมาชิกใหม่
+        await window.loadRoomMembers(window.currentRoomId);
+        
+    } catch (error) {
+        console.error('❌ Error kicking member:', error);
+        alert('ไม่สามารถเตะสมาชิกได้: ' + error.message);
+    }
+};
+
 // ========== INITIALIZATION ==========
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -2168,6 +2168,10 @@ window.checkAdminStatus = async function() {
         const adminBtn = document.getElementById('adminModeBtn');
         if (adminBtn) {
             adminBtn.style.display = window.isAdmin ? 'inline-block' : 'none';
+            if (window.isAdmin) {
+                adminBtn.innerHTML = '👑 แอดมิน (ปิด)';
+                adminBtn.style.background = '';
+            }
         }
         return window.isAdmin;
     } catch (error) { 
