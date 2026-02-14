@@ -464,9 +464,11 @@ window.confirmAddToPlaylist = async function() {
         return;
     }
     
+    // โหลด playlist ปัจจุบัน
     const savedPlaylist = localStorage.getItem(`youtube_playlist_${window.currentRoomId}`);
     let playlist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
     
+    // ตรวจสอบซ้ำ
     if (playlist.some(v => v.video_id === currentVideoId)) {
         alert('⚠️ คลิปนี้อยู่ในเพลย์ลิสต์แล้ว');
         window.closeAddToPlaylistModal();
@@ -486,13 +488,37 @@ window.confirmAddToPlaylist = async function() {
         playlist_name: playlistName
     };
     
+    // เพิ่มเข้า array
     playlist.unshift(newItem);
     
+    // บันทึกลง localStorage
     localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(playlist));
+    
+    // อัพเดทตัวแปร global
     window.youtubePlaylist = playlist;
+    
+    // บันทึกลงฐานข้อมูล (ถ้ามี)
+    try {
+        await supabaseClient
+            .from('room_youtube_playlist')
+            .insert([{
+                room_id: newItem.room_id,
+                user_id: newItem.user_id,
+                video_id: newItem.video_id,
+                title: newItem.title,
+                channel: newItem.channel,
+                thumbnail: newItem.thumbnail,
+                added_by: newItem.added_by,
+                playlist_name: newItem.playlist_name,
+                created_at: newItem.added_at
+            }]);
+    } catch (error) {
+        console.log('⚠️ Could not save to DB, but saved to localStorage');
+    }
     
     window.closeAddToPlaylistModal();
     
+    // อัพเดท UI
     window.displayYoutubePlaylist(playlist);
     window.displayYoutubePlayerPlaylist();
     
@@ -736,6 +762,7 @@ window.saveYoutubePlaylistToDB = async function(item) {
                 channel: item.channel,
                 thumbnail: item.thumbnail,
                 added_by: item.added_by,
+                playlist_name: item.playlist_name || 'เพลย์ลิสต์เริ่มต้น',
                 created_at: item.added_at
             }]);
         
@@ -768,7 +795,8 @@ window.loadYoutubePlaylistFromDB = async function() {
             channel: item.channel,
             thumbnail: item.thumbnail,
             added_at: item.created_at,
-            added_by: item.added_by
+            added_by: item.added_by,
+            playlist_name: item.playlist_name
         }));
         
     } catch (error) {
@@ -778,14 +806,27 @@ window.loadYoutubePlaylistFromDB = async function() {
 };
 
 window.loadYoutubePlaylist = async function() {
-    if (!window.currentRoomId) return;
+    if (!window.currentRoomId) {
+        console.log('No room selected');
+        return;
+    }
     
     try {
+        console.log('Loading playlist for room:', window.currentRoomId);
+        
+        // โหลดจาก localStorage ก่อน
         const savedPlaylist = localStorage.getItem(`youtube_playlist_${window.currentRoomId}`);
         let localPlaylist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
         
-        const dbPlaylist = await window.loadYoutubePlaylistFromDB();
+        // โหลดจากฐานข้อมูล (ถ้ามี)
+        let dbPlaylist = [];
+        try {
+            dbPlaylist = await window.loadYoutubePlaylistFromDB();
+        } catch (e) {
+            console.log('DB not available, using localStorage only');
+        }
         
+        // รวมข้อมูลและลบรายการซ้ำ
         const allItems = [...dbPlaylist, ...localPlaylist];
         const uniqueItems = [];
         const seen = new Set();
@@ -797,14 +838,31 @@ window.loadYoutubePlaylist = async function() {
             }
         });
         
+        // เซ็ตค่าให้ตัวแปร global
         window.youtubePlaylist = uniqueItems;
         
+        // อัพเดท localStorage ให้เป็นข้อมูลล่าสุด
         localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
         
+        console.log(`✅ Loaded ${window.youtubePlaylist.length} items from localStorage`);
+        
+        // อัพเดท UI
         window.displayYoutubePlaylist(window.youtubePlaylist);
+        
+        // ถ้า YouTube Player เปิดอยู่ ให้อัพเดทเพลย์ลิสต์ด้วย
+        if (document.getElementById('youtubePlayerModal').classList.contains('active')) {
+            window.displayYoutubePlayerPlaylist();
+        }
         
     } catch (error) {
         console.error('❌ Error loading playlist:', error);
+        
+        // Fallback: ถ้ามี error ให้ใช้ localStorage เท่านั้น
+        try {
+            const savedPlaylist = localStorage.getItem(`youtube_playlist_${window.currentRoomId}`);
+            window.youtubePlaylist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
+            window.displayYoutubePlaylist(window.youtubePlaylist);
+        } catch (e) {}
     }
 };
 
@@ -814,6 +872,7 @@ window.addToYoutubePlaylist = async function(videoId, title, channel, thumbnail)
         return;
     }
     
+    // ตรวจสอบซ้ำ
     if (window.youtubePlaylist.some(v => v.video_id === videoId)) {
         alert('⚠️ คลิปนี้อยู่ในเพลย์ลิสต์แล้ว');
         return;
@@ -828,17 +887,33 @@ window.addToYoutubePlaylist = async function(videoId, title, channel, thumbnail)
         channel: channel,
         thumbnail: thumbnail,
         added_at: new Date().toISOString(),
-        added_by: window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้'
+        added_by: window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้',
+        playlist_name: 'เพลย์ลิสต์เริ่มต้น'
     };
     
+    // เพิ่มเข้า array
     window.youtubePlaylist.unshift(newItem);
     
+    // บันทึกลง localStorage
     localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
+    console.log('✅ Saved to localStorage, total:', window.youtubePlaylist.length);
     
-    await window.saveYoutubePlaylistToDB(newItem);
+    // บันทึกลงฐานข้อมูล (ถ้ามี)
+    try {
+        await window.saveYoutubePlaylistToDB(newItem);
+    } catch (e) {
+        console.log('DB not available, saved only to localStorage');
+    }
     
+    // อัพเดท UI
     window.displayYoutubePlaylist(window.youtubePlaylist);
     
+    // อัพเดท YouTube Player ถ้ากำลังเปิดอยู่
+    if (document.getElementById('youtubePlayerModal').classList.contains('active')) {
+        window.displayYoutubePlayerPlaylist();
+    }
+    
+    // อัพเดทปุ่มในผลการค้นหา
     const addBtn = document.querySelector(`.search-result-add[onclick*="${videoId}"]`);
     if (addBtn) {
         addBtn.classList.add('added');
@@ -855,14 +930,16 @@ window.displayYoutubePlaylist = function(playlist) {
     
     if (!container) return;
     
-    if (countEl) countEl.textContent = `${playlist.length} คลิป`;
+    const roomPlaylist = playlist.filter(item => item.room_id === window.currentRoomId);
     
-    if (playlist.length === 0) {
+    if (countEl) countEl.textContent = roomPlaylist.length;
+    
+    if (roomPlaylist.length === 0) {
         container.innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">📋 ยังไม่มีคลิปในเพลย์ลิสต์<br><small>ค้นหาและเพิ่มคลิปจากฝั่งซ้าย</small></div>';
         return;
     }
     
-    container.innerHTML = playlist.map(item => {
+    container.innerHTML = roomPlaylist.map(item => {
         const isOwner = item.user_id === window.currentUser?.id;
         
         return `
@@ -891,10 +968,13 @@ window.removeFromYoutubePlaylist = async function(playlistId) {
     
     const itemToRemove = window.youtubePlaylist.find(item => item.id === playlistId);
     
+    // ลบจาก array
     window.youtubePlaylist = window.youtubePlaylist.filter(item => item.id !== playlistId);
     
+    // อัพเดท localStorage
     localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
     
+    // ลบจากฐานข้อมูล (ถ้ามี)
     try {
         await supabaseClient
             .from('room_youtube_playlist')
@@ -902,12 +982,14 @@ window.removeFromYoutubePlaylist = async function(playlistId) {
             .eq('video_id', itemToRemove.video_id)
             .eq('room_id', window.currentRoomId);
     } catch (error) {
-        console.error('❌ Error removing from DB:', error);
+        console.log('Could not delete from DB, but deleted from localStorage');
     }
     
+    // อัพเดท UI
     window.displayYoutubePlaylist(window.youtubePlaylist);
     window.displayYoutubePlayerPlaylist();
     
+    // อัพเดทปุ่มในผลการค้นหา
     const addBtn = document.querySelector(`.search-result-add[onclick*="${itemToRemove.video_id}"]`);
     if (addBtn) {
         addBtn.classList.remove('added');
@@ -931,21 +1013,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    document.getElementById('addToPlaylistModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            window.closeAddToPlaylistModal();
-        }
-    });
+    const addModal = document.getElementById('addToPlaylistModal');
+    if (addModal) {
+        addModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                window.closeAddToPlaylistModal();
+            }
+        });
+    }
     
-    document.getElementById('youtubePlaylistModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            window.closeYoutubePlaylist();
-        }
-    });
+    const playlistModal = document.getElementById('youtubePlaylistModal');
+    if (playlistModal) {
+        playlistModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                window.closeYoutubePlaylist();
+            }
+        });
+    }
 });
 
 // ========== ACTIVITIES FUNCTIONS (คงเดิม) ==========
-// ... (โค้ดส่วน activities, music, rooms, ฯลฯ คงเดิมทั้งหมด)
 window.loadActivities = async function() {
     if (!window.currentRoomId) {
         console.log('No room selected');
@@ -2209,4 +2296,3 @@ window.togglePasswordField = function() {
     const passwordField = document.getElementById('passwordField');
     if (roomType && passwordField) passwordField.classList.toggle('show', roomType.value === 'private');
 };
-
