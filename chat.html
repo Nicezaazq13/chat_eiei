@@ -1315,7 +1315,156 @@
             align-items: center;
             justify-content: space-between;
         }
-
+        #youtubePlaylistModal .modal-content {
+            width: 800px;
+            max-width: 95%;
+            padding: 20px;
+        }
+        
+        .youtube-playlist-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .playlist-layout {
+            display: flex;
+            gap: 20px;
+            min-height: 500px;
+        }
+        
+        .search-section {
+            flex: 1;
+            border-right: 1px solid var(--border-color);
+            padding-right: 20px;
+        }
+        
+        .search-section h4 {
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+        
+        .playlist-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .playlist-search input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+        }
+        
+        .playlist-search input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .playlist-search button {
+            padding: 12px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .playlist-search button:hover {
+            background: var(--primary-dark);
+        }
+        
+        .playlist-search button:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+        }
+        
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+        
+        .playlist-section {
+            flex: 1;
+            padding-left: 20px;
+        }
+        
+        .playlist-section h4 {
+            margin-bottom: 15px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .playlist-count {
+            font-size: 13px;
+            color: var(--text-light);
+            background: var(--bg-light);
+            padding: 4px 10px;
+            border-radius: var(--radius-xl);
+        }
+        
+        .playlist-items {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+        
+        .search-result-item:hover,
+        .playlist-item:hover {
+            background: var(--bg-light);
+        }
+        
+        .search-result-add.added {
+            background: var(--secondary-color);
+        }
+        
+        .search-result-add.added:hover {
+            background: var(--danger-color);
+        }
+        
+        .playlist-item-play:hover {
+            background: #38a169;
+        }
+        
+        .playlist-item-remove:hover {
+            background: var(--danger-dark);
+        }
+        
+        @media (max-width: 768px) {
+            .playlist-layout {
+                flex-direction: column;
+            }
+            
+            .search-section {
+                border-right: none;
+                padding-right: 0;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 20px;
+            }
+            
+            .playlist-section {
+                padding-left: 0;
+                padding-top: 20px;
+            }
+            
+            .search-result-thumbnail,
+            .playlist-item-thumbnail {
+                width: 80px;
+                height: 45px;
+            }
+        }
         .playlist-count {
             font-size: 13px;
             color: var(--text-light);
@@ -2261,7 +2410,53 @@
             <button onclick="window.hideMusicBar()" class="music-btn">✕</button>
         </div>
     </div>
-
+<!-- ========== YOUTUBE PLAYLIST MODAL ========== -->
+<div id="youtubePlaylistModal" class="modal">
+    <div class="modal-content" style="width: 800px; max-width: 95%;">
+        <div class="youtube-playlist-header">
+            <h3 style="display: flex; align-items: center; gap: 8px;">
+                <span>📺</span> จัดการเพลย์ลิสต์ YouTube
+            </h3>
+            <button onclick="window.closeYoutubePlaylist()" class="btn-icon" style="font-size: 24px;">✕</button>
+        </div>
+        
+        <div style="display: flex; gap: 20px; min-height: 500px;">
+            <!-- ฝั่งซ้าย: ค้นหาคลิป -->
+            <div style="flex: 1; border-right: 1px solid var(--border-color); padding-right: 20px;">
+                <h4 style="margin-bottom: 15px;">🔍 ค้นหาคลิป</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <input type="text" id="youtubeSearchInput" placeholder="พิมพ์ชื่อคลิปที่ต้องการค้นหา..." style="flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px;">
+                    <button id="youtubeSearchBtn" onclick="window.searchYoutube()" style="padding: 12px 20px; background: var(--primary-color); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 500;">ค้นหา</button>
+                </div>
+                
+                <div id="searchResults" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <div style="text-align: center; padding: 40px; color: #718096;">
+                        🔍 พิมพ์คำค้นหาเพื่อหาคลิป YouTube
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ฝั่งขวา: เพลย์ลิสต์ -->
+            <div style="flex: 1; padding-left: 20px;">
+                <h4 style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    📋 เพลย์ลิสต์ของห้อง
+                    <span id="playlistCount" style="font-size: 13px; color: var(--text-light); background: var(--bg-light); padding: 4px 10px; border-radius: var(--radius-xl);">0 คลิป</span>
+                </h4>
+                
+                <div id="playlistItems" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <div style="text-align: center; padding: 40px; color: #718096;">
+                        📋 ยังไม่มีคลิปในเพลย์ลิสต์<br>
+                        <small>ค้นหาและเพิ่มคลิปจากฝั่งซ้าย</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button onclick="window.closeYoutubePlaylist()" class="btn btn-secondary" style="flex: 1;">ปิด</button>
+        </div>
+    </div>
+</div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ========== CONFIGURATION ==========
@@ -2603,12 +2798,16 @@ window.playYoutubeVideo = function(videoId) {
     window.openYoutubePlayer(videoId);
 };
 
-// ========== YOUTUBE PLAYLIST ==========
 window.openYoutubePlaylist = function() {
     const modal = document.getElementById('youtubePlaylistModal');
     if (modal) {
         modal.classList.add('active');
         window.loadYoutubePlaylist();
+        
+        // รีเซ็ตการค้นหา
+        const searchInput = document.getElementById('youtubeSearchInput');
+        if (searchInput) searchInput.value = '';
+        document.getElementById('searchResults').innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">🔍 พิมพ์คำค้นหาเพื่อหาคลิป YouTube</div>';
     }
 };
 
@@ -2675,14 +2874,18 @@ window.searchYoutube = async function() {
             const isInPlaylist = window.youtubePlaylist.some(v => v.video_id === videoId);
             
             return `
-                <div class="search-result-item">
-                    <img src="${thumbnail}" alt="${title}" class="search-result-thumbnail" onclick="window.playYoutubeVideo('${videoId}')">
-                    <div class="search-result-info">
-                        <div class="search-result-title" title="${title}">${title}</div>
-                        <div class="search-result-channel">${channel}</div>
-                        <div class="search-result-duration">⏱️ ${duration}</div>
+                <div class="search-result-item" style="display: flex; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border-color);">
+                    <img src="${thumbnail}" alt="${title}" 
+                         style="width: 120px; height: 68px; border-radius: var(--radius-sm); object-fit: cover; cursor: pointer; background: #000;"
+                         onclick="window.playYoutubeVideo('${videoId}')">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; margin-bottom: 4px; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${title}">${title}</div>
+                        <div style="font-size: 12px; color: var(--text-light); margin-bottom: 4px;">${channel}</div>
+                        <div style="font-size: 11px; color: var(--text-light);">⏱️ ${duration}</div>
                     </div>
-                    <button class="search-result-add ${isInPlaylist ? 'added' : ''}" onclick="window.addToYoutubePlaylist('${videoId}', '${title.replace(/'/g, "\\'")}', '${channel.replace(/'/g, "\\'")}', '${thumbnail}')">
+                    <button class="search-result-add ${isInPlaylist ? 'added' : ''}" 
+                            style="padding: 6px 12px; background: ${isInPlaylist ? 'var(--secondary-color)' : 'var(--primary-color)'}; color: white; border: none; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; height: fit-content;"
+                            onclick="window.addToYoutubePlaylist('${videoId}', '${title.replace(/'/g, "\\'")}', '${channel.replace(/'/g, "\\'")}', '${thumbnail}')">
                         ${isInPlaylist ? '✓ เพิ่มแล้ว' : '➕ เพิ่ม'}
                     </button>
                 </div>
@@ -2698,7 +2901,98 @@ window.searchYoutube = async function() {
     }
 };
 
-window.addToYoutubePlaylist = function(videoId, title, channel, thumbnail) {
+// บันทึกเพลย์ลิสต์ลงฐานข้อมูล
+window.saveYoutubePlaylistToDB = async function(item) {
+    try {
+        const { error } = await supabaseClient
+            .from('room_youtube_playlist')
+            .insert([{
+                room_id: item.room_id,
+                user_id: item.user_id,
+                video_id: item.video_id,
+                title: item.title,
+                channel: item.channel,
+                thumbnail: item.thumbnail,
+                added_by: item.added_by,
+                created_at: item.added_at
+            }]);
+        
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('❌ Error saving to DB:', error);
+        return false;
+    }
+};
+
+// โหลดเพลย์ลิสต์จากฐานข้อมูล
+window.loadYoutubePlaylistFromDB = async function() {
+    if (!window.currentRoomId) return [];
+    
+    try {
+        const { data: playlist, error } = await supabaseClient
+            .from('room_youtube_playlist')
+            .select('*')
+            .eq('room_id', window.currentRoomId)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // แปลงข้อมูลให้ตรงกับ format ที่ใช้
+        return (playlist || []).map(item => ({
+            id: item.id,
+            room_id: item.room_id,
+            user_id: item.user_id,
+            video_id: item.video_id,
+            title: item.title,
+            channel: item.channel,
+            thumbnail: item.thumbnail,
+            added_at: item.created_at,
+            added_by: item.added_by
+        }));
+        
+    } catch (error) {
+        console.error('❌ Error loading from DB:', error);
+        return [];
+    }
+};
+
+window.loadYoutubePlaylist = async function() {
+    if (!window.currentRoomId) return;
+    
+    try {
+        // โหลดจาก localStorage ก่อน
+        const savedPlaylist = localStorage.getItem(`youtube_playlist_${window.currentRoomId}`);
+        let localPlaylist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
+        
+        // โหลดจากฐานข้อมูล
+        const dbPlaylist = await window.loadYoutubePlaylistFromDB();
+        
+        // รวมข้อมูลและลบรายการซ้ำ
+        const allItems = [...dbPlaylist, ...localPlaylist];
+        const uniqueItems = [];
+        const seen = new Set();
+        
+        allItems.forEach(item => {
+            if (!seen.has(item.video_id)) {
+                seen.add(item.video_id);
+                uniqueItems.push(item);
+            }
+        });
+        
+        window.youtubePlaylist = uniqueItems;
+        
+        // อัพเดท localStorage
+        localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
+        
+        window.displayYoutubePlaylist(window.youtubePlaylist);
+        
+    } catch (error) {
+        console.error('❌ Error loading playlist:', error);
+    }
+};
+
+window.addToYoutubePlaylist = async function(videoId, title, channel, thumbnail) {
     if (!window.currentRoomId) {
         alert('❌ กรุณาเลือกห้องก่อน');
         return;
@@ -2721,22 +3015,26 @@ window.addToYoutubePlaylist = function(videoId, title, channel, thumbnail) {
         added_by: window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้'
     };
     
+    // เพิ่มลงใน array
     window.youtubePlaylist.unshift(newItem);
+    
+    // บันทึกลง localStorage
+    localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
+    
+    // บันทึกลงฐานข้อมูล
+    await window.saveYoutubePlaylistToDB(newItem);
+    
     window.displayYoutubePlaylist(window.youtubePlaylist);
     
+    // อัพเดทปุ่มในผลการค้นหา
     const addBtn = document.querySelector(`.search-result-add[onclick*="${videoId}"]`);
     if (addBtn) {
         addBtn.classList.add('added');
         addBtn.textContent = '✓ เพิ่มแล้ว';
+        addBtn.style.background = 'var(--secondary-color)';
     }
     
     alert('✅ เพิ่มคลิปลงเพลย์ลิสต์แล้ว');
-};
-
-window.loadYoutubePlaylist = function() {
-    if (!window.currentRoomId) return;
-    const roomPlaylist = window.youtubePlaylist.filter(item => item.room_id === window.currentRoomId);
-    window.displayYoutubePlaylist(roomPlaylist);
 };
 
 window.displayYoutubePlaylist = function(playlist) {
@@ -2756,33 +3054,101 @@ window.displayYoutubePlaylist = function(playlist) {
         const isOwner = item.user_id === window.currentUser?.id;
         
         return `
-            <div class="playlist-item">
+            <div class="playlist-item" style="display: flex; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border-color);">
                 <img src="${item.thumbnail || `https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}" 
                      alt="${item.title}" 
-                     class="playlist-item-thumbnail" 
+                     style="width: 100px; height: 56px; border-radius: var(--radius-sm); object-fit: cover; cursor: pointer; background: #000;"
                      onclick="window.playYoutubeVideo('${item.video_id}')">
-                <div class="playlist-item-info">
-                    <div class="playlist-item-title" title="${item.title}">${item.title}</div>
-                    <div class="playlist-item-channel">${item.channel}</div>
-                    <div class="playlist-item-added-by">เพิ่มโดย ${item.added_by}</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; margin-bottom: 4px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.title}">${item.title}</div>
+                    <div style="font-size: 11px; color: var(--text-light); margin-bottom: 2px;">${item.channel}</div>
+                    <div style="font-size: 10px; color: var(--text-light);">เพิ่มโดย ${item.added_by}</div>
                 </div>
-                <div class="playlist-item-controls">
-                    <button class="playlist-item-play" onclick="window.playYoutubeVideo('${item.video_id}')">▶️ เล่น</button>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button onclick="window.playYoutubeVideo('${item.video_id}')" 
+                            style="padding: 4px 8px; background: var(--secondary-color); color: white; border: none; border-radius: var(--radius-sm); font-size: 11px; cursor: pointer;">
+                        ▶️ เล่น
+                    </button>
                     ${isOwner || window.isAdmin ? 
-                        `<button class="playlist-item-remove" onclick="window.removeFromYoutubePlaylist('${item.id}')">🗑️ ลบ</button>` : ''}
+                        `<button onclick="window.removeFromYoutubePlaylist('${item.id}')" 
+                                style="padding: 4px 8px; background: var(--danger-color); color: white; border: none; border-radius: var(--radius-sm); font-size: 11px; cursor: pointer;">
+                            🗑️ ลบ
+                        </button>` : ''}
                 </div>
             </div>
         `;
     }).join('');
 };
 
-window.removeFromYoutubePlaylist = function(playlistId) {
+window.removeFromYoutubePlaylist = async function(playlistId) {
     if (!confirm('🗑️ ลบคลิปนี้ออกจากเพลย์ลิสต์?')) return;
+    
+    const itemToRemove = window.youtubePlaylist.find(item => item.id === playlistId);
+    
+    // ลบจาก array
     window.youtubePlaylist = window.youtubePlaylist.filter(item => item.id !== playlistId);
+    
+    // อัพเดท localStorage
+    localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
+    
+    // ลบจากฐานข้อมูล
+    try {
+        await supabaseClient
+            .from('room_youtube_playlist')
+            .delete()
+            .eq('video_id', itemToRemove.video_id)
+            .eq('room_id', window.currentRoomId);
+    } catch (error) {
+        console.error('❌ Error removing from DB:', error);
+    }
+    
     window.displayYoutubePlaylist(window.youtubePlaylist);
+    
+    // อัพเดทปุ่มในผลการค้นหา
+    const addBtn = document.querySelector(`.search-result-add[onclick*="${itemToRemove.video_id}"]`);
+    if (addBtn) {
+        addBtn.classList.remove('added');
+        addBtn.textContent = '➕ เพิ่ม';
+        addBtn.style.background = 'var(--primary-color)';
+    }
+    
     alert('✅ ลบคลิปออกจากเพลย์ลิสต์แล้ว');
 };
 
+// เล่นวิดีโอจาก playlist
+window.playYoutubeVideo = function(videoId) {
+    window.openYoutubePlayer(videoId);
+};
+
+// แก้ไขฟังก์ชัน selectRoom ให้โหลด playlist
+const originalSelectRoom = window.selectRoom;
+window.selectRoom = async function(roomId) {
+    await originalSelectRoom(roomId);
+    await window.loadYoutubePlaylist();
+};
+
+// เพิ่ม event listener สำหรับค้นหาอัตโนมัติ
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('youtubeSearchInput');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.trim().length >= 3) {
+                    window.searchYoutube();
+                }
+            }, 500);
+        });
+        
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                window.searchYoutube();
+            }
+        });
+    }
+});
 // ========== ACTIVITIES FUNCTIONS ==========
 window.loadActivities = async function() {
     if (!window.currentRoomId) {
@@ -4050,5 +4416,6 @@ window.togglePasswordField = function() {
     </script>
 </body>
 </html>
+
 
 
