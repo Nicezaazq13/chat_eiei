@@ -2,7 +2,7 @@
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
 // ✅ ใช้ API Key จริง (อันนี้คือ key จริง)
-const SUPABASE_ANON_KEY = 'sb_publishable_bBVN1rHJyBJN_KswV_skAQ_XYwPsvsy';
+const SUPABASE_ANON_KEY = 'sb_publishable_5qJZJ7cH73Rz-HycTEOf2g_R_O_pmjI';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -2219,4 +2219,5 @@ document.addEventListener('DOMContentLoaded', function() {
         // ไม่ปิด YouTube Player เมื่อคลิกพื้นหลัง
     });
 });
+
 
