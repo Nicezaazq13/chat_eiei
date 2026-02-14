@@ -1,7 +1,7 @@
 // ========== script.js ==========
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdWd0amxqZmtqcWZwbW5zeGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5MzY4MDAsImV4cCI6MjA1NDUxMjgwMH0.dQmB1nHJyBJNKswVskAQXYwPsvsy';
+const SUPABASE_ANON_KEY = 'sb_publishable_bBVN1rHJyBJN_KswV_skAQ_XYwPsvsy';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -2015,3 +2015,4 @@ window.togglePasswordField = function() {
     const passwordField = document.getElementById('passwordField');
     if (roomType && passwordField) passwordField.classList.toggle('show', roomType.value === 'private');
 };
+
