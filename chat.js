@@ -1797,9 +1797,15 @@ window.displayRooms = function(rooms) {
     }).join('');
 };
 
+// แก้ไขฟังก์ชัน selectRoom
 window.selectRoom = async function(roomId) {
     try {
-        const { data: room, error } = await supabaseClient.from('rooms').select('*').eq('id', roomId).single();
+        const { data: room, error } = await supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('id', roomId)
+            .single();
+            
         if (error) throw error;
         
         window.currentRoom = room;
@@ -1814,11 +1820,14 @@ window.selectRoom = async function(roomId) {
         
         await window.loadMessages(room.id);
         await window.loadYoutubePlaylist();
-        
-        // โหลดกิจกรรมทุกครั้งที่เปลี่ยนห้อง
         await window.loadActivities();
         
+        // โหลด members ทันทีเมื่อเปลี่ยนห้อง
+        await window.loadRoomMembers(room.id);
+        
+        // อัพเดท rooms list
         window.loadRooms();
+        
     } catch (error) {
         console.error('❌ Error selecting room:', error);
     }
@@ -2180,6 +2189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // ไม่ปิด YouTube Player เมื่อคลิกพื้นหลัง
     });
 });
+
 
 
 
