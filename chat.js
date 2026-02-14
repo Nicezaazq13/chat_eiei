@@ -2,7 +2,7 @@
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
 // ✅ ใช้ API Key จริง (อันนี้คือ key จริง)
-const SUPABASE_ANON_KEY = 'sb_publishable_bBVN1rHJyBJN_KswV_skAQ_XYwPsvsy';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdWd0amxqZmtqcWZwbW5zeGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5MzY4MDAsImV4cCI6MjA1NDUxMjgwMH0.dQmB1nHJyBJNKswVskAQXYwPsvsy';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -914,15 +914,28 @@ window.loadActivities = async function() {
         if (error) {
             console.error('❌ Error loading activities:', error);
             
-            if (error.code === '42P01') {
+            if (error.message.includes('Invalid API key')) {
+                container.innerHTML = 
+                    '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
+                    '❌ API Key ไม่ถูกต้อง<br>' +
+                    '<small>กรุณาตรวจสอบการตั้งค่า</small>' +
+                    '<br><br>' +
+                    '<button onclick="window.location.reload()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">รีเฟรชหน้า</button>' +
+                    '</div>';
+            } else if (error.code === '42P01') {
                 container.innerHTML = 
                     '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
                     '❌ ยังไม่มีตาราง activities ในฐานข้อมูล<br>' +
-                    '<small>กรุณาสร้างตารางก่อน</small></div>';
+                    '<small>กรุณาสร้างตารางก่อน</small>' +
+                    '<br><br>' +
+                    '<button onclick="window.location.reload()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">รีเฟรชหน้า</button>' +
+                    '</div>';
             } else {
                 container.innerHTML = 
                     '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
-                    '❌ ' + error.message + '</div>';
+                    '❌ ' + error.message + '<br>' +
+                    '<small>Code: ' + error.code + '</small>' +
+                    '</div>';
             }
             return;
         }
@@ -932,31 +945,48 @@ window.loadActivities = async function() {
         if (!activities || activities.length === 0) {
             container.innerHTML = 
                 '<div style="text-align: center; padding: 40px 20px; color: #718096;">' +
-                '🎮 ยังไม่มีกิจกรรม<br>' +
-                '<small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small></div>';
+                '🎮 ยังไม่มีกิจกรรมในห้องนี้<br>' +
+                '<small>คลิก "สร้างกิจกรรม" เพื่อเริ่มต้น</small>' +
+                '</div>';
             return;
         }
         
-        const activitiesWithCreator = await Promise.all(activities.map(async (activity) => {
+        const activitiesWithDetails = await Promise.all(activities.map(async (activity) => {
+            // ดึงข้อมูลผู้สร้าง
             const { data: creator } = await supabaseClient
                 .from('profiles')
                 .select('username, display_name, avatar_url')
                 .eq('id', activity.user_id)
                 .maybeSingle();
             
+            // ดึงข้อมูลผู้เข้าร่วม
             const { data: participants } = await supabaseClient
                 .from('activity_participants')
-                .select('user_id, joined_at, profiles:user_id(username, display_name, avatar_url)')
+                .select('user_id, joined_at')
                 .eq('activity_id', activity.id);
+            
+            // ดึงข้อมูลผู้เข้าร่วมพร้อมโปรไฟล์
+            const participantsWithProfiles = await Promise.all((participants || []).map(async (p) => {
+                const { data: profile } = await supabaseClient
+                    .from('profiles')
+                    .select('username, display_name, avatar_url')
+                    .eq('id', p.user_id)
+                    .maybeSingle();
+                
+                return {
+                    ...p,
+                    profiles: profile
+                };
+            }));
             
             return {
                 ...activity,
                 creator: creator || { display_name: 'ผู้ใช้', username: 'user', avatar_url: null },
-                participants: participants || []
+                participants: participantsWithProfiles || []
             };
         }));
         
-        window.displayActivities(activitiesWithCreator);
+        window.displayActivities(activitiesWithDetails);
         
     } catch (error) { 
         console.error('❌ Error loading activities:', error); 
@@ -1136,7 +1166,7 @@ window.createActivity = async function(event) {
         alert('✅ สร้างกิจกรรมสำเร็จ!');
         window.closeCreateActivityModal();
         
-        // ✅ โหลดกิจกรรมใหม่ทันที
+        // โหลดกิจกรรมใหม่ทันที
         await window.loadActivities();
         
     } catch (error) { 
@@ -1185,7 +1215,7 @@ window.toggleJoinActivity = async function(activityId) {
             .update({ participants_count: participants.length })
             .eq('id', activityId);
         
-        // ✅ โหลดกิจกรรมใหม่ทันที
+        // โหลดกิจกรรมใหม่ทันที
         await window.loadActivities();
         
     } catch (error) { 
@@ -1208,7 +1238,7 @@ window.endActivity = async function(activityId) {
         
         alert('✅ จบกิจกรรมแล้ว');
         
-        // ✅ โหลดกิจกรรมใหม่ทันที
+        // โหลดกิจกรรมใหม่ทันที
         await window.loadActivities();
         
     } catch (error) { 
@@ -1759,7 +1789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         await window.selectRoom(initialRoomId);
         
-        // ✅ โหลดกิจกรรมทันที
+        // โหลดกิจกรรมทันทีหลังจากเลือกห้อง
         setTimeout(() => {
             window.loadActivities();
         }, 500);
@@ -1840,7 +1870,7 @@ window.selectRoom = async function(roomId) {
         await window.loadMessages(room.id);
         await window.loadYoutubePlaylist();
         
-        // ✅ โหลดกิจกรรมทุกครั้งที่เปลี่ยนห้อง
+        // โหลดกิจกรรมทุกครั้งที่เปลี่ยนห้อง
         await window.loadActivities();
         
         window.loadRooms();
