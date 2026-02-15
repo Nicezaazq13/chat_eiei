@@ -1987,9 +1987,42 @@ window.displayRooms = function(rooms) {
     }).join('');
 };
 
-// แก้ไขฟังก์ชัน selectRoom
+// ========== PANEL MANAGEMENT ==========
+window.hideAllPanels = function() {
+    // ซ่อน members panel
+    const membersPanel = document.getElementById('membersPanel');
+    if (membersPanel) {
+        membersPanel.classList.remove('active');
+    }
+    
+    // ซ่อน activities panel
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    if (activitiesPanel) {
+        activitiesPanel.classList.remove('active');
+    }
+    
+    // ซ่อน mobile sidebar
+    const roomsPanel = document.querySelector('.rooms-panel');
+    if (roomsPanel) {
+        roomsPanel.classList.remove('mobile-active');
+    }
+    
+    // ซ่อน overlay
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    
+    // remove body class
+    document.body.classList.remove('sidebar-open');
+};
+
+// ========== SELECT ROOM (ปรับปรุงให้ซ่อน panels) ==========
 window.selectRoom = async function(roomId) {
     try {
+        console.log('Selecting room:', roomId);
+        
+        // ตรวจสอบว่าเป็นห้องส่วนตัวหรือไม่
         const { data: room, error } = await supabaseClient
             .from('rooms')
             .select('*')
@@ -1998,28 +2031,73 @@ window.selectRoom = async function(roomId) {
             
         if (error) throw error;
         
+        // ถ้าเป็นห้องส่วนตัวและไม่ใช่เจ้าของ ให้ตรวจสอบรหัสผ่าน
+        if (room.room_type === 'private' && room.owner_id !== window.currentUser?.id) {
+            // ตรวจสอบว่าผู้ใช้เป็นสมาชิกอยู่แล้วหรือไม่
+            const { data: existingMember } = await supabaseClient
+                .from('room_members')
+                .select('*')
+                .eq('room_id', roomId)
+                .eq('user_id', window.currentUser.id)
+                .maybeSingle();
+            
+            if (!existingMember) {
+                window.showJoinPrivateModal(room);
+                return;
+            }
+        }
+        
         window.currentRoom = room;
         window.currentRoomId = room.id;
         
         localStorage.setItem(STORAGE_KEY, room.id);
         
-        document.getElementById('currentRoomTitle').innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}`;
-        document.getElementById('currentRoomTypeBadge').textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+        // อัพเดท UI
+        const titleEl = document.getElementById('currentRoomTitle');
+        const badgeEl = document.getElementById('currentRoomTypeBadge');
+        const inputArea = document.getElementById('messageInputArea');
+        const roomActions = document.getElementById('roomActions');
         
-        document.getElementById('messageInputArea').style.display = 'block';
+        if (titleEl) {
+            titleEl.innerHTML = `${room.room_type === 'private' ? '🔒' : '💬'} ${room.name}`;
+        }
+        if (badgeEl) {
+            badgeEl.textContent = room.room_type === 'private' ? 'ส่วนตัว' : 'สาธารณะ';
+        }
+        if (inputArea) {
+            inputArea.style.display = 'block';
+        }
         
+        // แสดงปุ่มลบห้องสำหรับเจ้าของหรือแอดมิน
+        if (roomActions) {
+            if (room.owner_id === window.currentUser?.id || window.isAdmin) {
+                roomActions.innerHTML = `
+                    <button class="delete-room-btn" onclick="window.showDeleteRoomModal()">
+                        🗑️ ลบห้อง
+                    </button>
+                `;
+            } else {
+                roomActions.innerHTML = '';
+            }
+        }
+        
+        // โหลดข้อมูลต่างๆ
         await window.loadMessages(room.id);
         await window.loadYoutubePlaylist();
         await window.loadActivities();
-        
-        // โหลด members ทันทีเมื่อเปลี่ยนห้อง
         await window.loadRoomMembers(room.id);
         
-        // อัพเดท rooms list
-        window.loadRooms();
+        // อัพเดทรายการห้อง
+        await window.loadRooms();
+        
+        // ซ่อน panels ทั้งหมดหลังจากเลือกห้อง (สำคัญ!)
+        window.hideAllPanels();
+        
+        console.log('✅ Room selected:', room.name);
         
     } catch (error) {
         console.error('❌ Error selecting room:', error);
+        alert('ไม่สามารถเลือกห้องได้: ' + error.message);
     }
 };
 
@@ -2225,15 +2303,36 @@ window.setupEventListeners = function() {
             }, 500);
         });
     }
+    
+    // เพิ่ม event listener สำหรับปุ่มแอดมิน
+    const adminBtn = document.getElementById('adminModeBtn');
+    if (adminBtn) {
+        adminBtn.addEventListener('click', window.toggleAdminMode);
+    }
 };
 
-// ฟังก์ชันพื้นฐาน
+// ฟังก์ชันพื้นฐาน (ปรับปรุงให้ใช้ hideAllPanels)
 window.toggleMobileSidebar = function() {
     const sidebar = document.querySelector('.rooms-panel');
     const overlay = document.getElementById('sidebarOverlay');
     if (!sidebar) return;
-    sidebar.classList.toggle('mobile-active');
-    if (overlay) overlay.classList.toggle('active', sidebar.classList.contains('mobile-active'));
+    
+    if (sidebar.classList.contains('mobile-active')) {
+        sidebar.classList.remove('mobile-active');
+        if (overlay) overlay.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    } else {
+        // ซ่อน panels อื่นๆ ก่อนเปิด sidebar
+        const membersPanel = document.getElementById('membersPanel');
+        const activitiesPanel = document.getElementById('activitiesPanel');
+        
+        if (membersPanel) membersPanel.classList.remove('active');
+        if (activitiesPanel) activitiesPanel.classList.remove('active');
+        
+        sidebar.classList.add('mobile-active');
+        if (overlay) overlay.classList.add('active');
+        document.body.classList.add('sidebar-open');
+    }
 };
 
 window.filterRooms = function(filter, btn) {
@@ -2244,14 +2343,18 @@ window.filterRooms = function(filter, btn) {
 
 window.toggleMembersPanel = function() {
     const panel = document.getElementById('membersPanel');
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    
     if (!panel) return;
     
-    // ถ้ากำลังเปิดอยู่ ให้ปิด
     if (panel.classList.contains('active')) {
         panel.classList.remove('active');
         console.log('👥 Members panel closed');
     } else {
-        // ถ้าปิดอยู่ ให้เปิดและโหลดข้อมูล
+        // ซ่อน activities panel ก่อน
+        if (activitiesPanel) {
+            activitiesPanel.classList.remove('active');
+        }
         panel.classList.add('active');
         console.log('👥 Members panel opened, loading members...');
         
@@ -2267,9 +2370,22 @@ window.toggleMembersPanel = function() {
 
 window.toggleActivitiesPanel = function() {
     const panel = document.getElementById('activitiesPanel');
-    if (panel) {
-        panel.classList.toggle('active');
-        if (panel.classList.contains('active')) {
+    const membersPanel = document.getElementById('membersPanel');
+    
+    if (!panel) return;
+    
+    if (panel.classList.contains('active')) {
+        panel.classList.remove('active');
+        console.log('🎮 Activities panel closed');
+    } else {
+        // ซ่อน members panel ก่อน
+        if (membersPanel) {
+            membersPanel.classList.remove('active');
+        }
+        panel.classList.add('active');
+        console.log('🎮 Activities panel opened, loading activities...');
+        
+        if (window.currentRoomId) {
             window.loadActivities();
         }
     }
@@ -2387,4 +2503,33 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('youtubePlayerModal')?.addEventListener('click', function(e) {
         // ไม่ปิด YouTube Player เมื่อคลิกพื้นหลัง
     });
+    
+    // เพิ่ม event listener สำหรับ overlay
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            const sidebar = document.querySelector('.rooms-panel');
+            if (sidebar) {
+                sidebar.classList.remove('mobile-active');
+            }
+            overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+        });
+    }
+    
+    // ป้องกันการคลิกที่ panels ปิดตัวเอง
+    const membersPanel = document.getElementById('membersPanel');
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    
+    if (membersPanel) {
+        membersPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    if (activitiesPanel) {
+        activitiesPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
 });
