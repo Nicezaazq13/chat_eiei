@@ -1989,32 +1989,134 @@ window.displayRooms = function(rooms) {
 
 // ========== PANEL MANAGEMENT ==========
 window.hideAllPanels = function() {
+    console.log('🔍 Hiding all panels...');
+    
     // ซ่อน members panel
     const membersPanel = document.getElementById('membersPanel');
     if (membersPanel) {
         membersPanel.classList.remove('active');
+        console.log('✅ Members panel hidden');
     }
     
     // ซ่อน activities panel
     const activitiesPanel = document.getElementById('activitiesPanel');
     if (activitiesPanel) {
         activitiesPanel.classList.remove('active');
+        console.log('✅ Activities panel hidden');
     }
     
-    // ซ่อน mobile sidebar
+    // ซ่อน mobile sidebar (rooms panel)
     const roomsPanel = document.querySelector('.rooms-panel');
     if (roomsPanel) {
         roomsPanel.classList.remove('mobile-active');
+        console.log('✅ Rooms panel mobile hidden');
     }
     
     // ซ่อน overlay
     const overlay = document.getElementById('sidebarOverlay');
     if (overlay) {
         overlay.classList.remove('active');
+        console.log('✅ Overlay hidden');
     }
     
     // remove body class
     document.body.classList.remove('sidebar-open');
+};
+
+// ========== TOGGLE FUNCTIONS (ปรับปรุง) ==========
+window.toggleMembersPanel = function() {
+    const panel = document.getElementById('membersPanel');
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    const roomsPanel = document.querySelector('.rooms-panel');
+    
+    if (!panel) return;
+    
+    console.log('Toggling members panel, current active:', panel.classList.contains('active'));
+    
+    if (panel.classList.contains('active')) {
+        panel.classList.remove('active');
+        console.log('👥 Members panel closed');
+    } else {
+        // ซ่อน activities panel ก่อน
+        if (activitiesPanel) {
+            activitiesPanel.classList.remove('active');
+        }
+        // ปิด mobile sidebar ถ้าเปิดอยู่
+        if (roomsPanel) {
+            roomsPanel.classList.remove('mobile-active');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+        panel.classList.add('active');
+        console.log('👥 Members panel opened');
+        
+        // โหลดข้อมูลสมาชิกเมื่อเปิด panel
+        if (window.currentRoomId) {
+            window.loadRoomMembers(window.currentRoomId);
+        } else {
+            document.getElementById('membersList').innerHTML = 
+                '<div style="text-align: center; padding: 20px; color: #718096;">❌ ไม่ได้เลือกห้อง</div>';
+        }
+    }
+};
+
+window.toggleActivitiesPanel = function() {
+    const panel = document.getElementById('activitiesPanel');
+    const membersPanel = document.getElementById('membersPanel');
+    const roomsPanel = document.querySelector('.rooms-panel');
+    
+    if (!panel) return;
+    
+    console.log('Toggling activities panel, current active:', panel.classList.contains('active'));
+    
+    if (panel.classList.contains('active')) {
+        panel.classList.remove('active');
+        console.log('🎮 Activities panel closed');
+    } else {
+        // ซ่อน members panel ก่อน
+        if (membersPanel) {
+            membersPanel.classList.remove('active');
+        }
+        // ปิด mobile sidebar ถ้าเปิดอยู่
+        if (roomsPanel) {
+            roomsPanel.classList.remove('mobile-active');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+        panel.classList.add('active');
+        console.log('🎮 Activities panel opened');
+        
+        if (window.currentRoomId) {
+            window.loadActivities();
+        }
+    }
+};
+
+window.toggleMobileSidebar = function() {
+    const sidebar = document.querySelector('.rooms-panel');
+    const overlay = document.getElementById('sidebarOverlay');
+    const membersPanel = document.getElementById('membersPanel');
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    
+    if (!sidebar) return;
+    
+    console.log('Toggling mobile sidebar, current active:', sidebar.classList.contains('mobile-active'));
+    
+    if (sidebar.classList.contains('mobile-active')) {
+        sidebar.classList.remove('mobile-active');
+        if (overlay) overlay.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+        console.log('✅ Mobile sidebar closed');
+    } else {
+        // ซ่อน panels อื่นๆ ก่อนเปิด sidebar
+        if (membersPanel) membersPanel.classList.remove('active');
+        if (activitiesPanel) activitiesPanel.classList.remove('active');
+        
+        sidebar.classList.add('mobile-active');
+        if (overlay) overlay.classList.add('active');
+        document.body.classList.add('sidebar-open');
+        console.log('✅ Mobile sidebar opened');
+    }
 };
 
 // ========== SELECT ROOM (ปรับปรุงให้ซ่อน panels) ==========
@@ -2101,6 +2203,68 @@ window.selectRoom = async function(roomId) {
     }
 };
 
+// เพิ่ม event listeners ใน DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    // ... โค้ดเดิม ...
+    
+    // เพิ่ม event listener สำหรับ overlay
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            const sidebar = document.querySelector('.rooms-panel');
+            if (sidebar) {
+                sidebar.classList.remove('mobile-active');
+            }
+            overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+            console.log('✅ Overlay clicked - closed sidebar');
+        });
+    }
+    
+    // ป้องกันการคลิกที่ panels ปิดตัวเอง
+    const membersPanel = document.getElementById('membersPanel');
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    
+    if (membersPanel) {
+        membersPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    if (activitiesPanel) {
+        activitiesPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    // ปิด panels เมื่อคลิกที่ chat content (สำหรับมือถือ)
+    const chatContent = document.querySelector('.chat-content');
+    if (chatContent) {
+        chatContent.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                const membersPanel = document.getElementById('membersPanel');
+                const activitiesPanel = document.getElementById('activitiesPanel');
+                const roomsPanel = document.querySelector('.rooms-panel');
+                const overlay = document.getElementById('sidebarOverlay');
+                
+                if (membersPanel && membersPanel.classList.contains('active')) {
+                    membersPanel.classList.remove('active');
+                }
+                if (activitiesPanel && activitiesPanel.classList.contains('active')) {
+                    activitiesPanel.classList.remove('active');
+                }
+                if (roomsPanel && roomsPanel.classList.contains('mobile-active')) {
+                    roomsPanel.classList.remove('mobile-active');
+                }
+                if (overlay && overlay.classList.contains('active')) {
+                    overlay.classList.remove('active');
+                }
+                document.body.classList.remove('sidebar-open');
+                console.log('✅ Clicked chat content - closed all panels');
+            }
+        });
+    }
+});
 window.loadMessages = async function(roomId) {
     try {
         if (!window.messagesContainer) return;
@@ -2533,3 +2697,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
