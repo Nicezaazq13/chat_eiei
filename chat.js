@@ -61,7 +61,7 @@ const STORAGE_KEY = 'chat_last_room_id';
 
 const emojiList = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
 
-// ========== DEBUG FUNCTION ==========
+// ========== UTILITY FUNCTIONS ==========
 window.debug = function(msg) {
     console.log('🔍 DEBUG:', msg);
     const debugEl = document.getElementById('debugInfo');
@@ -72,6 +72,91 @@ window.debug = function(msg) {
             debugEl.style.display = 'none';
         }, 3000);
     }
+};
+
+window.formatTime = function(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
+
+window.linkify = function(text) {
+    if (!text) return '';
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
+};
+
+window.scrollToBottom = function() { 
+    if (window.messagesContainer) {
+        window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; 
+    }
+};
+
+// ========== IMAGE PREVIEW FUNCTIONS ==========
+window.clearImagePreview = function() {
+    console.log('Clearing image preview');
+    window.selectedImageFile = null;
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    if (preview) {
+        preview.style.display = 'none';
+    }
+    if (previewImg) {
+        previewImg.src = '';
+    }
+};
+
+window.uploadImage = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('❌ รูปภาพต้องมีขนาดไม่เกิน 5MB');
+                return;
+            }
+            
+            window.selectedImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                const img = document.getElementById('previewImg');
+                if (preview && img) { 
+                    img.src = e.target.result; 
+                    preview.style.display = 'inline-block'; 
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+window.openLightbox = function(imageUrl) {
+    const lightbox = document.createElement('div');
+    lightbox.className = 'lightbox';
+    lightbox.onclick = function() { 
+        document.body.removeChild(lightbox); 
+    };
+    
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'lightbox-close';
+    closeBtn.innerHTML = '✕';
+    closeBtn.onclick = function(e) { 
+        e.stopPropagation(); 
+        document.body.removeChild(lightbox); 
+    };
+    
+    lightbox.appendChild(img);
+    lightbox.appendChild(closeBtn);
+    document.body.appendChild(lightbox);
 };
 
 // ========== CHECK USER ==========
@@ -126,7 +211,6 @@ window.setupSessionManager = function() {
 
 // ========== REALTIME MESSAGES ==========
 window.setupRealtimeSubscription = async function(roomId) {
-    // ยกเลิก subscription เดิมถ้ามี
     if (window.messageSubscription) {
         console.log('🔄 Unsubscribing from old subscription...');
         window.messageSubscription.unsubscribe();
@@ -135,7 +219,6 @@ window.setupRealtimeSubscription = async function(roomId) {
     
     console.log('📡 Setting up realtime subscription for room:', roomId);
     
-    // สร้าง subscription ใหม่
     window.messageSubscription = supabaseClient
         .channel(`room:${roomId}`)
         .on(
@@ -150,7 +233,6 @@ window.setupRealtimeSubscription = async function(roomId) {
                 console.log('📥 New message received:', payload);
                 
                 try {
-                    // ดึงข้อมูลโปรไฟล์ของผู้ส่งข้อความ
                     const { data: profile, error } = await supabaseClient
                         .from('profiles')
                         .select('username, display_name, avatar_url')
@@ -161,7 +243,6 @@ window.setupRealtimeSubscription = async function(roomId) {
                         console.error('Error fetching profile:', error);
                     }
                     
-                    // สร้าง object ข้อความที่มีข้อมูลโปรไฟล์
                     const newMessage = {
                         ...payload.new,
                         profiles: profile || { 
@@ -171,7 +252,6 @@ window.setupRealtimeSubscription = async function(roomId) {
                         }
                     };
                     
-                    // แสดงข้อความใหม่ทันที
                     window.displayMessage(newMessage);
                     window.scrollToBottom();
                     
@@ -203,7 +283,6 @@ window.setupRealtimeSubscription = async function(roomId) {
         });
 };
 
-// ฟังก์ชันสำหรับอัปเดตข้อความใน UI
 window.updateMessageInUI = function(updatedMessage) {
     const messageDiv = document.querySelector(`.message[data-message-id="${updatedMessage.id}"]`);
     if (messageDiv) {
@@ -1668,8 +1747,6 @@ window.deleteSelectedMessages = async function() {
         
         alert(`✅ ลบ ${messageIds.length} ข้อความสำเร็จ`);
         window.clearSelectedMessages();
-        // ไม่ต้องโหลด messages ใหม่ เพราะ Realtime จะอัปเดตให้
-        // await window.loadMessages(window.currentRoomId);
         
     } catch (error) {
         console.error('❌ Error deleting messages:', error);
@@ -2172,7 +2249,7 @@ window.selectRoom = async function(roomId) {
         // โหลดข้อความเก่า
         await window.loadMessages(room.id);
         
-        // ตั้งค่า Realtime subscription สำหรับห้องนี้ (สำคัญ!)
+        // ตั้งค่า Realtime subscription สำหรับห้องนี้
         await window.setupRealtimeSubscription(room.id);
         
         // โหลดข้อมูลอื่นๆ
@@ -2263,6 +2340,7 @@ window.displayMessage = function(message) {
     window.scrollToBottom();
 };
 
+// ========== SEND MESSAGE ==========
 window.sendMessage = async function() {
     const message = window.messageInput.value.trim();
     const hasImage = window.selectedImageFile !== null;
@@ -2297,9 +2375,7 @@ window.sendMessage = async function() {
         
         // เคลียร์ input
         window.messageInput.value = '';
-        window.clearImagePreview();
-        
-        // ไม่ต้องโหลด messages ใหม่ เพราะ Realtime จะจัดการให้
+        window.clearImagePreview(); // ตอนนี้ฟังก์ชันนี้ถูกประกาศไว้ก่อนแล้ว
         
     } catch (error) {
         console.error('❌ Error sending message:', error);
@@ -2307,117 +2383,7 @@ window.sendMessage = async function() {
     }
 };
 
-// ========== IMAGE PREVIEW FUNCTIONS ==========
-window.clearImagePreview = function() {
-    console.log('Clearing image preview');
-    window.selectedImageFile = null;
-    const preview = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('previewImg');
-    if (preview) {
-        preview.style.display = 'none';
-    }
-    if (previewImg) {
-        previewImg.src = '';
-    }
-};
-
-window.uploadImage = function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // ตรวจสอบขนาดไฟล์ (ไม่เกิน 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('❌ รูปภาพต้องมีขนาดไม่เกิน 5MB');
-                return;
-            }
-            
-            window.selectedImageFile = file;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('imagePreview');
-                const img = document.getElementById('previewImg');
-                if (preview && img) { 
-                    img.src = e.target.result; 
-                    preview.style.display = 'inline-block'; 
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-};
-
-window.openLightbox = function(imageUrl) {
-    const lightbox = document.createElement('div');
-    lightbox.className = 'lightbox';
-    lightbox.onclick = function() { 
-        document.body.removeChild(lightbox); 
-    };
-    
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    
-    const closeBtn = document.createElement('span');
-    closeBtn.className = 'lightbox-close';
-    closeBtn.innerHTML = '✕';
-    closeBtn.onclick = function(e) { 
-        e.stopPropagation(); 
-        document.body.removeChild(lightbox); 
-    };
-    
-    lightbox.appendChild(img);
-    lightbox.appendChild(closeBtn);
-    document.body.appendChild(lightbox);
-};
-
-// ========== UTILITIES ==========
-window.formatTime = function(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const now = new Date();
-    if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-};
-
-window.linkify = function(text) {
-    if (!text) return '';
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
-};
-
-window.scrollToBottom = function() { 
-    if (window.messagesContainer) {
-        window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; 
-    }
-};
-
-window.logout = async function() { 
-    try {
-        if (window.currentUser) {
-            await supabaseClient
-                .from('profiles')
-                .update({ 
-                    is_online: false,
-                    last_seen: new Date().toISOString() 
-                })
-                .eq('id', window.currentUser.id);
-        }
-        
-        if (window.messageSubscription) {
-            window.messageSubscription.unsubscribe();
-        }
-        await supabaseClient.auth.signOut();
-        localStorage.removeItem(STORAGE_KEY);
-        window.location.href = 'login.html'; 
-    } catch (error) {
-        console.error('Logout error:', error);
-        window.location.href = 'login.html';
-    }
-};
-
+// ========== CHECK ADMIN STATUS ==========
 window.checkAdminStatus = async function() {
     try {
         if (!window.currentUser) return false;
@@ -2561,7 +2527,7 @@ window.updateProfile = async function(event) {
             avatarUrl = publicUrl;
         }
         
-        // อัปเดตโปรไฟล์ในตาราง profiles (ไม่ใช้ updated_at)
+        // อัปเดตโปรไฟล์ในตาราง profiles
         const updates = {
             id: window.currentUser.id,
             display_name: displayName || null,
@@ -2668,7 +2634,7 @@ window.changePassword = async function(event) {
     }
 };
 
-// ========== UPDATE DISPLAYUSERINFO ==========
+// ========== DISPLAY USER INFO ==========
 window.displayUserInfo = function() {
     const userProfile = document.getElementById('userProfile');
     if (!userProfile || !window.currentUser) return;
@@ -2742,6 +2708,47 @@ window.setupEventListeners = function() {
     if (adminBtn) {
         adminBtn.addEventListener('click', window.toggleAdminMode);
     }
+};
+
+// ========== EMOJI FUNCTIONS ==========
+window.openEmojiPicker = function() {
+    const modal = document.getElementById('emojiPickerModal');
+    const grid = document.getElementById('emojiGrid');
+    if (!modal || !grid) return;
+    grid.innerHTML = emojiList.map(emoji => `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`).join('');
+    modal.classList.add('active');
+};
+
+window.closeEmojiPicker = function() { 
+    document.getElementById('emojiPickerModal')?.classList.remove('active'); 
+};
+
+window.insertEmoji = function(emoji) { 
+    if (window.messageInput) { 
+        window.messageInput.value += emoji; 
+        window.messageInput.focus(); 
+        window.closeEmojiPicker(); 
+    } 
+};
+
+// ========== MODAL FUNCTIONS ==========
+window.showCreateRoomModal = function() { 
+    document.getElementById('createRoomModal')?.classList.add('active'); 
+};
+
+window.closeCreateRoomModal = function() {
+    const modal = document.getElementById('createRoomModal');
+    const form = document.getElementById('createRoomForm');
+    const passwordField = document.getElementById('passwordField');
+    if (modal) modal.classList.remove('active');
+    if (form) form.reset();
+    if (passwordField) passwordField.classList.remove('show');
+};
+
+window.togglePasswordField = function() {
+    const roomType = document.getElementById('roomType');
+    const passwordField = document.getElementById('passwordField');
+    if (roomType && passwordField) passwordField.classList.toggle('show', roomType.value === 'private');
 };
 
 // ========== MODAL EVENT LISTENERS ==========
