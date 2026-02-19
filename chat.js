@@ -2307,6 +2307,72 @@ window.sendMessage = async function() {
     }
 };
 
+// ========== IMAGE PREVIEW FUNCTIONS ==========
+window.clearImagePreview = function() {
+    console.log('Clearing image preview');
+    window.selectedImageFile = null;
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    if (preview) {
+        preview.style.display = 'none';
+    }
+    if (previewImg) {
+        previewImg.src = '';
+    }
+};
+
+window.uploadImage = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // ตรวจสอบขนาดไฟล์ (ไม่เกิน 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('❌ รูปภาพต้องมีขนาดไม่เกิน 5MB');
+                return;
+            }
+            
+            window.selectedImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                const img = document.getElementById('previewImg');
+                if (preview && img) { 
+                    img.src = e.target.result; 
+                    preview.style.display = 'inline-block'; 
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+window.openLightbox = function(imageUrl) {
+    const lightbox = document.createElement('div');
+    lightbox.className = 'lightbox';
+    lightbox.onclick = function() { 
+        document.body.removeChild(lightbox); 
+    };
+    
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'lightbox-close';
+    closeBtn.innerHTML = '✕';
+    closeBtn.onclick = function(e) { 
+        e.stopPropagation(); 
+        document.body.removeChild(lightbox); 
+    };
+    
+    lightbox.appendChild(img);
+    lightbox.appendChild(closeBtn);
+    document.body.appendChild(lightbox);
+};
+
 // ========== UTILITIES ==========
 window.formatTime = function(timestamp) {
     if (!timestamp) return '';
