@@ -1,7 +1,6 @@
 // ========== script.js ==========
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
-// ✅ ใช้ API Key จริง (อันนี้คือ key จริง)
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdWd0amxqZmtqcWZwbW5zeGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4ODE1MTEsImV4cCI6MjA4NjQ1NzUxMX0.br0Kmrk_ekJN_E8e7J_iARpaZFAAgyR3PVsuSfD72vw';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -30,6 +29,8 @@ window.selectedImageFile = null;
 window.currentMusic = null;
 window.audioPlayer = null;
 window.kickMemberId = null;
+window.selectedProfileImage = null;
+window.currentAvatarUrl = null;
 
 // YouTube Variables
 window.youtubePlayer = null;
@@ -38,7 +39,7 @@ window.youtubeApiReady = false;
 window.youtubeActivityId = null;
 window.youtubeLoadAttempts = 0;
 
-// YouTube Playlist Variables - โหลดจาก localStorage ทันที
+// YouTube Playlist Variables
 const savedRoomId = localStorage.getItem('chat_last_room_id');
 if (savedRoomId) {
     try {
@@ -89,17 +90,6 @@ window.checkUser = async function() {
             return null;
         }
         
-        const expiresAt = session.expires_at;
-        if (expiresAt && Date.now() / 1000 > expiresAt) {
-            console.log('Session expired, refreshing...');
-            const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
-            if (refreshError || !refreshData.session) {
-                console.error('Refresh failed:', refreshError);
-                return null;
-            }
-            return refreshData.user;
-        }
-        
         return session.user;
         
     } catch (error) {
@@ -120,14 +110,6 @@ window.setupSessionManager = function() {
                 return;
             }
             
-            const expiresAt = session.expires_at;
-            const timeUntilExpiry = expiresAt - (Date.now() / 1000);
-            
-            if (timeUntilExpiry < 600) {
-                console.log('Refreshing session...');
-                await supabaseClient.auth.refreshSession();
-            }
-            
             if (window.currentUser) {
                 await supabaseClient
                     .from('profiles')
@@ -141,6 +123,96 @@ window.setupSessionManager = function() {
             console.error('Session check error:', error);
         }
     }, 60000);
+};
+
+// ========== REALTIME MESSAGES ==========
+window.setupRealtimeSubscription = async function(roomId) {
+    // ยกเลิก subscription เดิมถ้ามี
+    if (window.messageSubscription) {
+        window.messageSubscription.unsubscribe();
+        console.log('✅ Unsubscribed from old subscription');
+    }
+    
+    console.log('📡 Setting up realtime subscription for room:', roomId);
+    
+    // สร้าง subscription ใหม่
+    window.messageSubscription = supabaseClient
+        .channel(`room:${roomId}`)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `room_id=eq.${roomId}`
+            },
+            async (payload) => {
+                console.log('📥 New message received:', payload);
+                
+                // ดึงข้อมูลโปรไฟล์ของผู้ส่งข้อความ
+                const { data: profile } = await supabaseClient
+                    .from('profiles')
+                    .select('username, display_name, avatar_url')
+                    .eq('id', payload.new.user_id)
+                    .single();
+                
+                // สร้าง object ข้อความที่มีข้อมูลโปรไฟล์
+                const newMessage = {
+                    ...payload.new,
+                    profiles: profile || { 
+                        display_name: 'ผู้ใช้', 
+                        username: 'user', 
+                        avatar_url: null 
+                    }
+                };
+                
+                // แสดงข้อความใหม่
+                window.displayMessage(newMessage);
+                window.scrollToBottom();
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'messages',
+                filter: `room_id=eq.${roomId}`
+            },
+            (payload) => {
+                console.log('📥 Message updated:', payload);
+                // อัปเดตข้อความใน UI (เช่น เมื่อถูกลบ)
+                window.updateMessageInUI(payload.new);
+            }
+        )
+        .subscribe((status) => {
+            console.log('📡 Subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+                console.log('✅ Successfully subscribed to realtime updates');
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error('❌ Realtime subscription error');
+            }
+        });
+};
+
+// ฟังก์ชันสำหรับอัปเดตข้อความใน UI
+window.updateMessageInUI = function(updatedMessage) {
+    const messageDiv = document.querySelector(`.message[data-message-id="${updatedMessage.id}"]`);
+    if (messageDiv) {
+        // ถ้าข้อความถูกลบ
+        if (updatedMessage.is_deleted) {
+            messageDiv.classList.add('deleted-message');
+            const contentDiv = messageDiv.querySelector('.message-content');
+            if (contentDiv) {
+                contentDiv.innerHTML = `
+                    <div class="deleted-content">
+                        <span>🗑️</span>
+                        <span>${updatedMessage.message}</span>
+                    </div>
+                `;
+            }
+        }
+    }
 };
 
 // ========== YOUTUBE API ==========
@@ -474,11 +546,9 @@ window.confirmAddToPlaylist = async function() {
         return;
     }
     
-    // โหลด playlist ปัจจุบัน
     const savedPlaylist = localStorage.getItem(`youtube_playlist_${window.currentRoomId}`);
     let playlist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
     
-    // ตรวจสอบซ้ำ
     if (playlist.some(v => v.video_id === currentVideoId)) {
         alert('⚠️ คลิปนี้อยู่ในเพลย์ลิสต์แล้ว');
         window.closeAddToPlaylistModal();
@@ -498,18 +568,11 @@ window.confirmAddToPlaylist = async function() {
         playlist_name: playlistName
     };
     
-    // เพิ่มเข้า array
     playlist.unshift(newItem);
-    
-    // บันทึกลง localStorage
     localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(playlist));
-    
-    // อัพเดทตัวแปร global
     window.youtubePlaylist = playlist;
     
     window.closeAddToPlaylistModal();
-    
-    // อัพเดท UI
     window.displayYoutubePlaylist(playlist);
     window.displayYoutubePlayerPlaylist();
     
@@ -750,16 +813,13 @@ window.loadYoutubePlaylist = async function() {
     try {
         console.log('Loading playlist for room:', window.currentRoomId);
         
-        // โหลดจาก localStorage
         const savedPlaylist = localStorage.getItem(`youtube_playlist_${window.currentRoomId}`);
         window.youtubePlaylist = savedPlaylist ? JSON.parse(savedPlaylist) : [];
         
         console.log(`✅ Loaded ${window.youtubePlaylist.length} items from localStorage`);
         
-        // อัพเดท UI
         window.displayYoutubePlaylist(window.youtubePlaylist);
         
-        // ถ้า YouTube Player เปิดอยู่ ให้อัพเดทเพลย์ลิสต์ด้วย
         if (document.getElementById('youtubePlayerModal') && 
             document.getElementById('youtubePlayerModal').classList.contains('active')) {
             window.displayYoutubePlayerPlaylist();
@@ -777,7 +837,6 @@ window.addToYoutubePlaylist = async function(videoId, title, channel, thumbnail)
         return;
     }
     
-    // ตรวจสอบซ้ำ
     if (window.youtubePlaylist.some(v => v.video_id === videoId)) {
         alert('⚠️ คลิปนี้อยู่ในเพลย์ลิสต์แล้ว');
         return;
@@ -796,23 +855,17 @@ window.addToYoutubePlaylist = async function(videoId, title, channel, thumbnail)
         playlist_name: 'เพลย์ลิสต์เริ่มต้น'
     };
     
-    // เพิ่มเข้า array
     window.youtubePlaylist.unshift(newItem);
-    
-    // บันทึกลง localStorage
     localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
     console.log('✅ Saved to localStorage, total:', window.youtubePlaylist.length);
     
-    // อัพเดท UI
     window.displayYoutubePlaylist(window.youtubePlaylist);
     
-    // อัพเดท YouTube Player ถ้ากำลังเปิดอยู่
     if (document.getElementById('youtubePlayerModal') && 
         document.getElementById('youtubePlayerModal').classList.contains('active')) {
         window.displayYoutubePlayerPlaylist();
     }
     
-    // อัพเดทปุ่มในผลการค้นหา
     const addBtn = document.querySelector(`.search-result-add[onclick*="${videoId}"]`);
     if (addBtn) {
         addBtn.classList.add('added');
@@ -867,17 +920,12 @@ window.removeFromYoutubePlaylist = async function(playlistId) {
     
     const itemToRemove = window.youtubePlaylist.find(item => item.id === playlistId);
     
-    // ลบจาก array
     window.youtubePlaylist = window.youtubePlaylist.filter(item => item.id !== playlistId);
-    
-    // อัพเดท localStorage
     localStorage.setItem(`youtube_playlist_${window.currentRoomId}`, JSON.stringify(window.youtubePlaylist));
     
-    // อัพเดท UI
     window.displayYoutubePlaylist(window.youtubePlaylist);
     window.displayYoutubePlayerPlaylist();
     
-    // อัพเดทปุ่มในผลการค้นหา
     const addBtn = document.querySelector(`.search-result-add[onclick*="${itemToRemove.video_id}"]`);
     if (addBtn) {
         addBtn.classList.remove('added');
@@ -898,7 +946,6 @@ window.loadActivities = async function() {
     const container = document.getElementById('activitiesList');
     if (!container) return;
     
-    // แสดงสถานะกำลังโหลด
     container.innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">⏳ กำลังโหลดกิจกรรม...</div>';
     
     try {
@@ -913,30 +960,7 @@ window.loadActivities = async function() {
         
         if (error) {
             console.error('❌ Error loading activities:', error);
-            
-            if (error.message.includes('Invalid API key')) {
-                container.innerHTML = 
-                    '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
-                    '❌ API Key ไม่ถูกต้อง<br>' +
-                    '<small>กรุณาตรวจสอบการตั้งค่า</small>' +
-                    '<br><br>' +
-                    '<button onclick="window.location.reload()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">รีเฟรชหน้า</button>' +
-                    '</div>';
-            } else if (error.code === '42P01') {
-                container.innerHTML = 
-                    '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
-                    '❌ ยังไม่มีตาราง activities ในฐานข้อมูล<br>' +
-                    '<small>กรุณาสร้างตารางก่อน</small>' +
-                    '<br><br>' +
-                    '<button onclick="window.location.reload()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">รีเฟรชหน้า</button>' +
-                    '</div>';
-            } else {
-                container.innerHTML = 
-                    '<div style="text-align: center; padding: 40px 20px; color: #f56565;">' +
-                    '❌ ' + error.message + '<br>' +
-                    '<small>Code: ' + error.code + '</small>' +
-                    '</div>';
-            }
+            container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #f56565;">❌ ${error.message}</div>`;
             return;
         }
         
@@ -952,20 +976,17 @@ window.loadActivities = async function() {
         }
         
         const activitiesWithDetails = await Promise.all(activities.map(async (activity) => {
-            // ดึงข้อมูลผู้สร้าง
             const { data: creator } = await supabaseClient
                 .from('profiles')
                 .select('username, display_name, avatar_url')
                 .eq('id', activity.user_id)
                 .maybeSingle();
             
-            // ดึงข้อมูลผู้เข้าร่วม
             const { data: participants } = await supabaseClient
                 .from('activity_participants')
                 .select('user_id, joined_at')
                 .eq('activity_id', activity.id);
             
-            // ดึงข้อมูลผู้เข้าร่วมพร้อมโปรไฟล์
             const participantsWithProfiles = await Promise.all((participants || []).map(async (p) => {
                 const { data: profile } = await supabaseClient
                     .from('profiles')
@@ -1165,8 +1186,6 @@ window.createActivity = async function(event) {
         
         alert('✅ สร้างกิจกรรมสำเร็จ!');
         window.closeCreateActivityModal();
-        
-        // โหลดกิจกรรมใหม่ทันที
         await window.loadActivities();
         
     } catch (error) { 
@@ -1215,7 +1234,6 @@ window.toggleJoinActivity = async function(activityId) {
             .update({ participants_count: participants.length })
             .eq('id', activityId);
         
-        // โหลดกิจกรรมใหม่ทันที
         await window.loadActivities();
         
     } catch (error) { 
@@ -1237,8 +1255,6 @@ window.endActivity = async function(activityId) {
             .eq('id', activityId);
         
         alert('✅ จบกิจกรรมแล้ว');
-        
-        // โหลดกิจกรรมใหม่ทันที
         await window.loadActivities();
         
     } catch (error) { 
@@ -1451,13 +1467,11 @@ window.loadRoomMembers = async function(roomId) {
         return;
     }
     
-    // แสดงสถานะกำลังโหลด
     container.innerHTML = '<div style="text-align: center; padding: 30px; color: #718096;">⏳ กำลังโหลดสมาชิก...</div>';
     
     try {
         console.log('📥 Loading members for room:', roomId);
         
-        // ดึง owner_id ของห้อง
         const { data: roomData, error: roomError } = await supabaseClient
             .from('rooms')
             .select('owner_id')
@@ -1470,7 +1484,6 @@ window.loadRoomMembers = async function(roomId) {
         
         const roomOwnerId = roomData?.owner_id;
         
-        // ดึงข้อมูลสมาชิกจาก room_members ก่อน (แบบง่าย)
         const { data: members, error } = await supabaseClient
             .from('room_members')
             .select(`
@@ -1493,7 +1506,6 @@ window.loadRoomMembers = async function(roomId) {
             return;
         }
         
-        // ดึงข้อมูล profiles แยกต่างหาก
         const userIds = members.map(m => m.user_id);
         const { data: profiles, error: profileError } = await supabaseClient
             .from('profiles')
@@ -1504,7 +1516,6 @@ window.loadRoomMembers = async function(roomId) {
             console.error('❌ Error loading profiles:', profileError);
         }
         
-        // สร้าง map ของ profiles เพื่อให้เข้าถึงง่าย
         const profileMap = {};
         if (profiles) {
             profiles.forEach(profile => {
@@ -1512,7 +1523,6 @@ window.loadRoomMembers = async function(roomId) {
             });
         }
         
-        // รวมข้อมูล members กับ profiles
         const membersWithProfiles = members.map(member => {
             const profile = profileMap[member.user_id] || {};
             return {
@@ -1523,7 +1533,6 @@ window.loadRoomMembers = async function(roomId) {
             };
         });
         
-        // ส่งข้อมูลไปแสดงผล
         window.displayRoomMembers(membersWithProfiles, roomOwnerId);
         
     } catch (error) {
@@ -1536,7 +1545,6 @@ window.displayRoomMembers = function(members, roomOwnerId) {
     const container = document.getElementById('membersList');
     if (!container) return;
     
-    // เช็คว่าเป็นเจ้าของห้องหรือไม่
     const isOwner = window.currentUser?.id === roomOwnerId;
     const isAdmin = window.isAdmin || false;
     
@@ -1547,17 +1555,13 @@ window.displayRoomMembers = function(members, roomOwnerId) {
         return;
     }
     
-    // เรียงลำดับ: เจ้าของห้องมาก่อน, แล้วแอดมิน, แล้วตามด้วยวันที่เข้าร่วม
     const sortedMembers = [...members].sort((a, b) => {
-        // เจ้าของห้องมาก่อน
         if (a.user_id === roomOwnerId) return -1;
         if (b.user_id === roomOwnerId) return 1;
         
-        // แอดมินมาก่อน
         if (a.profile?.is_admin && !b.profile?.is_admin) return -1;
         if (!a.profile?.is_admin && b.profile?.is_admin) return 1;
         
-        // เรียงตามวันที่เข้าร่วม (ใหม่ไปเก่า)
         return new Date(b.joined_at) - new Date(a.joined_at);
     });
     
@@ -1569,10 +1573,8 @@ window.displayRoomMembers = function(members, roomOwnerId) {
         const isOwnerUser = member.user_id === roomOwnerId;
         const canKick = (isOwner || isAdmin) && !isCurrentUser && !isOwnerUser;
         
-        // ชื่อที่แสดง
         const displayName = profile.display_name || profile.username || 'ผู้ใช้';
         
-        // จัดรูปแบบวันที่
         const joinedDate = member.joined_at ? new Date(member.joined_at).toLocaleDateString('th-TH', {
             day: 'numeric',
             month: 'short',
@@ -1580,10 +1582,8 @@ window.displayRoomMembers = function(members, roomOwnerId) {
             minute: '2-digit'
         }) : '';
         
-        // สร้าง avatar URL
         const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=667eea&color=fff&size=100`;
         
-        // กำหนด role badge
         let roleBadge = '';
         if (isOwnerUser) {
             roleBadge = '👑 เจ้าของห้อง';
@@ -1788,7 +1788,6 @@ window.createRoom = async function(event) {
         
         if (error) throw error;
         
-        // เพิ่มผู้สร้างเป็นสมาชิก
         await supabaseClient.from('room_members').insert([{
             room_id: data.id,
             user_id: window.currentUser.id,
@@ -1831,7 +1830,6 @@ window.confirmJoinPrivateRoom = async function() {
             return;
         }
         
-        // เพิ่มผู้ใช้เข้า room_members
         await supabaseClient.from('room_members').insert([{
             room_id: roomId,
             user_id: window.currentUser.id,
@@ -1863,8 +1861,6 @@ window.confirmDeleteRoom = async function() {
         
         alert('✅ ลบห้องสำเร็จ');
         window.closeDeleteRoomModal();
-        
-        // กลับไปห้องสาธารณะ
         await window.selectRoom(PUBLIC_ROOM_ID);
         window.loadRooms();
         
@@ -1889,8 +1885,6 @@ window.confirmKickMember = async function() {
         
         alert('✅ เตะสมาชิกออกจากห้องแล้ว');
         window.closeKickModal();
-        
-        // โหลดสมาชิกใหม่
         await window.loadRoomMembers(window.currentRoomId);
         
     } catch (error) {
@@ -1924,7 +1918,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         await window.selectRoom(initialRoomId);
         
-        // โหลดกิจกรรมทันทีหลังจากเลือกห้อง
         setTimeout(() => {
             window.loadActivities();
         }, 500);
@@ -1991,39 +1984,34 @@ window.displayRooms = function(rooms) {
 window.hideAllPanels = function() {
     console.log('🔍 Hiding all panels...');
     
-    // ซ่อน members panel
     const membersPanel = document.getElementById('membersPanel');
     if (membersPanel) {
         membersPanel.classList.remove('active');
         console.log('✅ Members panel hidden');
     }
     
-    // ซ่อน activities panel
     const activitiesPanel = document.getElementById('activitiesPanel');
     if (activitiesPanel) {
         activitiesPanel.classList.remove('active');
         console.log('✅ Activities panel hidden');
     }
     
-    // ซ่อน mobile sidebar (rooms panel)
     const roomsPanel = document.querySelector('.rooms-panel');
     if (roomsPanel) {
         roomsPanel.classList.remove('mobile-active');
         console.log('✅ Rooms panel mobile hidden');
     }
     
-    // ซ่อน overlay
     const overlay = document.getElementById('sidebarOverlay');
     if (overlay) {
         overlay.classList.remove('active');
         console.log('✅ Overlay hidden');
     }
     
-    // remove body class
     document.body.classList.remove('sidebar-open');
 };
 
-// ========== TOGGLE FUNCTIONS (ปรับปรุง) ==========
+// ========== TOGGLE FUNCTIONS ==========
 window.toggleMembersPanel = function() {
     const panel = document.getElementById('membersPanel');
     const activitiesPanel = document.getElementById('activitiesPanel');
@@ -2037,11 +2025,9 @@ window.toggleMembersPanel = function() {
         panel.classList.remove('active');
         console.log('👥 Members panel closed');
     } else {
-        // ซ่อน activities panel ก่อน
         if (activitiesPanel) {
             activitiesPanel.classList.remove('active');
         }
-        // ปิด mobile sidebar ถ้าเปิดอยู่
         if (roomsPanel) {
             roomsPanel.classList.remove('mobile-active');
             const overlay = document.getElementById('sidebarOverlay');
@@ -2050,7 +2036,6 @@ window.toggleMembersPanel = function() {
         panel.classList.add('active');
         console.log('👥 Members panel opened');
         
-        // โหลดข้อมูลสมาชิกเมื่อเปิด panel
         if (window.currentRoomId) {
             window.loadRoomMembers(window.currentRoomId);
         } else {
@@ -2073,11 +2058,9 @@ window.toggleActivitiesPanel = function() {
         panel.classList.remove('active');
         console.log('🎮 Activities panel closed');
     } else {
-        // ซ่อน members panel ก่อน
         if (membersPanel) {
             membersPanel.classList.remove('active');
         }
-        // ปิด mobile sidebar ถ้าเปิดอยู่
         if (roomsPanel) {
             roomsPanel.classList.remove('mobile-active');
             const overlay = document.getElementById('sidebarOverlay');
@@ -2108,7 +2091,6 @@ window.toggleMobileSidebar = function() {
         document.body.classList.remove('sidebar-open');
         console.log('✅ Mobile sidebar closed');
     } else {
-        // ซ่อน panels อื่นๆ ก่อนเปิด sidebar
         if (membersPanel) membersPanel.classList.remove('active');
         if (activitiesPanel) activitiesPanel.classList.remove('active');
         
@@ -2119,12 +2101,11 @@ window.toggleMobileSidebar = function() {
     }
 };
 
-// ========== SELECT ROOM (ปรับปรุงให้ซ่อน panels) ==========
+// ========== SELECT ROOM ==========
 window.selectRoom = async function(roomId) {
     try {
         console.log('Selecting room:', roomId);
         
-        // ตรวจสอบว่าเป็นห้องส่วนตัวหรือไม่
         const { data: room, error } = await supabaseClient
             .from('rooms')
             .select('*')
@@ -2133,9 +2114,7 @@ window.selectRoom = async function(roomId) {
             
         if (error) throw error;
         
-        // ถ้าเป็นห้องส่วนตัวและไม่ใช่เจ้าของ ให้ตรวจสอบรหัสผ่าน
         if (room.room_type === 'private' && room.owner_id !== window.currentUser?.id) {
-            // ตรวจสอบว่าผู้ใช้เป็นสมาชิกอยู่แล้วหรือไม่
             const { data: existingMember } = await supabaseClient
                 .from('room_members')
                 .select('*')
@@ -2154,7 +2133,6 @@ window.selectRoom = async function(roomId) {
         
         localStorage.setItem(STORAGE_KEY, room.id);
         
-        // อัพเดท UI
         const titleEl = document.getElementById('currentRoomTitle');
         const badgeEl = document.getElementById('currentRoomTypeBadge');
         const inputArea = document.getElementById('messageInputArea');
@@ -2170,7 +2148,6 @@ window.selectRoom = async function(roomId) {
             inputArea.style.display = 'block';
         }
         
-        // แสดงปุ่มลบห้องสำหรับเจ้าของหรือแอดมิน
         if (roomActions) {
             if (room.owner_id === window.currentUser?.id || window.isAdmin) {
                 roomActions.innerHTML = `
@@ -2183,16 +2160,16 @@ window.selectRoom = async function(roomId) {
             }
         }
         
-        // โหลดข้อมูลต่างๆ
         await window.loadMessages(room.id);
         await window.loadYoutubePlaylist();
         await window.loadActivities();
         await window.loadRoomMembers(room.id);
         
-        // อัพเดทรายการห้อง
+        // ตั้งค่า Realtime subscription สำหรับห้องนี้
+        await window.setupRealtimeSubscription(room.id);
+        
         await window.loadRooms();
         
-        // ซ่อน panels ทั้งหมดหลังจากเลือกห้อง (สำคัญ!)
         window.hideAllPanels();
         
         console.log('✅ Room selected:', room.name);
@@ -2203,68 +2180,6 @@ window.selectRoom = async function(roomId) {
     }
 };
 
-// เพิ่ม event listeners ใน DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function() {
-    // ... โค้ดเดิม ...
-    
-    // เพิ่ม event listener สำหรับ overlay
-    const overlay = document.getElementById('sidebarOverlay');
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            const sidebar = document.querySelector('.rooms-panel');
-            if (sidebar) {
-                sidebar.classList.remove('mobile-active');
-            }
-            overlay.classList.remove('active');
-            document.body.classList.remove('sidebar-open');
-            console.log('✅ Overlay clicked - closed sidebar');
-        });
-    }
-    
-    // ป้องกันการคลิกที่ panels ปิดตัวเอง
-    const membersPanel = document.getElementById('membersPanel');
-    const activitiesPanel = document.getElementById('activitiesPanel');
-    
-    if (membersPanel) {
-        membersPanel.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
-    
-    if (activitiesPanel) {
-        activitiesPanel.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
-    
-    // ปิด panels เมื่อคลิกที่ chat content (สำหรับมือถือ)
-    const chatContent = document.querySelector('.chat-content');
-    if (chatContent) {
-        chatContent.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                const membersPanel = document.getElementById('membersPanel');
-                const activitiesPanel = document.getElementById('activitiesPanel');
-                const roomsPanel = document.querySelector('.rooms-panel');
-                const overlay = document.getElementById('sidebarOverlay');
-                
-                if (membersPanel && membersPanel.classList.contains('active')) {
-                    membersPanel.classList.remove('active');
-                }
-                if (activitiesPanel && activitiesPanel.classList.contains('active')) {
-                    activitiesPanel.classList.remove('active');
-                }
-                if (roomsPanel && roomsPanel.classList.contains('mobile-active')) {
-                    roomsPanel.classList.remove('mobile-active');
-                }
-                if (overlay && overlay.classList.contains('active')) {
-                    overlay.classList.remove('active');
-                }
-                document.body.classList.remove('sidebar-open');
-                console.log('✅ Clicked chat content - closed all panels');
-            }
-        });
-    }
-});
 window.loadMessages = async function(roomId) {
     try {
         if (!window.messagesContainer) return;
@@ -2309,17 +2224,30 @@ window.displayMessage = function(message) {
     messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
     messageDiv.dataset.messageId = message.id;
     
-    messageDiv.innerHTML = `
-        <img src="${avatarUrl}" alt="${author}" class="message-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
-        <div class="message-content">
-            <div class="message-header">
-                <span class="message-author">${author}</span>
-                <span class="message-time">${window.formatTime(message.created_at)}</span>
+    // ถ้าข้อความถูกลบ
+    if (message.is_deleted) {
+        messageDiv.classList.add('deleted-message');
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <div class="deleted-content">
+                    <span>🗑️</span>
+                    <span>${message.message || '[ข้อความถูกลบ]'}</span>
+                </div>
             </div>
-            ${messageText ? `<div class="message-body">${window.linkify(messageText)}</div>` : ''}
-            ${imageHtml}
-        </div>
-    `;
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <img src="${avatarUrl}" alt="${author}" class="message-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=667eea&color=fff'">
+            <div class="message-content">
+                <div class="message-header">
+                    <span class="message-author">${author}</span>
+                    <span class="message-time">${window.formatTime(message.created_at)}</span>
+                </div>
+                ${messageText ? `<div class="message-body">${window.linkify(messageText)}</div>` : ''}
+                ${imageHtml}
+            </div>
+        `;
+    }
     
     window.messagesContainer.appendChild(messageDiv);
     window.scrollToBottom();
@@ -2422,10 +2350,264 @@ window.checkAdminStatus = async function() {
     }
 };
 
+// ========== PROFILE MANAGEMENT ==========
+window.showProfileModal = async function() {
+    console.log('Opening profile modal');
+    
+    if (!window.currentUser) {
+        alert('❌ ไม่พบข้อมูลผู้ใช้');
+        return;
+    }
+    
+    try {
+        const { data: profile, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', window.currentUser.id)
+            .single();
+        
+        if (error && error.code !== 'PGRST116') throw error;
+        
+        const displayNameInput = document.getElementById('profileDisplayName');
+        const usernameInput = document.getElementById('profileUsername');
+        const emailInput = document.getElementById('profileEmail');
+        const avatarPreview = document.getElementById('profileAvatarPreview');
+        
+        if (displayNameInput) {
+            displayNameInput.value = profile?.display_name || window.currentUser.user_metadata?.display_name || '';
+        }
+        
+        if (usernameInput) {
+            usernameInput.value = profile?.username || window.currentUser.user_metadata?.username || '';
+        }
+        
+        if (emailInput) {
+            emailInput.value = window.currentUser.email || '';
+        }
+        
+        const avatarUrl = profile?.avatar_url || 
+                         window.currentUser.user_metadata?.avatar_url || 
+                         `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User')}&background=667eea&color=fff&size=200`;
+        
+        if (avatarPreview) {
+            avatarPreview.src = avatarUrl;
+        }
+        
+        window.currentAvatarUrl = avatarUrl;
+        
+        const modal = document.getElementById('profileEditModal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading profile:', error);
+        alert('ไม่สามารถโหลดข้อมูลโปรไฟล์ได้: ' + error.message);
+    }
+};
+
+window.closeProfileModal = function() {
+    const modal = document.getElementById('profileEditModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    window.selectedProfileImage = null;
+};
+
+window.uploadProfileImage = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                alert('❌ รูปภาพต้องมีขนาดไม่เกิน 2MB');
+                return;
+            }
+            
+            window.selectedProfileImage = file;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('profileAvatarPreview');
+                if (preview) {
+                    preview.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+window.updateProfile = async function(event) {
+    event.preventDefault();
+    
+    const displayName = document.getElementById('profileDisplayName')?.value.trim();
+    const username = document.getElementById('profileUsername')?.value.trim();
+    
+    if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
+        alert('❌ ชื่อผู้ใช้ต้องเป็นตัวอักษรภาษาอังกฤษ ตัวเลข และ _ เท่านั้น');
+        return;
+    }
+    
+    try {
+        let avatarUrl = window.currentAvatarUrl;
+        
+        if (window.selectedProfileImage) {
+            const fileExt = window.selectedProfileImage.name.split('.').pop();
+            const fileName = `avatars/${window.currentUser.id}/${Date.now()}.${fileExt}`;
+            
+            const { error: uploadError } = await supabaseClient.storage
+                .from('chat_files')
+                .upload(fileName, window.selectedProfileImage);
+            
+            if (uploadError) throw uploadError;
+            
+            const { data: { publicUrl } } = supabaseClient.storage
+                .from('chat_files')
+                .getPublicUrl(fileName);
+            
+            avatarUrl = publicUrl;
+        }
+        
+        // อัปเดตโปรไฟล์ในตาราง profiles (ไม่ใช้ updated_at)
+        const updates = {
+            id: window.currentUser.id,
+            display_name: displayName || null,
+            username: username || null,
+            avatar_url: avatarUrl
+            // ลบ updated_at ออกไป
+        };
+        
+        const { error: updateError } = await supabaseClient
+            .from('profiles')
+            .upsert(updates);
+        
+        if (updateError) throw updateError;
+        
+        const { error: metadataError } = await supabaseClient.auth.updateUser({
+            data: {
+                display_name: displayName,
+                username: username,
+                avatar_url: avatarUrl
+            }
+        });
+        
+        if (metadataError) throw metadataError;
+        
+        window.currentUser.user_metadata = {
+            ...window.currentUser.user_metadata,
+            display_name: displayName,
+            username: username,
+            avatar_url: avatarUrl
+        };
+        
+        window.displayUserInfo();
+        
+        alert('✅ อัปเดตโปรไฟล์สำเร็จ');
+        window.closeProfileModal();
+        
+    } catch (error) {
+        console.error('❌ Error updating profile:', error);
+        alert('ไม่สามารถอัปเดตโปรไฟล์ได้: ' + error.message);
+    }
+};
+
+// ========== PASSWORD MANAGEMENT ==========
+window.showPasswordModal = function() {
+    const profileModal = document.getElementById('profileEditModal');
+    const passwordModal = document.getElementById('passwordChangeModal');
+    
+    if (profileModal) {
+        profileModal.classList.remove('active');
+    }
+    
+    if (passwordModal) {
+        passwordModal.classList.add('active');
+    }
+};
+
+window.closePasswordModal = function() {
+    const modal = document.getElementById('passwordChangeModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    document.getElementById('passwordChangeForm')?.reset();
+};
+
+window.changePassword = async function(event) {
+    event.preventDefault();
+    
+    const currentPassword = document.getElementById('currentPassword')?.value;
+    const newPassword = document.getElementById('newPassword')?.value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword')?.value;
+    
+    if (newPassword !== confirmNewPassword) {
+        alert('❌ รหัสผ่านใหม่ไม่ตรงกัน');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        alert('❌ รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
+        return;
+    }
+    
+    try {
+        const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+            email: window.currentUser.email,
+            password: currentPassword
+        });
+        
+        if (signInError) {
+            alert('❌ รหัสผ่านปัจจุบันไม่ถูกต้อง');
+            return;
+        }
+        
+        const { error: updateError } = await supabaseClient.auth.updateUser({
+            password: newPassword
+        });
+        
+        if (updateError) throw updateError;
+        
+        alert('✅ เปลี่ยนรหัสผ่านสำเร็จ');
+        window.closePasswordModal();
+        
+    } catch (error) {
+        console.error('❌ Error changing password:', error);
+        alert('ไม่สามารถเปลี่ยนรหัสผ่านได้: ' + error.message);
+    }
+};
+
+// ========== UPDATE DISPLAYUSERINFO ==========
 window.displayUserInfo = function() {
     const userProfile = document.getElementById('userProfile');
-    const username = window.currentUser.user_metadata?.display_name || window.currentUser.user_metadata?.username || 'ผู้ใช้';
-    userProfile.innerHTML = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff" alt="${username}" class="avatar"><span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>`;
+    if (!userProfile || !window.currentUser) return;
+    
+    const username = window.currentUser.user_metadata?.display_name || 
+                     window.currentUser.user_metadata?.username || 
+                     window.currentUser.email?.split('@')[0] || 'ผู้ใช้';
+    
+    const avatarUrl = window.currentUser.user_metadata?.avatar_url || 
+                     `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff&size=100`;
+    
+    userProfile.innerHTML = `
+        <div class="profile-clickable" onclick="window.showProfileModal()" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 12px; border-radius: var(--radius-xl); transition: all 0.2s; border: 1px solid transparent;">
+            <img src="${avatarUrl}" alt="${username}" class="avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff&size=100'">
+            <span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>
+        </div>
+    `;
+    
+    const profileDiv = userProfile.querySelector('.profile-clickable');
+    if (profileDiv) {
+        profileDiv.addEventListener('mouseenter', function() {
+            this.style.background = 'var(--bg-light)';
+        });
+        profileDiv.addEventListener('mouseleave', function() {
+            this.style.background = 'transparent';
+        });
+    }
 };
 
 // ========== EVENT LISTENERS ==========
@@ -2468,173 +2650,10 @@ window.setupEventListeners = function() {
         });
     }
     
-    // เพิ่ม event listener สำหรับปุ่มแอดมิน
     const adminBtn = document.getElementById('adminModeBtn');
     if (adminBtn) {
         adminBtn.addEventListener('click', window.toggleAdminMode);
     }
-};
-
-// ฟังก์ชันพื้นฐาน (ปรับปรุงให้ใช้ hideAllPanels)
-window.toggleMobileSidebar = function() {
-    const sidebar = document.querySelector('.rooms-panel');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (!sidebar) return;
-    
-    if (sidebar.classList.contains('mobile-active')) {
-        sidebar.classList.remove('mobile-active');
-        if (overlay) overlay.classList.remove('active');
-        document.body.classList.remove('sidebar-open');
-    } else {
-        // ซ่อน panels อื่นๆ ก่อนเปิด sidebar
-        const membersPanel = document.getElementById('membersPanel');
-        const activitiesPanel = document.getElementById('activitiesPanel');
-        
-        if (membersPanel) membersPanel.classList.remove('active');
-        if (activitiesPanel) activitiesPanel.classList.remove('active');
-        
-        sidebar.classList.add('mobile-active');
-        if (overlay) overlay.classList.add('active');
-        document.body.classList.add('sidebar-open');
-    }
-};
-
-window.filterRooms = function(filter, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    window.loadRooms(filter);
-};
-
-window.toggleMembersPanel = function() {
-    const panel = document.getElementById('membersPanel');
-    const activitiesPanel = document.getElementById('activitiesPanel');
-    
-    if (!panel) return;
-    
-    if (panel.classList.contains('active')) {
-        panel.classList.remove('active');
-        console.log('👥 Members panel closed');
-    } else {
-        // ซ่อน activities panel ก่อน
-        if (activitiesPanel) {
-            activitiesPanel.classList.remove('active');
-        }
-        panel.classList.add('active');
-        console.log('👥 Members panel opened, loading members...');
-        
-        // โหลดข้อมูลสมาชิกเมื่อเปิด panel
-        if (window.currentRoomId) {
-            window.loadRoomMembers(window.currentRoomId);
-        } else {
-            document.getElementById('membersList').innerHTML = 
-                '<div style="text-align: center; padding: 20px; color: #718096;">❌ ไม่ได้เลือกห้อง</div>';
-        }
-    }
-};
-
-window.toggleActivitiesPanel = function() {
-    const panel = document.getElementById('activitiesPanel');
-    const membersPanel = document.getElementById('membersPanel');
-    
-    if (!panel) return;
-    
-    if (panel.classList.contains('active')) {
-        panel.classList.remove('active');
-        console.log('🎮 Activities panel closed');
-    } else {
-        // ซ่อน members panel ก่อน
-        if (membersPanel) {
-            membersPanel.classList.remove('active');
-        }
-        panel.classList.add('active');
-        console.log('🎮 Activities panel opened, loading activities...');
-        
-        if (window.currentRoomId) {
-            window.loadActivities();
-        }
-    }
-};
-
-window.openEmojiPicker = function() {
-    const modal = document.getElementById('emojiPickerModal');
-    const grid = document.getElementById('emojiGrid');
-    if (!modal || !grid) return;
-    grid.innerHTML = emojiList.map(emoji => `<div class="emoji-item" onclick="window.insertEmoji('${emoji}')">${emoji}</div>`).join('');
-    modal.classList.add('active');
-};
-
-window.closeEmojiPicker = function() { 
-    document.getElementById('emojiPickerModal')?.classList.remove('active'); 
-};
-
-window.insertEmoji = function(emoji) { 
-    if (window.messageInput) { 
-        window.messageInput.value += emoji; 
-        window.messageInput.focus(); 
-        window.closeEmojiPicker(); 
-    } 
-};
-
-window.uploadImage = function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            window.selectedImageFile = file;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('imagePreview');
-                const img = document.getElementById('previewImg');
-                if (preview && img) { img.src = e.target.result; preview.style.display = 'inline-block'; }
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-};
-
-window.clearImagePreview = function() {
-    window.selectedImageFile = null;
-    const preview = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('previewImg');
-    if (preview) preview.style.display = 'none';
-    if (previewImg) previewImg.src = '';
-};
-
-window.openLightbox = function(imageUrl) {
-    const lightbox = document.createElement('div');
-    lightbox.className = 'lightbox';
-    lightbox.onclick = function() { document.body.removeChild(lightbox); };
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    const closeBtn = document.createElement('span');
-    closeBtn.className = 'lightbox-close';
-    closeBtn.innerHTML = '✕';
-    closeBtn.onclick = function(e) { e.stopPropagation(); document.body.removeChild(lightbox); };
-    lightbox.appendChild(img);
-    lightbox.appendChild(closeBtn);
-    document.body.appendChild(lightbox);
-};
-
-window.showCreateRoomModal = function() { 
-    document.getElementById('createRoomModal')?.classList.add('active'); 
-};
-
-window.closeCreateRoomModal = function() {
-    const modal = document.getElementById('createRoomModal');
-    const form = document.getElementById('createRoomForm');
-    const passwordField = document.getElementById('passwordField');
-    if (modal) modal.classList.remove('active');
-    if (form) form.reset();
-    if (passwordField) passwordField.classList.remove('show');
-};
-
-window.togglePasswordField = function() {
-    const roomType = document.getElementById('roomType');
-    const passwordField = document.getElementById('passwordField');
-    if (roomType && passwordField) passwordField.classList.toggle('show', roomType.value === 'private');
 };
 
 // ========== MODAL EVENT LISTENERS ==========
@@ -2644,14 +2663,12 @@ document.addEventListener('DOMContentLoaded', function() {
         autoPlayNext = savedAutoPlay === 'true';
     }
     
-    // ป้องกันการคลิกที่ modal content ปิด modal
     document.querySelectorAll('.modal-content').forEach(content => {
         content.addEventListener('click', function(e) {
             e.stopPropagation();
         });
     });
     
-    // จัดการการคลิกพื้นหลังเพื่อปิด modal
     document.getElementById('addToPlaylistModal')?.addEventListener('click', function(e) {
         if (e.target === this) {
             window.closeAddToPlaylistModal();
@@ -2668,7 +2685,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // ไม่ปิด YouTube Player เมื่อคลิกพื้นหลัง
     });
     
-    // เพิ่ม event listener สำหรับ overlay
     const overlay = document.getElementById('sidebarOverlay');
     if (overlay) {
         overlay.addEventListener('click', function() {
@@ -2681,7 +2697,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ป้องกันการคลิกที่ panels ปิดตัวเอง
     const membersPanel = document.getElementById('membersPanel');
     const activitiesPanel = document.getElementById('activitiesPanel');
     
@@ -2696,283 +2711,30 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     }
-});
-// ========== PROFILE MANAGEMENT ==========
-window.showProfileModal = async function() {
-    console.log('Opening profile modal');
     
-    if (!window.currentUser) {
-        alert('❌ ไม่พบข้อมูลผู้ใช้');
-        return;
-    }
-    
-    try {
-        // ดึงข้อมูลโปรไฟล์ล่าสุด
-        const { data: profile, error } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('id', window.currentUser.id)
-            .single();
-        
-        if (error) throw error;
-        
-        // อัพเดทค่าในฟอร์ม
-        const displayNameInput = document.getElementById('profileDisplayName');
-        const usernameInput = document.getElementById('profileUsername');
-        const emailInput = document.getElementById('profileEmail');
-        const avatarPreview = document.getElementById('profileAvatarPreview');
-        
-        if (displayNameInput) {
-            displayNameInput.value = profile?.display_name || window.currentUser.user_metadata?.display_name || '';
-        }
-        
-        if (usernameInput) {
-            usernameInput.value = profile?.username || window.currentUser.user_metadata?.username || '';
-        }
-        
-        if (emailInput) {
-            emailInput.value = window.currentUser.email || '';
-        }
-        
-        // อัพเดทรูปโปรไฟล์
-        const avatarUrl = profile?.avatar_url || 
-                         window.currentUser.user_metadata?.avatar_url || 
-                         `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username || 'User')}&background=667eea&color=fff&size=200`;
-        
-        if (avatarPreview) {
-            avatarPreview.src = avatarUrl;
-        }
-        
-        // เก็บ avatar_url ปัจจุบัน
-        window.currentAvatarUrl = avatarUrl;
-        
-        // เปิด modal
-        const modal = document.getElementById('profileEditModal');
-        if (modal) {
-            modal.classList.add('active');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error loading profile:', error);
-        alert('ไม่สามารถโหลดข้อมูลโปรไฟล์ได้: ' + error.message);
-    }
-};
-
-window.closeProfileModal = function() {
-    const modal = document.getElementById('profileEditModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-    window.selectedProfileImage = null;
-};
-
-window.uploadProfileImage = function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // ตรวจสอบขนาดไฟล์ (ไม่เกิน 2MB)
-            if (file.size > 2 * 1024 * 1024) {
-                alert('❌ รูปภาพต้องมีขนาดไม่เกิน 2MB');
-                return;
-            }
-            
-            window.selectedProfileImage = file;
-            
-            // แสดงตัวอย่างรูป
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('profileAvatarPreview');
-                if (preview) {
-                    preview.src = e.target.result;
+    const chatContent = document.querySelector('.chat-content');
+    if (chatContent) {
+        chatContent.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                const membersPanel = document.getElementById('membersPanel');
+                const activitiesPanel = document.getElementById('activitiesPanel');
+                const roomsPanel = document.querySelector('.rooms-panel');
+                const overlay = document.getElementById('sidebarOverlay');
+                
+                if (membersPanel && membersPanel.classList.contains('active')) {
+                    membersPanel.classList.remove('active');
                 }
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-};
-
-window.updateProfile = async function(event) {
-    event.preventDefault();
-    
-    const displayName = document.getElementById('profileDisplayName')?.value.trim();
-    const username = document.getElementById('profileUsername')?.value.trim();
-    
-    // ตรวจสอบความถูกต้อง
-    if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
-        alert('❌ ชื่อผู้ใช้ต้องเป็นตัวอักษรภาษาอังกฤษ ตัวเลข และ _ เท่านั้น');
-        return;
-    }
-    
-    try {
-        let avatarUrl = window.currentAvatarUrl;
-        
-        // อัปโหลดรูปภาพถ้ามีการเลือกใหม่
-        if (window.selectedProfileImage) {
-            const fileExt = window.selectedProfileImage.name.split('.').pop();
-            const fileName = `avatars/${window.currentUser.id}/${Date.now()}.${fileExt}`;
-            
-            const { error: uploadError } = await supabaseClient.storage
-                .from('chat_files')
-                .upload(fileName, window.selectedProfileImage);
-            
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabaseClient.storage
-                .from('chat_files')
-                .getPublicUrl(fileName);
-            
-            avatarUrl = publicUrl;
-        }
-        
-        // อัปเดตโปรไฟล์ในตาราง profiles
-        const updates = {
-            id: window.currentUser.id,
-            display_name: displayName || null,
-            username: username || null,
-            avatar_url: avatarUrl,
-            updated_at: new Date().toISOString()
-        };
-        
-        const { error: updateError } = await supabaseClient
-            .from('profiles')
-            .upsert(updates);
-        
-        if (updateError) throw updateError;
-        
-        // อัปเดต metadata ใน auth user
-        const { error: metadataError } = await supabaseClient.auth.updateUser({
-            data: {
-                display_name: displayName,
-                username: username,
-                avatar_url: avatarUrl
+                if (activitiesPanel && activitiesPanel.classList.contains('active')) {
+                    activitiesPanel.classList.remove('active');
+                }
+                if (roomsPanel && roomsPanel.classList.contains('mobile-active')) {
+                    roomsPanel.classList.remove('mobile-active');
+                }
+                if (overlay && overlay.classList.contains('active')) {
+                    overlay.classList.remove('active');
+                }
+                document.body.classList.remove('sidebar-open');
             }
         });
-        
-        if (metadataError) throw metadataError;
-        
-        // อัปเดต currentUser
-        window.currentUser.user_metadata = {
-            ...window.currentUser.user_metadata,
-            display_name: displayName,
-            username: username,
-            avatar_url: avatarUrl
-        };
-        
-        // อัปเดตการแสดงผล
-        window.displayUserInfo();
-        
-        alert('✅ อัปเดตโปรไฟล์สำเร็จ');
-        window.closeProfileModal();
-        
-    } catch (error) {
-        console.error('❌ Error updating profile:', error);
-        alert('ไม่สามารถอัปเดตโปรไฟล์ได้: ' + error.message);
     }
-};
-
-// ========== PASSWORD MANAGEMENT ==========
-window.showPasswordModal = function() {
-    const profileModal = document.getElementById('profileEditModal');
-    const passwordModal = document.getElementById('passwordChangeModal');
-    
-    if (profileModal) {
-        profileModal.classList.remove('active');
-    }
-    
-    if (passwordModal) {
-        passwordModal.classList.add('active');
-    }
-};
-
-window.closePasswordModal = function() {
-    const modal = document.getElementById('passwordChangeModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-    // รีเซ็ตฟอร์ม
-    document.getElementById('passwordChangeForm')?.reset();
-};
-
-window.changePassword = async function(event) {
-    event.preventDefault();
-    
-    const currentPassword = document.getElementById('currentPassword')?.value;
-    const newPassword = document.getElementById('newPassword')?.value;
-    const confirmNewPassword = document.getElementById('confirmNewPassword')?.value;
-    
-    // ตรวจสอบรหัสผ่านใหม่
-    if (newPassword !== confirmNewPassword) {
-        alert('❌ รหัสผ่านใหม่ไม่ตรงกัน');
-        return;
-    }
-    
-    if (newPassword.length < 6) {
-        alert('❌ รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
-        return;
-    }
-    
-    try {
-        // ตรวจสอบรหัสผ่านปัจจุบันโดยลอง sign in
-        const { error: signInError } = await supabaseClient.auth.signInWithPassword({
-            email: window.currentUser.email,
-            password: currentPassword
-        });
-        
-        if (signInError) {
-            alert('❌ รหัสผ่านปัจจุบันไม่ถูกต้อง');
-            return;
-        }
-        
-        // เปลี่ยนรหัสผ่าน
-        const { error: updateError } = await supabaseClient.auth.updateUser({
-            password: newPassword
-        });
-        
-        if (updateError) throw updateError;
-        
-        alert('✅ เปลี่ยนรหัสผ่านสำเร็จ');
-        window.closePasswordModal();
-        
-    } catch (error) {
-        console.error('❌ Error changing password:', error);
-        alert('ไม่สามารถเปลี่ยนรหัสผ่านได้: ' + error.message);
-    }
-};
-
-// ========== UPDATE DISPLAYUSERINFO ==========
-// แก้ไขฟังก์ชัน displayUserInfo ให้คลิกได้
-window.displayUserInfo = function() {
-    const userProfile = document.getElementById('userProfile');
-    if (!userProfile || !window.currentUser) return;
-    
-    const username = window.currentUser.user_metadata?.display_name || 
-                     window.currentUser.user_metadata?.username || 
-                     window.currentUser.email?.split('@')[0] || 'ผู้ใช้';
-    
-    const avatarUrl = window.currentUser.user_metadata?.avatar_url || 
-                     `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff&size=100`;
-    
-    userProfile.innerHTML = `
-        <div class="profile-clickable" onclick="window.showProfileModal()" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: var(--radius-xl); transition: all 0.2s;">
-            <img src="${avatarUrl}" alt="${username}" class="avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-            <span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>
-        </div>
-    `;
-    
-    // เพิ่ม event listener
-    const profileDiv = userProfile.querySelector('.profile-clickable');
-    if (profileDiv) {
-        profileDiv.addEventListener('mouseenter', function() {
-            this.style.background = 'var(--bg-light)';
-        });
-        profileDiv.addEventListener('mouseleave', function() {
-            this.style.background = 'transparent';
-        });
-    }
-};
-
-
+});
