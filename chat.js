@@ -2697,4 +2697,282 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+// ========== PROFILE MANAGEMENT ==========
+window.showProfileModal = async function() {
+    console.log('Opening profile modal');
+    
+    if (!window.currentUser) {
+        alert('❌ ไม่พบข้อมูลผู้ใช้');
+        return;
+    }
+    
+    try {
+        // ดึงข้อมูลโปรไฟล์ล่าสุด
+        const { data: profile, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', window.currentUser.id)
+            .single();
+        
+        if (error) throw error;
+        
+        // อัพเดทค่าในฟอร์ม
+        const displayNameInput = document.getElementById('profileDisplayName');
+        const usernameInput = document.getElementById('profileUsername');
+        const emailInput = document.getElementById('profileEmail');
+        const avatarPreview = document.getElementById('profileAvatarPreview');
+        
+        if (displayNameInput) {
+            displayNameInput.value = profile?.display_name || window.currentUser.user_metadata?.display_name || '';
+        }
+        
+        if (usernameInput) {
+            usernameInput.value = profile?.username || window.currentUser.user_metadata?.username || '';
+        }
+        
+        if (emailInput) {
+            emailInput.value = window.currentUser.email || '';
+        }
+        
+        // อัพเดทรูปโปรไฟล์
+        const avatarUrl = profile?.avatar_url || 
+                         window.currentUser.user_metadata?.avatar_url || 
+                         `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || profile?.username || 'User')}&background=667eea&color=fff&size=200`;
+        
+        if (avatarPreview) {
+            avatarPreview.src = avatarUrl;
+        }
+        
+        // เก็บ avatar_url ปัจจุบัน
+        window.currentAvatarUrl = avatarUrl;
+        
+        // เปิด modal
+        const modal = document.getElementById('profileEditModal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading profile:', error);
+        alert('ไม่สามารถโหลดข้อมูลโปรไฟล์ได้: ' + error.message);
+    }
+};
+
+window.closeProfileModal = function() {
+    const modal = document.getElementById('profileEditModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    window.selectedProfileImage = null;
+};
+
+window.uploadProfileImage = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // ตรวจสอบขนาดไฟล์ (ไม่เกิน 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('❌ รูปภาพต้องมีขนาดไม่เกิน 2MB');
+                return;
+            }
+            
+            window.selectedProfileImage = file;
+            
+            // แสดงตัวอย่างรูป
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('profileAvatarPreview');
+                if (preview) {
+                    preview.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+};
+
+window.updateProfile = async function(event) {
+    event.preventDefault();
+    
+    const displayName = document.getElementById('profileDisplayName')?.value.trim();
+    const username = document.getElementById('profileUsername')?.value.trim();
+    
+    // ตรวจสอบความถูกต้อง
+    if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
+        alert('❌ ชื่อผู้ใช้ต้องเป็นตัวอักษรภาษาอังกฤษ ตัวเลข และ _ เท่านั้น');
+        return;
+    }
+    
+    try {
+        let avatarUrl = window.currentAvatarUrl;
+        
+        // อัปโหลดรูปภาพถ้ามีการเลือกใหม่
+        if (window.selectedProfileImage) {
+            const fileExt = window.selectedProfileImage.name.split('.').pop();
+            const fileName = `avatars/${window.currentUser.id}/${Date.now()}.${fileExt}`;
+            
+            const { error: uploadError } = await supabaseClient.storage
+                .from('chat_files')
+                .upload(fileName, window.selectedProfileImage);
+            
+            if (uploadError) throw uploadError;
+            
+            const { data: { publicUrl } } = supabaseClient.storage
+                .from('chat_files')
+                .getPublicUrl(fileName);
+            
+            avatarUrl = publicUrl;
+        }
+        
+        // อัปเดตโปรไฟล์ในตาราง profiles
+        const updates = {
+            id: window.currentUser.id,
+            display_name: displayName || null,
+            username: username || null,
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString()
+        };
+        
+        const { error: updateError } = await supabaseClient
+            .from('profiles')
+            .upsert(updates);
+        
+        if (updateError) throw updateError;
+        
+        // อัปเดต metadata ใน auth user
+        const { error: metadataError } = await supabaseClient.auth.updateUser({
+            data: {
+                display_name: displayName,
+                username: username,
+                avatar_url: avatarUrl
+            }
+        });
+        
+        if (metadataError) throw metadataError;
+        
+        // อัปเดต currentUser
+        window.currentUser.user_metadata = {
+            ...window.currentUser.user_metadata,
+            display_name: displayName,
+            username: username,
+            avatar_url: avatarUrl
+        };
+        
+        // อัปเดตการแสดงผล
+        window.displayUserInfo();
+        
+        alert('✅ อัปเดตโปรไฟล์สำเร็จ');
+        window.closeProfileModal();
+        
+    } catch (error) {
+        console.error('❌ Error updating profile:', error);
+        alert('ไม่สามารถอัปเดตโปรไฟล์ได้: ' + error.message);
+    }
+};
+
+// ========== PASSWORD MANAGEMENT ==========
+window.showPasswordModal = function() {
+    const profileModal = document.getElementById('profileEditModal');
+    const passwordModal = document.getElementById('passwordChangeModal');
+    
+    if (profileModal) {
+        profileModal.classList.remove('active');
+    }
+    
+    if (passwordModal) {
+        passwordModal.classList.add('active');
+    }
+};
+
+window.closePasswordModal = function() {
+    const modal = document.getElementById('passwordChangeModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    // รีเซ็ตฟอร์ม
+    document.getElementById('passwordChangeForm')?.reset();
+};
+
+window.changePassword = async function(event) {
+    event.preventDefault();
+    
+    const currentPassword = document.getElementById('currentPassword')?.value;
+    const newPassword = document.getElementById('newPassword')?.value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword')?.value;
+    
+    // ตรวจสอบรหัสผ่านใหม่
+    if (newPassword !== confirmNewPassword) {
+        alert('❌ รหัสผ่านใหม่ไม่ตรงกัน');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        alert('❌ รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
+        return;
+    }
+    
+    try {
+        // ตรวจสอบรหัสผ่านปัจจุบันโดยลอง sign in
+        const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+            email: window.currentUser.email,
+            password: currentPassword
+        });
+        
+        if (signInError) {
+            alert('❌ รหัสผ่านปัจจุบันไม่ถูกต้อง');
+            return;
+        }
+        
+        // เปลี่ยนรหัสผ่าน
+        const { error: updateError } = await supabaseClient.auth.updateUser({
+            password: newPassword
+        });
+        
+        if (updateError) throw updateError;
+        
+        alert('✅ เปลี่ยนรหัสผ่านสำเร็จ');
+        window.closePasswordModal();
+        
+    } catch (error) {
+        console.error('❌ Error changing password:', error);
+        alert('ไม่สามารถเปลี่ยนรหัสผ่านได้: ' + error.message);
+    }
+};
+
+// ========== UPDATE DISPLAYUSERINFO ==========
+// แก้ไขฟังก์ชัน displayUserInfo ให้คลิกได้
+window.displayUserInfo = function() {
+    const userProfile = document.getElementById('userProfile');
+    if (!userProfile || !window.currentUser) return;
+    
+    const username = window.currentUser.user_metadata?.display_name || 
+                     window.currentUser.user_metadata?.username || 
+                     window.currentUser.email?.split('@')[0] || 'ผู้ใช้';
+    
+    const avatarUrl = window.currentUser.user_metadata?.avatar_url || 
+                     `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff&size=100`;
+    
+    userProfile.innerHTML = `
+        <div class="profile-clickable" onclick="window.showProfileModal()" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: var(--radius-xl); transition: all 0.2s;">
+            <img src="${avatarUrl}" alt="${username}" class="avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+            <span class="username">${username} ${window.isAdmin ? '👑' : ''}</span>
+        </div>
+    `;
+    
+    // เพิ่ม event listener
+    const profileDiv = userProfile.querySelector('.profile-clickable');
+    if (profileDiv) {
+        profileDiv.addEventListener('mouseenter', function() {
+            this.style.background = 'var(--bg-light)';
+        });
+        profileDiv.addEventListener('mouseleave', function() {
+            this.style.background = 'transparent';
+        });
+    }
+};
+
 
