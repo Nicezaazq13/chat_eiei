@@ -111,7 +111,7 @@
 
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-    <!-- Modals -->
+    <!-- Emoji Picker Modal -->
     <div id="emojiPickerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <h3 style="margin-bottom: 16px;">😊 เลือกอิโมจิ</h3>
@@ -122,6 +122,7 @@
         </div>
     </div>
 
+    <!-- Create Room Modal -->
     <div id="createRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">📝 สร้างห้องใหม่</h2>
@@ -159,6 +160,7 @@
         </div>
     </div>
 
+    <!-- Join Private Room Modal -->
     <div id="joinPrivateRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">🔐 เข้าร่วมห้องส่วนตัว</h2>
@@ -174,6 +176,7 @@
         </div>
     </div>
 
+    <!-- Kick Member Modal -->
     <div id="kickMemberModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px;">⚠️ เตะสมาชิก</h2>
@@ -186,6 +189,7 @@
         </div>
     </div>
 
+    <!-- Delete Room Modal -->
     <div id="deleteRoomModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 24px; color: #f56565;">⚠️ ลบห้อง</h2>
@@ -198,6 +202,7 @@
         </div>
     </div>
 
+    <!-- Create Activity Modal -->
     <div id="createActivityModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <h3 style="margin-bottom: 20px;">🎮 สร้างกิจกรรมใหม่</h3>
@@ -258,6 +263,7 @@
         </div>
     </div>
 
+    <!-- YouTube Playlist Modal -->
     <div id="youtubePlaylistModal" class="modal">
         <div class="modal-content">
             <div class="youtube-playlist-header">
@@ -301,6 +307,7 @@
         </div>
     </div>
 
+    <!-- YouTube Player Modal -->
     <div id="youtubePlayerModal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
@@ -350,6 +357,7 @@
         </div>
     </div>
 
+    <!-- Add To Playlist Modal -->
     <div id="addToPlaylistModal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -388,6 +396,7 @@
         </div>
     </div>
 
+    <!-- Music Player Modal -->
     <div id="musicPlayerModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <h3 style="margin-bottom: 16px;">🎵 เครื่องเล่นเพลง</h3>
@@ -411,6 +420,7 @@
         </div>
     </div>
 
+    <!-- Current Music Bar -->
     <div id="currentMusicBar" class="music-bar" style="display: none;">
         <div class="music-info">
             <span class="music-icon">🎵</span>
@@ -420,6 +430,91 @@
             <button onclick="window.togglePlayPause()" id="playPauseBtn" class="music-btn">⏸️</button>
             <button onclick="window.stopMusic()" class="music-btn">⏹️</button>
             <button onclick="window.hideMusicBar()" class="music-btn">✕</button>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profileEditModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <span>👤</span> แก้ไขโปรไฟล์
+                </h3>
+                <button onclick="window.closeProfileModal()" class="btn-icon" style="font-size: 24px;">✕</button>
+            </div>
+            
+            <form id="profileEditForm" onsubmit="window.updateProfile(event)">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="position: relative; display: inline-block;">
+                        <img id="profileAvatarPreview" src="" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color);">
+                        <button type="button" onclick="window.uploadProfileImage()" style="position: absolute; bottom: 0; right: 0; background: var(--primary-color); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            📷
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>ชื่อที่แสดง</label>
+                    <input type="text" id="profileDisplayName" placeholder="ชื่อที่ต้องการแสดง" maxlength="50">
+                </div>
+                
+                <div class="form-group">
+                    <label>ชื่อผู้ใช้</label>
+                    <input type="text" id="profileUsername" placeholder="ชื่อผู้ใช้" maxlength="30">
+                    <small>ใช้สำหรับเข้าสู่ระบบ • ตัวอักษรภาษาอังกฤษและตัวเลขเท่านั้น</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>อีเมล</label>
+                    <input type="email" id="profileEmail" placeholder="อีเมล" disabled style="background: var(--bg-light);">
+                    <small>ไม่สามารถเปลี่ยนอีเมลได้</small>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <button type="button" onclick="window.showPasswordModal()" class="btn btn-outline" style="width: 100%;">
+                        🔐 เปลี่ยนรหัสผ่าน
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">💾 บันทึก</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.closeProfileModal()" style="flex: 1;">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div id="passwordChangeModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <span>🔐</span> เปลี่ยนรหัสผ่าน
+                </h3>
+                <button onclick="window.closePasswordModal()" class="btn-icon" style="font-size: 24px;">✕</button>
+            </div>
+            
+            <form id="passwordChangeForm" onsubmit="window.changePassword(event)">
+                <div class="form-group">
+                    <label>รหัสผ่านปัจจุบัน</label>
+                    <input type="password" id="currentPassword" placeholder="รหัสผ่านปัจจุบัน" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>รหัสผ่านใหม่</label>
+                    <input type="password" id="newPassword" placeholder="รหัสผ่านใหม่อย่างน้อย 6 ตัว" minlength="6" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" id="confirmNewPassword" placeholder="ยืนยันรหัสผ่านใหม่" minlength="6" required>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">💾 เปลี่ยนรหัสผ่าน</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.closePasswordModal()" style="flex: 1;">ยกเลิก</button>
+                </div>
+            </form>
         </div>
     </div>
 
