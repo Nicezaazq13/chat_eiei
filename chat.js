@@ -1,4 +1,3 @@
-// ========== script.js ==========
 // ========== CONFIGURATION ==========
 const SUPABASE_URL = 'https://xaugtjljfkjqfpmnsxko.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhdWd0amxqZmtqcWZwbW5zeGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4ODE1MTEsImV4cCI6MjA4NjQ1NzUxMX0.br0Kmrk_ekJN_E8e7J_iARpaZFAAgyR3PVsuSfD72vw';
@@ -129,8 +128,9 @@ window.setupSessionManager = function() {
 window.setupRealtimeSubscription = async function(roomId) {
     // ยกเลิก subscription เดิมถ้ามี
     if (window.messageSubscription) {
+        console.log('🔄 Unsubscribing from old subscription...');
         window.messageSubscription.unsubscribe();
-        console.log('✅ Unsubscribed from old subscription');
+        window.messageSubscription = null;
     }
     
     console.log('📡 Setting up realtime subscription for room:', roomId);
@@ -149,26 +149,35 @@ window.setupRealtimeSubscription = async function(roomId) {
             async (payload) => {
                 console.log('📥 New message received:', payload);
                 
-                // ดึงข้อมูลโปรไฟล์ของผู้ส่งข้อความ
-                const { data: profile } = await supabaseClient
-                    .from('profiles')
-                    .select('username, display_name, avatar_url')
-                    .eq('id', payload.new.user_id)
-                    .single();
-                
-                // สร้าง object ข้อความที่มีข้อมูลโปรไฟล์
-                const newMessage = {
-                    ...payload.new,
-                    profiles: profile || { 
-                        display_name: 'ผู้ใช้', 
-                        username: 'user', 
-                        avatar_url: null 
+                try {
+                    // ดึงข้อมูลโปรไฟล์ของผู้ส่งข้อความ
+                    const { data: profile, error } = await supabaseClient
+                        .from('profiles')
+                        .select('username, display_name, avatar_url')
+                        .eq('id', payload.new.user_id)
+                        .single();
+                    
+                    if (error && error.code !== 'PGRST116') {
+                        console.error('Error fetching profile:', error);
                     }
-                };
-                
-                // แสดงข้อความใหม่
-                window.displayMessage(newMessage);
-                window.scrollToBottom();
+                    
+                    // สร้าง object ข้อความที่มีข้อมูลโปรไฟล์
+                    const newMessage = {
+                        ...payload.new,
+                        profiles: profile || { 
+                            display_name: 'ผู้ใช้', 
+                            username: 'user', 
+                            avatar_url: null 
+                        }
+                    };
+                    
+                    // แสดงข้อความใหม่ทันที
+                    window.displayMessage(newMessage);
+                    window.scrollToBottom();
+                    
+                } catch (error) {
+                    console.error('Error processing new message:', error);
+                }
             }
         )
         .on(
@@ -181,7 +190,6 @@ window.setupRealtimeSubscription = async function(roomId) {
             },
             (payload) => {
                 console.log('📥 Message updated:', payload);
-                // อัปเดตข้อความใน UI (เช่น เมื่อถูกลบ)
                 window.updateMessageInUI(payload.new);
             }
         )
@@ -199,7 +207,6 @@ window.setupRealtimeSubscription = async function(roomId) {
 window.updateMessageInUI = function(updatedMessage) {
     const messageDiv = document.querySelector(`.message[data-message-id="${updatedMessage.id}"]`);
     if (messageDiv) {
-        // ถ้าข้อความถูกลบ
         if (updatedMessage.is_deleted) {
             messageDiv.classList.add('deleted-message');
             const contentDiv = messageDiv.querySelector('.message-content');
@@ -1661,7 +1668,8 @@ window.deleteSelectedMessages = async function() {
         
         alert(`✅ ลบ ${messageIds.length} ข้อความสำเร็จ`);
         window.clearSelectedMessages();
-        await window.loadMessages(window.currentRoomId);
+        // ไม่ต้องโหลด messages ใหม่ เพราะ Realtime จะอัปเดตให้
+        // await window.loadMessages(window.currentRoomId);
         
     } catch (error) {
         console.error('❌ Error deleting messages:', error);
@@ -1798,6 +1806,7 @@ window.createRoom = async function(event) {
         alert('✅ สร้างห้องสำเร็จ');
         window.closeCreateRoomModal();
         window.loadRooms();
+        window.selectRoom(data.id);
         
     } catch (error) {
         console.error('❌ Error creating room:', error);
@@ -2101,7 +2110,7 @@ window.toggleMobileSidebar = function() {
     }
 };
 
-// ========== SELECT ROOM ==========
+// ========== SELECT ROOM (พร้อม Realtime) ==========
 window.selectRoom = async function(roomId) {
     try {
         console.log('Selecting room:', roomId);
@@ -2160,14 +2169,16 @@ window.selectRoom = async function(roomId) {
             }
         }
         
+        // โหลดข้อความเก่า
         await window.loadMessages(room.id);
+        
+        // ตั้งค่า Realtime subscription สำหรับห้องนี้ (สำคัญ!)
+        await window.setupRealtimeSubscription(room.id);
+        
+        // โหลดข้อมูลอื่นๆ
         await window.loadYoutubePlaylist();
         await window.loadActivities();
         await window.loadRoomMembers(room.id);
-        
-        // ตั้งค่า Realtime subscription สำหรับห้องนี้
-        await window.setupRealtimeSubscription(room.id);
-        
         await window.loadRooms();
         
         window.hideAllPanels();
@@ -2224,7 +2235,6 @@ window.displayMessage = function(message) {
     messageDiv.className = `message ${isOwnMessage ? 'own-message' : ''}`;
     messageDiv.dataset.messageId = message.id;
     
-    // ถ้าข้อความถูกลบ
     if (message.is_deleted) {
         messageDiv.classList.add('deleted-message');
         messageDiv.innerHTML = `
@@ -2272,16 +2282,25 @@ window.sendMessage = async function() {
             const { data: { publicUrl } } = supabaseClient.storage.from('chat_files').getPublicUrl(fileName);
             imageUrl = publicUrl;
         }
+        
         const messageText = imageUrl ? `${message} [IMAGE]${imageUrl}[/IMAGE]` : message;
+        
+        // ส่งข้อความ
         const { error } = await supabaseClient.from('messages').insert([{
             user_id: window.currentUser.id,
             room_id: window.currentRoomId,
             message: messageText,
             created_at: new Date().toISOString()
         }]);
+        
         if (error) throw error;
+        
+        // เคลียร์ input
         window.messageInput.value = '';
         window.clearImagePreview();
+        
+        // ไม่ต้องโหลด messages ใหม่ เพราะ Realtime จะจัดการให้
+        
     } catch (error) {
         console.error('❌ Error sending message:', error);
         alert('ไม่สามารถส่งข้อความได้: ' + error.message);
@@ -2304,7 +2323,9 @@ window.linkify = function(text) {
 };
 
 window.scrollToBottom = function() { 
-    if (window.messagesContainer) window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; 
+    if (window.messagesContainer) {
+        window.messagesContainer.scrollTop = window.messagesContainer.scrollHeight; 
+    }
 };
 
 window.logout = async function() { 
@@ -2319,7 +2340,9 @@ window.logout = async function() {
                 .eq('id', window.currentUser.id);
         }
         
-        if (window.messageSubscription) window.messageSubscription.unsubscribe();
+        if (window.messageSubscription) {
+            window.messageSubscription.unsubscribe();
+        }
         await supabaseClient.auth.signOut();
         localStorage.removeItem(STORAGE_KEY);
         window.location.href = 'login.html'; 
@@ -2478,7 +2501,6 @@ window.updateProfile = async function(event) {
             display_name: displayName || null,
             username: username || null,
             avatar_url: avatarUrl
-            // ลบ updated_at ออกไป
         };
         
         const { error: updateError } = await supabaseClient
